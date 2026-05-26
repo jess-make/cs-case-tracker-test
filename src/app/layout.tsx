@@ -3,8 +3,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CS Case Tracker | 客訴案件管理系統",
-  description: "客訴案件追蹤與管理系統",
+  title: "客服案件追蹤平台 | 客訴立案・處理・結案管理",
+  description: "客訴立案・處理・結案管理",
 };
 
 export default function RootLayout({

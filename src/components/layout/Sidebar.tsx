@@ -11,7 +11,7 @@ import {
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/", label: "案件總覽", icon: LayoutDashboard },
   { href: "/cases/new", label: "建立案件", icon: PlusCircle },
   { href: "/cases", label: "案件列表", icon: List },
 ];
@@ -26,8 +26,8 @@ export function Sidebar() {
           <Headphones className="h-5 w-5" />
         </div>
         <div>
-          <h1 className="text-sm font-bold text-slate-900">CS Case Tracker</h1>
-          <p className="text-xs text-slate-500">客訴案件管理系統</p>
+          <h1 className="text-sm font-bold text-slate-900">客服案件追蹤平台</h1>
+          <p className="text-xs text-slate-500">客訴立案・處理・結案管理</p>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export function Sidebar() {
 
       <div className="border-t border-slate-200 px-4 py-4">
         <div className="rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-xs font-medium text-slate-700">王小美</p>
+          <p className="text-xs font-medium text-slate-700">客服-茹茹</p>
           <p className="text-xs text-slate-500">客服 · 客服部</p>
         </div>
       </div>

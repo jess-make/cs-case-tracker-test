@@ -27,7 +27,7 @@ export default async function DashboardPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-slate-900">案件總覽</h1>
         <p className="mt-1 text-sm text-slate-500">客訴案件總覽</p>
       </div>
 

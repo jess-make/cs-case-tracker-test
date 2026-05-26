@@ -20,11 +20,11 @@ export function CaseTable({ cases }: { cases: Case[] }) {
           <tr>
             <th className="px-4 py-3 font-medium text-slate-600">案件編號</th>
             <th className="px-4 py-3 font-medium text-slate-600">客戶</th>
-            <th className="px-4 py-3 font-medium text-slate-600">類型</th>
+            <th className="px-4 py-3 font-medium text-slate-600">客訴類型</th>
             <th className="px-4 py-3 font-medium text-slate-600">緊急度</th>
-            <th className="px-4 py-3 font-medium text-slate-600">狀態</th>
-            <th className="px-4 py-3 font-medium text-slate-600">處理人</th>
-            <th className="px-4 py-3 font-medium text-slate-600">期限</th>
+            <th className="px-4 py-3 font-medium text-slate-600">案件狀態</th>
+            <th className="px-4 py-3 font-medium text-slate-600">負責人</th>
+            <th className="px-4 py-3 font-medium text-slate-600">處理期限</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">

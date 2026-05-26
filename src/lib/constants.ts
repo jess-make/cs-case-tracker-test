@@ -4,7 +4,7 @@ export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   new: "新案件",
   assigned: "已指派",
   in_progress: "處理中",
-  replied: "已回覆改善結果",
+  replied: "已回覆",
   cs_confirming: "客服確認中",
   closed: "已結案",
 };

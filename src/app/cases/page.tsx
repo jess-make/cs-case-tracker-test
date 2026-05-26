@@ -1,0 +1,52 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { CaseTable } from "@/components/cases/CaseTable";
+import { CaseFilters } from "@/components/cases/CaseFilters";
+import { getCases, getHandlers } from "@/lib/data/cases";
+import { Suspense } from "react";
+
+interface PageProps {
+  searchParams: Promise<{
+    status?: string;
+    assignee_id?: string;
+    complaint_type?: string;
+  }>;
+}
+
+export default async function CasesPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const [cases, handlers] = await Promise.all([
+    getCases({
+      status: params.status,
+      assignee_id: params.assignee_id,
+      complaint_type: params.complaint_type,
+    }),
+    getHandlers(),
+  ]);
+
+  return (
+    <div>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">案件列表</h1>
+          <p className="mt-1 text-sm text-slate-500">共 {cases.length} 筆案件</p>
+        </div>
+        <Link
+          href="/cases/new"
+          className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          <Plus className="h-4 w-4" />
+          建立案件
+        </Link>
+      </div>
+
+      <Suspense fallback={<div className="mb-6 h-16 animate-pulse rounded-xl bg-slate-100" />}>
+        <div className="mb-6">
+          <CaseFilters handlers={handlers} />
+        </div>
+      </Suspense>
+
+      <CaseTable cases={cases} />
+    </div>
+  );
+}

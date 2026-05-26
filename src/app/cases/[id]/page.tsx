@@ -22,12 +22,12 @@ export default async function CaseDetailPage({ params }: PageProps) {
       <div>
         <Link
           href="/cases"
-          className="mb-6 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+          className="mb-6 inline-flex min-h-11 items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
         >
           <ArrowLeft className="h-4 w-4" />
           返回列表
         </Link>
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center sm:p-12">
           <p className="text-lg font-medium text-slate-800">找不到案件</p>
           <p className="mt-2 text-sm text-slate-500">
             案件可能已刪除或編號不正確。
@@ -41,7 +41,7 @@ export default async function CaseDetailPage({ params }: PageProps) {
     <div>
       <Link
         href="/cases"
-        className="mb-6 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
+        className="mb-4 inline-flex min-h-11 items-center gap-1 text-sm text-slate-500 hover:text-slate-700 lg:mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
         返回列表

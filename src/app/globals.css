@@ -13,4 +13,12 @@ body {
   font-family: var(--font-sans);
   background-color: #f8fafc;
   color: #0f172a;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }

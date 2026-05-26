@@ -7,6 +7,12 @@ export const metadata: Metadata = {
   description: "客訴立案・處理・結案管理",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover" as const,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{

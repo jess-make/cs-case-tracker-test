@@ -17,11 +17,11 @@ export function CaseFilters({ handlers }: { handlers: User[] }) {
   }
 
   return (
-    <div className="flex flex-wrap gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <div>
+    <div className="grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2 lg:flex lg:flex-wrap">
+      <div className="min-w-0 sm:max-w-xs">
         <label className="mb-1 block text-xs font-medium text-slate-500">狀態</label>
         <select
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
           value={params.get("status") ?? ""}
           onChange={(e) => update("status", e.target.value)}
         >
@@ -34,10 +34,10 @@ export function CaseFilters({ handlers }: { handlers: User[] }) {
         </select>
       </div>
 
-      <div>
+      <div className="min-w-0 sm:max-w-xs">
         <label className="mb-1 block text-xs font-medium text-slate-500">處理人</label>
         <select
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
           value={params.get("assignee_id") ?? ""}
           onChange={(e) => update("assignee_id", e.target.value)}
         >
@@ -50,10 +50,10 @@ export function CaseFilters({ handlers }: { handlers: User[] }) {
         </select>
       </div>
 
-      <div>
+      <div className="min-w-0 sm:max-w-xs sm:col-span-2 lg:col-span-1">
         <label className="mb-1 block text-xs font-medium text-slate-500">客訴類型</label>
         <select
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
           value={params.get("complaint_type") ?? ""}
           onChange={(e) => update("complaint_type", e.target.value)}
         >

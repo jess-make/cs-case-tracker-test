@@ -52,21 +52,21 @@ export function CaseDetailPanel({
   }
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className="space-y-6 lg:col-span-2">
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-start justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">{caseData.case_number}</h2>
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+      <div className="min-w-0 space-y-4 lg:col-span-2 lg:space-y-6">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
+              <h2 className="break-all text-lg font-bold text-slate-900">{caseData.case_number}</h2>
               <p className="text-sm text-slate-500">建立於 {formatDate(caseData.created_at)}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <StatusBadge status={caseData.status} />
               <UrgencyBadge urgency={caseData.urgency} />
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <InfoRow icon={User} label="客戶姓名" value={caseData.customer_name} />
             <InfoRow icon={User} label="聯絡方式" value={caseData.customer_contact} />
             <InfoRow icon={Building2} label="客訴來源" value={caseData.source} />
@@ -104,7 +104,7 @@ export function CaseDetailPanel({
           )}
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h3 className="mb-4 text-base font-semibold text-slate-900">處理回覆</h3>
           {caseData.status !== "closed" && (
             <form onSubmit={handleReply} className="mb-6">
@@ -112,13 +112,13 @@ export function CaseDetailPanel({
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
                 placeholder="輸入處理回覆或改善說明..."
               />
               <button
                 type="submit"
                 disabled={pending || !reply.trim()}
-                className="mt-2 inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
               >
                 {pending && <Loader2 className="h-4 w-4 animate-spin" />}
                 送出回覆
@@ -127,22 +127,24 @@ export function CaseDetailPanel({
           )}
 
           <h4 className="mb-3 text-sm font-medium text-slate-700">處理紀錄</h4>
-          <div className="space-y-3">
+          <div className="max-w-full space-y-3 overflow-hidden">
             {safeLogs.length === 0 ? (
               <p className="text-sm text-slate-500">尚無處理紀錄</p>
             ) : (
               safeLogs.map((log, index) => (
                 <div
                   key={log.id || `log-${index}`}
-                  className="flex gap-3 border-l-2 border-brand-200 pl-4"
+                  className="min-w-0 border-l-2 border-brand-200 pl-3 sm:pl-4"
                 >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="min-w-0">
+                    <div className="flex flex-col gap-0.5 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
                       <span className="text-sm font-medium text-slate-800">{log.action}</span>
-                      <span className="text-xs text-slate-400">{formatDate(log.created_at)}</span>
+                      <span className="shrink-0 text-xs text-slate-400">
+                        {formatDate(log.created_at)}
+                      </span>
                     </div>
                     {log.content && (
-                      <p className="mt-1 text-sm text-slate-600">{log.content}</p>
+                      <p className="mt-1 break-words text-sm text-slate-600">{log.content}</p>
                     )}
                     {log.user && (
                       <p className="mt-0.5 text-xs text-slate-400">{log.user.name}</p>
@@ -155,8 +157,8 @@ export function CaseDetailPanel({
         </section>
       </div>
 
-      <div className="space-y-4">
-        <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="min-w-0 space-y-4">
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h3 className="mb-4 text-base font-semibold text-slate-900">案件操作</h3>
 
           <div className="mb-4 space-y-2">
@@ -179,7 +181,7 @@ export function CaseDetailPanel({
                 <button
                   onClick={handleAdvance}
                   disabled={pending}
-                  className="w-full rounded-lg bg-brand-600 py-2 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                  className="min-h-11 w-full rounded-lg bg-brand-600 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
                 >
                   推進至：{CASE_STATUS_LABELS[nextStatus]}
                 </button>
@@ -188,7 +190,7 @@ export function CaseDetailPanel({
                 <button
                   onClick={handleClose}
                   disabled={pending}
-                  className="w-full rounded-lg bg-emerald-600 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                  className="min-h-11 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
                 >
                   結案
                 </button>

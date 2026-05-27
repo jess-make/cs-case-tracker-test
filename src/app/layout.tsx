@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { APP_NAME, APP_SUBTITLE } from "@/lib/constants";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GREVIA 客服案件追蹤平台 | 客訴立案・處理・結案管理",
-  description: "客訴立案・處理・結案管理",
+  title: `${APP_NAME} | ${APP_SUBTITLE}`,
+  description: APP_SUBTITLE,
+  applicationName: APP_NAME,
   icons: {
     icon: [{ url: "/grevia-logo.png", type: "image/png" }],
     apple: [{ url: "/grevia-logo.png", type: "image/png" }],

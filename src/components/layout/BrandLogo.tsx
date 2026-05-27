@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { APP_NAME, APP_SUBTITLE } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const LOGO_SRC = "/grevia-logo.png";
@@ -16,7 +17,7 @@ const sizeClass = {
   lg: "h-10",
 } as const;
 
-/** GREVIA 品牌 Logo，保留原比例 */
+/** Grevia 品牌 Logo，保留原比例 */
 export function BrandLogo({
   size = "md",
   className,
@@ -25,7 +26,7 @@ export function BrandLogo({
   return (
     <Image
       src={LOGO_SRC}
-      alt="GREVIA"
+      alt="Grevia"
       width={160}
       height={48}
       priority={priority}
@@ -54,10 +55,10 @@ export function BrandHeader({
       <BrandLogo size={logoSize} priority={priority} />
       <div className="min-w-0">
         <p className="truncate text-sm font-bold leading-tight text-slate-900">
-          GREVIA 客服案件追蹤平台
+          {APP_NAME}
         </p>
         {showSubtitle && (
-          <p className="truncate text-xs text-slate-500">客訴立案・處理・結案管理</p>
+          <p className="truncate text-xs text-slate-500">{APP_SUBTITLE}</p>
         )}
       </div>
     </div>

@@ -1,5 +1,9 @@
 import type { CaseStatus, UrgencyLevel, UserRole } from "@/types";
 
+/** 系統顯示名稱 */
+export const APP_NAME = "Grevia 客服案件追蹤平台";
+export const APP_SUBTITLE = "客訴立案・處理・結案管理";
+
 export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   new: "新案件",
   assigned: "已指派",

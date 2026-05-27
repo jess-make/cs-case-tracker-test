@@ -5,6 +5,10 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "GREVIA 客服案件追蹤平台 | 客訴立案・處理・結案管理",
   description: "客訴立案・處理・結案管理",
+  icons: {
+    icon: [{ url: "/grevia-logo.png", type: "image/png" }],
+    apple: [{ url: "/grevia-logo.png", type: "image/png" }],
+  },
 };
 
 export const viewport = {

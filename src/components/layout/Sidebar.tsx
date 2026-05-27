@@ -2,13 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  PlusCircle,
-  List,
-  Headphones,
-  X,
-} from "lucide-react";
+import { LayoutDashboard, PlusCircle, List, X } from "lucide-react";
+import { BrandHeader } from "./BrandLogo";
 import { cn } from "@/lib/utils";
 
 const navItems = [
@@ -37,18 +32,8 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
         "lg:translate-x-0"
       )}
     >
-      <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-5 lg:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-600 text-white">
-            <Headphones className="h-5 w-5" />
-          </div>
-          <div className="min-w-0">
-            <h1 className="truncate text-sm font-bold text-slate-900">
-              GREVIA 客服案件追蹤平台
-            </h1>
-            <p className="truncate text-xs text-slate-500">客訴立案・處理・結案管理</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-between gap-2 border-b border-slate-200 px-4 py-4 lg:px-5 lg:py-5">
+        <BrandHeader logoSize="lg" className="flex-1" priority />
         <button
           type="button"
           onClick={onClose}

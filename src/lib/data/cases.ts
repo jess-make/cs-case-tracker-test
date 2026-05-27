@@ -240,6 +240,7 @@ export async function createCase(
       customer_gender: input.customer_gender,
       source: input.source,
       complaint_type: input.complaint_type,
+      complaint_subtype: input.complaint_subtype,
       description: input.description,
       urgency: input.urgency,
       department: input.department,

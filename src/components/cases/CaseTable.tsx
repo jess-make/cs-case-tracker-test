@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Case } from "@/types";
 import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
+import { formatComplaintLabel } from "@/lib/constants";
 import { formatDateOnly } from "@/lib/utils";
 import { AlertTriangle } from "lucide-react";
 
@@ -46,9 +47,11 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
               <dt className="text-xs text-slate-500">客戶</dt>
               <dd className="truncate font-medium text-slate-800">{c.customer_name}</dd>
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 sm:col-span-2">
               <dt className="text-xs text-slate-500">客訴類型</dt>
-              <dd className="truncate text-slate-700">{c.complaint_type}</dd>
+              <dd className="text-slate-700">
+                {formatComplaintLabel(c.complaint_type, c.complaint_subtype)}
+              </dd>
             </div>
             <div>
               <dt className="text-xs text-slate-500">緊急程度</dt>
@@ -100,7 +103,9 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
                 )}
               </td>
               <td className="px-4 py-3 text-slate-700">{c.customer_name}</td>
-              <td className="px-4 py-3 text-slate-600">{c.complaint_type}</td>
+              <td className="px-4 py-3 text-slate-600">
+                {formatComplaintLabel(c.complaint_type, c.complaint_subtype)}
+              </td>
               <td className="px-4 py-3">
                 <UrgencyBadge urgency={c.urgency} />
               </td>

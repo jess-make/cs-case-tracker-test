@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   COMPLAINT_SOURCES,
-  COMPLAINT_TYPES,
+  COMPLAINT_CATEGORIES,
+  COMPLAINT_CATEGORY_KEYS,
   CUSTOMER_GENDERS,
   DEPARTMENTS,
   URGENCY_LABELS,
@@ -15,6 +16,17 @@ import { Loader2 } from "lucide-react";
 
 export function CreateCaseForm() {
   const [pending, setPending] = useState(false);
+  const [complaintCategory, setComplaintCategory] = useState("");
+  const [complaintSubtype, setComplaintSubtype] = useState("");
+
+  const subtypeOptions = complaintCategory
+    ? COMPLAINT_CATEGORIES[complaintCategory] ?? []
+    : [];
+
+  function handleCategoryChange(value: string) {
+    setComplaintCategory(value);
+    setComplaintSubtype("");
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -28,7 +40,7 @@ export function CreateCaseForm() {
   }
 
   const inputClass =
-    "w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20";
+    "w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
   const labelClass = "mb-1 block text-sm font-medium text-slate-700";
   const btnSecondary =
     "inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto";
@@ -78,14 +90,41 @@ export function CreateCaseForm() {
           </select>
         </div>
         <div>
-          <label className={labelClass}>客訴類型 *</label>
-          <select name="complaint_type" required className={inputClass} defaultValue="">
+          <label className={labelClass}>客訴類別 *</label>
+          <select
+            name="complaint_type"
+            required
+            className={inputClass}
+            value={complaintCategory}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+          >
             <option value="" disabled>
               請選擇
             </option>
-            {COMPLAINT_TYPES.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            {COMPLAINT_CATEGORY_KEYS.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>客訴問題 *</label>
+          <select
+            name="complaint_subtype"
+            required
+            className={`${inputClass} ${!complaintCategory ? "pointer-events-none opacity-60" : ""}`}
+            value={complaintSubtype}
+            onChange={(e) => setComplaintSubtype(e.target.value)}
+            aria-disabled={!complaintCategory}
+            tabIndex={complaintCategory ? 0 : -1}
+          >
+            <option value="" disabled>
+              {complaintCategory ? "請選擇" : "請先選擇客訴類別"}
+            </option>
+            {subtypeOptions.map((sub) => (
+              <option key={sub} value={sub}>
+                {sub}
               </option>
             ))}
           </select>

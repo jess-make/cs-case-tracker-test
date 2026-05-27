@@ -51,15 +51,29 @@ export const COMPLAINT_SOURCES = [
 
 export const CUSTOMER_GENDERS = ["男", "女"] as const;
 
-export const COMPLAINT_TYPES = [
-  "產品品質",
-  "配送問題",
-  "服務態度",
-  "帳務爭議",
-  "退換貨",
-  "系統問題",
-  "其他",
-] as const;
+/** 客訴類別 → 客訴問題（二層選單） */
+export const COMPLAINT_CATEGORIES: Record<string, readonly string[]> = {
+  商品問題: ["商品瑕疵", "規格不符", "缺件", "保固問題", "其他"],
+  物流問題: ["配送延遲", "錯誤件", "修改收件資料", "其他"],
+  服務問題: ["態度問題", "回覆過慢", "惡意客訴", "說明不清", "其他"],
+  "退款/金流問題": ["發票問題", "折價券", "付款問題", "其他"],
+  退換貨: ["功能異常", "外觀定義等級", "改變心意", "其他"],
+  "系統/設備問題": ["無法操作", "付款異常", "設備故障", "系統錯誤", "其他"],
+  其他: ["其他"],
+};
+
+export const COMPLAINT_CATEGORY_KEYS = Object.keys(
+  COMPLAINT_CATEGORIES
+) as (keyof typeof COMPLAINT_CATEGORIES)[];
+
+/** 列表／詳情顯示：客訴類別 / 客訴問題 */
+export function formatComplaintLabel(
+  type: string,
+  subtype: string | null | undefined
+): string {
+  if (!subtype) return type || "—";
+  return `${type} / ${subtype}`;
+}
 
 /** 建立案件：指派部門選項 */
 export const DEPARTMENTS = [

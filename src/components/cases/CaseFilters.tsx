@@ -2,7 +2,11 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@/types";
-import { CASE_STATUS_LABELS, COMPLAINT_TYPES, URGENCY_LABELS } from "@/lib/constants";
+import {
+  CASE_STATUS_LABELS,
+  COMPLAINT_CATEGORY_KEYS,
+  URGENCY_LABELS,
+} from "@/lib/constants";
 import type { CaseStatus, UrgencyLevel } from "@/types";
 import { DateRangeFilter } from "@/components/cases/DateRangeFilter";
 
@@ -71,14 +75,14 @@ export function CaseFilters({ handlers }: { handlers: User[] }) {
         </div>
 
         <div className="min-w-0 sm:max-w-xs sm:col-span-2 lg:col-span-1">
-          <label className="mb-1 block text-xs font-medium text-slate-500">客訴類型</label>
+          <label className="mb-1 block text-xs font-medium text-slate-500">客訴類別</label>
           <select
             className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             value={params.get("complaint_type") ?? ""}
             onChange={(e) => update("complaint_type", e.target.value)}
           >
             <option value="">全部</option>
-            {COMPLAINT_TYPES.map((t) => (
+            {COMPLAINT_CATEGORY_KEYS.map((t) => (
               <option key={t} value={t}>
                 {t}
               </option>

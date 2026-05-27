@@ -29,6 +29,7 @@ export interface Case {
   customer_gender: string | null;
   source: string;
   complaint_type: string;
+  complaint_subtype: string | null;
   description: string;
   urgency: UrgencyLevel;
   department: string;
@@ -70,6 +71,7 @@ export interface CreateCaseInput {
   customer_gender: string;
   source: string;
   complaint_type: string;
+  complaint_subtype: string;
   description: string;
   urgency: UrgencyLevel;
   department: string;

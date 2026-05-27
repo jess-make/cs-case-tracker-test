@@ -38,6 +38,7 @@ export async function createCaseAction(formData: FormData) {
     customer_gender: formData.get("customer_gender") as string,
     source: formData.get("source") as string,
     complaint_type: formData.get("complaint_type") as string,
+    complaint_subtype: formData.get("complaint_subtype") as string,
     description: (formData.get("description") as string)?.trim(),
     urgency: formData.get("urgency") as UrgencyLevel,
     department: formData.get("department") as string,

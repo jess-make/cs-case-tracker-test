@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
+import { resolveDateRange, toCreatedAtBounds } from "@/lib/date-range";
 import { isOverdue } from "@/lib/utils";
 import { normalizeCase, normalizeCaseLog } from "@/lib/data/normalize";
 import type {
@@ -110,6 +111,11 @@ export async function getCases(filters?: {
   assignee_id?: string;
   complaint_type?: string;
   urgency?: string;
+  q?: string;
+  date_preset?: string;
+  date_from?: string;
+  date_to?: string;
+  filterByDate?: boolean;
 }): Promise<Case[]> {
   const client = await supabase();
   let query = client.from("cases").select("*").order("created_at", {
@@ -121,6 +127,23 @@ export async function getCases(filters?: {
   if (filters?.complaint_type)
     query = query.eq("complaint_type", filters.complaint_type);
   if (filters?.urgency) query = query.eq("urgency", filters.urgency);
+
+  if (filters?.filterByDate) {
+    const { from, to } = resolveDateRange({
+      date_preset: filters.date_preset,
+      date_from: filters.date_from,
+      date_to: filters.date_to,
+    });
+    const bounds = toCreatedAtBounds(from, to);
+    query = query.gte("created_at", bounds.from).lte("created_at", bounds.to);
+  }
+
+  if (filters?.q?.trim()) {
+    const term = `%${filters.q.trim()}%`;
+    query = query.or(
+      `case_number.ilike.${term},customer_name.ilike.${term}`
+    );
+  }
 
   const { data, error } = await query;
   if (error) throw error;

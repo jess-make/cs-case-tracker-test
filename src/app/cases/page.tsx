@@ -11,6 +11,10 @@ interface PageProps {
     assignee_id?: string;
     complaint_type?: string;
     urgency?: string;
+    q?: string;
+    date_preset?: string;
+    date_from?: string;
+    date_to?: string;
   }>;
 }
 
@@ -22,6 +26,11 @@ export default async function CasesPage({ searchParams }: PageProps) {
       assignee_id: params.assignee_id,
       complaint_type: params.complaint_type,
       urgency: params.urgency,
+      q: params.q,
+      date_preset: params.date_preset,
+      date_from: params.date_from,
+      date_to: params.date_to,
+      filterByDate: true,
     }),
     getHandlers(),
   ]);

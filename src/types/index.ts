@@ -81,4 +81,8 @@ export interface CaseFilters {
   assignee_id?: string | "";
   complaint_type?: string | "";
   urgency?: UrgencyLevel | "";
+  q?: string;
+  date_preset?: string;
+  date_from?: string;
+  date_to?: string;
 }

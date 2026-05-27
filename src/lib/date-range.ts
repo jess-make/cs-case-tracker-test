@@ -71,7 +71,7 @@ export function isValidSlashDate(value: string): boolean {
 }
 
 export function getPresetRange(
-  preset: Exclude<DatePreset, "custom">,
+  preset: DatePreset,
   baseDate = new Date()
 ): { from: Date; to: Date } {
   switch (preset) {
@@ -98,6 +98,11 @@ export function getPresetRange(
       return {
         from: startOfQuarter(baseDate),
         to: endOfQuarter(baseDate),
+      };
+    case "custom":
+      return {
+        from: startOfMonth(baseDate),
+        to: endOfMonth(baseDate),
       };
   }
 }

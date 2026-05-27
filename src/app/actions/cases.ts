@@ -7,20 +7,16 @@ import {
   updateCaseStatus,
   addCaseReply,
   uploadAttachment,
-  getHandlers,
   getDefaultActorUserId,
 } from "@/lib/data/cases";
 import {
-  notifyCaseCreated,
   notifyCaseCompleted,
   isLineConfigured,
 } from "@/lib/line/notify";
 import { getNextStatus } from "@/lib/constants";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
-import { URGENCY_LABELS } from "@/lib/constants";
 
 export async function createCaseAction(formData: FormData) {
-  const assigneeId = formData.get("assignee_id") as string;
   const attachmentFiles = formData.getAll("attachments") as File[];
   const actorId = await getDefaultActorUserId();
 
@@ -37,33 +33,18 @@ export async function createCaseAction(formData: FormData) {
   }
 
   const input: CreateCaseInput = {
-    customer_name: formData.get("customer_name") as string,
-    customer_contact: formData.get("customer_contact") as string,
+    customer_name: (formData.get("customer_name") as string)?.trim(),
+    customer_contact: (formData.get("customer_contact") as string)?.trim(),
+    customer_gender: formData.get("customer_gender") as string,
     source: formData.get("source") as string,
     complaint_type: formData.get("complaint_type") as string,
-    description: formData.get("description") as string,
+    description: (formData.get("description") as string)?.trim(),
     urgency: formData.get("urgency") as UrgencyLevel,
     department: formData.get("department") as string,
-    assignee_id: assigneeId || null,
-    due_date: (formData.get("due_date") as string) || null,
     attachment_urls: attachmentUrls,
   };
 
   const newCase = await createCase(input, actorId);
-
-  if (isLineConfigured() && assigneeId) {
-    const handlers = await getHandlers();
-    const assignee = handlers.find((h) => h.id === assigneeId);
-    if (assignee?.line_user_id) {
-      await notifyCaseCreated({
-        caseNumber: newCase.case_number,
-        assigneeLineUserId: assignee.line_user_id,
-        customerName: input.customer_name,
-        urgency: URGENCY_LABELS[input.urgency],
-        dueDate: input.due_date,
-      });
-    }
-  }
 
   revalidatePath("/");
   revalidatePath("/cases");

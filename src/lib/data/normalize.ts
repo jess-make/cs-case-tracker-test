@@ -18,6 +18,7 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     case_number: String(raw.case_number ?? "—"),
     customer_name: String(raw.customer_name ?? ""),
     customer_contact: String(raw.customer_contact ?? ""),
+    customer_gender: (raw.customer_gender as string | null) ?? null,
     source: String(raw.source ?? ""),
     complaint_type: String(raw.complaint_type ?? "其他"),
     description: String(raw.description ?? ""),

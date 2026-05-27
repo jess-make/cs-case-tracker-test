@@ -42,11 +42,14 @@ export const COMPLAINT_SOURCES = [
   "電話",
   "Email",
   "LINE",
-  "官網表單",
+  "官網",
   "門市",
-  "社群媒體",
+  "FB",
+  "IG",
   "其他",
 ] as const;
+
+export const CUSTOMER_GENDERS = ["男", "女"] as const;
 
 export const COMPLAINT_TYPES = [
   "產品品質",
@@ -58,13 +61,16 @@ export const COMPLAINT_TYPES = [
   "其他",
 ] as const;
 
+/** 建立案件：指派部門選項 */
 export const DEPARTMENTS = [
-  "客服部",
-  "品保部",
-  "物流部",
-  "業務部",
-  "資訊部",
-  "管理部",
+  "後勤部-維修",
+  "後勤部-品檢",
+  "後勤部-倉儲",
+  "業務部-電商",
+  "業務部-門市",
+  "業務部-客服",
+  "行銷部",
+  "開發部",
 ] as const;
 
 /** 狀態流轉順序 */

@@ -26,6 +26,7 @@ export interface Case {
   case_number: string;
   customer_name: string;
   customer_contact: string;
+  customer_gender: string | null;
   source: string;
   complaint_type: string;
   description: string;
@@ -66,13 +67,12 @@ export interface DashboardStats {
 export interface CreateCaseInput {
   customer_name: string;
   customer_contact: string;
+  customer_gender: string;
   source: string;
   complaint_type: string;
   description: string;
   urgency: UrgencyLevel;
   department: string;
-  assignee_id: string | null;
-  due_date: string | null;
   attachment_urls?: string[];
 }
 

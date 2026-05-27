@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { User } from "@/types";
 import {
   COMPLAINT_SOURCES,
   COMPLAINT_TYPES,
+  CUSTOMER_GENDERS,
   DEPARTMENTS,
   URGENCY_LABELS,
 } from "@/lib/constants";
@@ -13,7 +13,7 @@ import type { UrgencyLevel } from "@/types";
 import { createCaseAction } from "@/app/actions/cases";
 import { Loader2 } from "lucide-react";
 
-export function CreateCaseForm({ handlers }: { handlers: User[] }) {
+export function CreateCaseForm() {
   const [pending, setPending] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -43,7 +43,20 @@ export function CreateCaseForm({ handlers }: { handlers: User[] }) {
           <input name="customer_name" required className={inputClass} />
         </div>
         <div>
-          <label className={labelClass}>客戶聯絡方式 *</label>
+          <label className={labelClass}>客戶性別 *</label>
+          <select name="customer_gender" required className={inputClass} defaultValue="">
+            <option value="" disabled>
+              請選擇
+            </option>
+            {CUSTOMER_GENDERS.map((g) => (
+              <option key={g} value={g}>
+                {g}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className={labelClass}>客戶聯繫方式 *</label>
           <input
             name="customer_contact"
             required
@@ -53,7 +66,10 @@ export function CreateCaseForm({ handlers }: { handlers: User[] }) {
         </div>
         <div>
           <label className={labelClass}>客訴來源 *</label>
-          <select name="source" required className={inputClass}>
+          <select name="source" required className={inputClass} defaultValue="">
+            <option value="" disabled>
+              請選擇
+            </option>
             {COMPLAINT_SOURCES.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -63,7 +79,10 @@ export function CreateCaseForm({ handlers }: { handlers: User[] }) {
         </div>
         <div>
           <label className={labelClass}>客訴類型 *</label>
-          <select name="complaint_type" required className={inputClass}>
+          <select name="complaint_type" required className={inputClass} defaultValue="">
+            <option value="" disabled>
+              請選擇
+            </option>
             {COMPLAINT_TYPES.map((t) => (
               <option key={t} value={t}>
                 {t}
@@ -81,30 +100,18 @@ export function CreateCaseForm({ handlers }: { handlers: User[] }) {
             ))}
           </select>
         </div>
-        <div>
-          <label className={labelClass}>負責部門 *</label>
-          <select name="department" required className={inputClass}>
+        <div className="md:col-span-2">
+          <label className={labelClass}>指派部門 *</label>
+          <select name="department" required className={inputClass} defaultValue="">
+            <option value="" disabled>
+              請選擇
+            </option>
             {DEPARTMENTS.map((d) => (
               <option key={d} value={d}>
                 {d}
               </option>
             ))}
           </select>
-        </div>
-        <div>
-          <label className={labelClass}>指派人員</label>
-          <select name="assignee_id" className={inputClass}>
-            <option value="">稍後指派</option>
-            {handlers.map((h) => (
-              <option key={h.id} value={h.id}>
-                {h.name}（{h.department}）
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>處理期限</label>
-          <input type="datetime-local" name="due_date" className={inputClass} />
         </div>
       </div>
 
@@ -128,7 +135,7 @@ export function CreateCaseForm({ handlers }: { handlers: User[] }) {
           accept="image/*,.pdf,.doc,.docx"
           className="block w-full min-h-11 text-sm text-slate-600 file:mr-4 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100"
         />
-        <p className="mt-1 text-xs text-slate-500">支援圖片、PDF、Word，可多選</p>
+        <p className="mt-1 text-xs text-slate-500">支援圖片、PDF、Word，可多選（選填）</p>
       </div>
 
       <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end sm:pt-6">

@@ -229,12 +229,6 @@ export async function createCase(
   createdById: string | null
 ): Promise<Case> {
   const client = await supabase();
-  const status = input.assignee_id ? "assigned" : "new";
-
-  const dueDate = input.due_date
-    ? new Date(input.due_date).toISOString()
-    : null;
-
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const caseNumber = `CS-${datePart}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
 
@@ -243,15 +237,16 @@ export async function createCase(
     .insert({
       customer_name: input.customer_name,
       customer_contact: input.customer_contact,
+      customer_gender: input.customer_gender,
       source: input.source,
       complaint_type: input.complaint_type,
       description: input.description,
       urgency: input.urgency,
       department: input.department,
-      assignee_id: input.assignee_id || null,
+      assignee_id: null,
       created_by_id: createdById,
-      status,
-      due_date: dueDate,
+      status: "new",
+      due_date: null,
       attachment_urls: input.attachment_urls ?? [],
       case_number: caseNumber,
     })

@@ -68,10 +68,15 @@ export function CaseDetailPanel({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <InfoRow icon={User} label="客戶姓名" value={caseData.customer_name} />
-            <InfoRow icon={User} label="聯絡方式" value={caseData.customer_contact} />
+            <InfoRow
+              icon={User}
+              label="客戶性別"
+              value={caseData.customer_gender ?? "—"}
+            />
+            <InfoRow icon={User} label="客戶聯繫方式" value={caseData.customer_contact} />
             <InfoRow icon={Building2} label="客訴來源" value={caseData.source} />
             <InfoRow icon={Building2} label="客訴類型" value={caseData.complaint_type} />
-            <InfoRow icon={Building2} label="負責部門" value={caseData.department} />
+            <InfoRow icon={Building2} label="指派部門" value={caseData.department} />
             <InfoRow icon={User} label="處理人" value={caseData.assignee?.name ?? "未指派"} />
             <InfoRow icon={Clock} label="處理期限" value={formatDate(caseData.due_date)} />
           </div>

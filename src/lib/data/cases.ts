@@ -1,7 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { resolveDateRange, toCreatedAtBounds } from "@/lib/date-range";
-import { isOverdue } from "@/lib/utils";
 import { normalizeCase, normalizeCaseLog } from "@/lib/data/normalize";
 import type {
   Case,
@@ -204,7 +203,7 @@ export async function getCaseLogs(caseId: string): Promise<CaseLog[]> {
 export async function getDashboardStats(): Promise<DashboardStats> {
   const { data, error } = await (await supabase())
     .from("cases")
-    .select("status, is_overdue, due_date");
+    .select("status");
 
   if (error) throw error;
 
@@ -216,11 +215,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     ).length,
     pendingConfirm: cases.filter((c) => c.status === "cs_confirming").length,
     closed: cases.filter((c) => c.status === "closed").length,
-    overdue: cases.filter(
-      (c) =>
-        c.status !== "closed" &&
-        (c.is_overdue || (c.due_date && isOverdue(c.due_date, c.status)))
-    ).length,
   };
 }
 

@@ -11,7 +11,7 @@ import {
   closeCaseAction,
   addReplyAction,
 } from "@/app/actions/cases";
-import { Loader2, Clock, User, Building2 } from "lucide-react";
+import { Loader2, User, Building2 } from "lucide-react";
 
 export function CaseDetailPanel({
   caseData,
@@ -83,7 +83,6 @@ export function CaseDetailPanel({
             />
             <InfoRow icon={Building2} label="指派部門" value={caseData.department} />
             <InfoRow icon={User} label="處理人" value={caseData.assignee?.name ?? "未指派"} />
-            <InfoRow icon={Clock} label="處理期限" value={formatDate(caseData.due_date)} />
           </div>
 
           <div className="mt-4 border-t border-slate-100 pt-4">

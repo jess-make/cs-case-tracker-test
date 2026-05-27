@@ -62,7 +62,6 @@ export interface DashboardStats {
   inProgress: number;
   pendingConfirm: number;
   closed: number;
-  overdue: number;
 }
 
 export interface CreateCaseInput {

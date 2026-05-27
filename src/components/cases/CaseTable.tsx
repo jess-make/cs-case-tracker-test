@@ -3,7 +3,6 @@ import type { Case } from "@/types";
 import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatComplaintLabel } from "@/lib/constants";
 import { formatDateOnly } from "@/lib/utils";
-import { AlertTriangle } from "lucide-react";
 
 function EmptyCases() {
   return (
@@ -32,12 +31,7 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
           <div className="mb-3 flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="text-xs text-slate-500">案件編號</p>
-              <p className="flex items-center gap-1 font-medium text-brand-600">
-                <span className="truncate">{c.case_number}</span>
-                {c.is_overdue && c.status !== "closed" && (
-                  <AlertTriangle className="h-4 w-4 shrink-0 text-red-500" />
-                )}
-              </p>
+              <p className="truncate font-medium text-brand-600">{c.case_number}</p>
             </div>
             <StatusBadge status={c.status} />
           </div>
@@ -98,9 +92,6 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
                 >
                   {c.case_number}
                 </Link>
-                {c.is_overdue && c.status !== "closed" && (
-                  <AlertTriangle className="ml-1 inline h-4 w-4 text-red-500" />
-                )}
               </td>
               <td className="px-4 py-3 text-slate-700">{c.customer_name}</td>
               <td className="px-4 py-3 text-slate-600">

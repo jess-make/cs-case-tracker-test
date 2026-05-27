@@ -4,17 +4,15 @@ import {
   isLineConfigured,
   notifyCaseCreated,
   notifyCaseCompleted,
-  notifyCaseOverdue,
 } from "@/lib/line/notify";
 import type { LineNotifyType } from "@/lib/line/notify";
 
 /**
  * POST /api/line/notify
  *
- * 預留 LINE 通知 API，支援三種通知類型：
+ * 預留 LINE 通知 API：
  * - case_created: 建立案件通知負責人
  * - case_completed: 處理完成通知客服
- * - case_overdue: 逾期通知
  */
 export async function POST(request: NextRequest) {
   if (!isLineConfigured()) {
@@ -37,9 +35,6 @@ export async function POST(request: NextRequest) {
       case "case_completed":
         result = await notifyCaseCompleted(body);
         break;
-      case "case_overdue":
-        result = await notifyCaseOverdue(body);
-        break;
       default:
         result = await dispatchLineNotification(body);
     }
@@ -61,8 +56,7 @@ export async function GET() {
     endpoints: {
       notify: "POST /api/line/notify",
       webhook: "POST /api/line/webhook",
-      cron_overdue: "POST /api/cron/overdue",
     },
-    types: ["case_created", "case_completed", "case_overdue"],
+    types: ["case_created", "case_completed"],
   });
 }

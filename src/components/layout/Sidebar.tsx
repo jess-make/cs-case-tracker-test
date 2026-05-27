@@ -43,7 +43,9 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
             <Headphones className="h-5 w-5" />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-sm font-bold text-slate-900">客服案件追蹤平台</h1>
+            <h1 className="truncate text-sm font-bold text-slate-900">
+              GREVIA 客服案件追蹤平台
+            </h1>
             <p className="truncate text-xs text-slate-500">客訴立案・處理・結案管理</p>
           </div>
         </div>

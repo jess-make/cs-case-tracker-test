@@ -6,10 +6,7 @@
  * - LINE_CHANNEL_SECRET
  */
 
-export type LineNotifyType =
-  | "case_created"
-  | "case_completed"
-  | "case_overdue";
+export type LineNotifyType = "case_created" | "case_completed";
 
 export interface LineNotifyPayload {
   type: LineNotifyType;
@@ -70,14 +67,12 @@ export async function notifyCaseCreated(params: {
   assigneeLineUserId: string;
   customerName: string;
   urgency: string;
-  dueDate: string | null;
 }): Promise<{ ok: boolean; error?: string }> {
-  const due = params.dueDate ? `\n處理期限：${params.dueDate}` : "";
   const message =
     `【新客訴案件】\n` +
     `案件編號：${params.caseNumber}\n` +
     `客戶：${params.customerName}\n` +
-    `緊急程度：${params.urgency}${due}\n` +
+    `緊急程度：${params.urgency}\n` +
     `請盡速處理。`;
 
   return sendLinePush(params.assigneeLineUserId, message);
@@ -98,30 +93,12 @@ export async function notifyCaseCompleted(params: {
   return sendLinePush(params.csLineUserId, message);
 }
 
-/** 逾期通知 */
-export async function notifyCaseOverdue(params: {
-  caseNumber: string;
-  recipientLineUserId: string;
-  assigneeName: string;
-  dueDate: string;
-}): Promise<{ ok: boolean; error?: string }> {
-  const message =
-    `【案件逾期提醒】\n` +
-    `案件編號：${params.caseNumber}\n` +
-    `負責人：${params.assigneeName}\n` +
-    `處理期限：${params.dueDate}\n` +
-    `請立即處理！`;
-
-  return sendLinePush(params.recipientLineUserId, message);
-}
-
 export async function dispatchLineNotification(
   payload: LineNotifyPayload
 ): Promise<{ ok: boolean; error?: string }> {
   switch (payload.type) {
     case "case_created":
     case "case_completed":
-    case "case_overdue":
       return sendLinePush(payload.recipientLineUserId, payload.message);
     default:
       return { ok: false, error: "Unknown notification type" };

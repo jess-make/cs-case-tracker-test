@@ -19,7 +19,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Menu className="h-6 w-6" />
         </button>
         <div className="min-w-0">
-          <p className="truncate text-sm font-bold text-slate-900">客服案件追蹤平台</p>
+          <p className="truncate text-sm font-bold text-slate-900">
+            GREVIA 客服案件追蹤平台
+          </p>
           <p className="truncate text-xs text-slate-500">客訴立案・處理・結案管理</p>
         </div>
       </header>

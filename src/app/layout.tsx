@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "客服案件追蹤平台 | 客訴立案・處理・結案管理",
+  title: "GREVIA 客服案件追蹤平台 | 客訴立案・處理・結案管理",
   description: "客訴立案・處理・結案管理",
 };
 

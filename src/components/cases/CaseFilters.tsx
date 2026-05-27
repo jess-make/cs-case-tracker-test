@@ -2,8 +2,8 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@/types";
-import { CASE_STATUS_LABELS, COMPLAINT_TYPES } from "@/lib/constants";
-import type { CaseStatus } from "@/types";
+import { CASE_STATUS_LABELS, COMPLAINT_TYPES, URGENCY_LABELS } from "@/lib/constants";
+import type { CaseStatus, UrgencyLevel } from "@/types";
 
 export function CaseFilters({ handlers }: { handlers: User[] }) {
   const router = useRouter();
@@ -45,6 +45,22 @@ export function CaseFilters({ handlers }: { handlers: User[] }) {
           {handlers.map((h) => (
             <option key={h.id} value={h.id}>
               {h.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="min-w-0 sm:max-w-xs">
+        <label className="mb-1 block text-xs font-medium text-slate-500">緊急程度</label>
+        <select
+          className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+          value={params.get("urgency") ?? ""}
+          onChange={(e) => update("urgency", e.target.value)}
+        >
+          <option value="">全部</option>
+          {(Object.keys(URGENCY_LABELS) as UrgencyLevel[]).map((u) => (
+            <option key={u} value={u}>
+              {URGENCY_LABELS[u]}
             </option>
           ))}
         </select>

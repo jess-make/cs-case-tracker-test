@@ -10,6 +10,7 @@ interface PageProps {
     status?: string;
     assignee_id?: string;
     complaint_type?: string;
+    urgency?: string;
   }>;
 }
 
@@ -20,6 +21,7 @@ export default async function CasesPage({ searchParams }: PageProps) {
       status: params.status,
       assignee_id: params.assignee_id,
       complaint_type: params.complaint_type,
+      urgency: params.urgency,
     }),
     getHandlers(),
   ]);

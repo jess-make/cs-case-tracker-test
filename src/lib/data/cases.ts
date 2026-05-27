@@ -109,6 +109,7 @@ export async function getCases(filters?: {
   status?: string;
   assignee_id?: string;
   complaint_type?: string;
+  urgency?: string;
 }): Promise<Case[]> {
   const client = await supabase();
   let query = client.from("cases").select("*").order("created_at", {
@@ -119,6 +120,7 @@ export async function getCases(filters?: {
   if (filters?.assignee_id) query = query.eq("assignee_id", filters.assignee_id);
   if (filters?.complaint_type)
     query = query.eq("complaint_type", filters.complaint_type);
+  if (filters?.urgency) query = query.eq("urgency", filters.urgency);
 
   const { data, error } = await query;
   if (error) throw error;

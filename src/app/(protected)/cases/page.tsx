@@ -3,6 +3,8 @@ import { Plus } from "lucide-react";
 import { CaseTable } from "@/components/cases/CaseTable";
 import { CaseFilters } from "@/components/cases/CaseFilters";
 import { getCases, getHandlers } from "@/lib/data/cases";
+import { getCurrentUser } from "@/lib/auth/session";
+import { canCreateCase } from "@/lib/auth/permissions";
 import { Suspense } from "react";
 
 interface PageProps {
@@ -20,6 +22,9 @@ interface PageProps {
 
 export default async function CasesPage({ searchParams }: PageProps) {
   const params = await searchParams;
+  const currentUser = await getCurrentUser();
+  const showCreate = currentUser ? canCreateCase(currentUser.role) : false;
+
   const [cases, handlers] = await Promise.all([
     getCases({
       status: params.status,
@@ -42,13 +47,15 @@ export default async function CasesPage({ searchParams }: PageProps) {
           <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">案件列表</h1>
           <p className="mt-1 text-sm text-slate-500">共 {cases.length} 筆案件</p>
         </div>
-        <Link
-          href="/cases/new"
-          className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          建立案件
-        </Link>
+        {showCreate && (
+          <Link
+            href="/cases/new"
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            建立案件
+          </Link>
+        )}
       </div>
 
       <Suspense fallback={<div className="mb-6 h-16 animate-pulse rounded-xl bg-slate-100" />}>

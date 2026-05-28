@@ -4,8 +4,15 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 import { BrandHeader } from "./BrandLogo";
 import { Sidebar } from "./Sidebar";
+import type { SessionUser } from "@/lib/auth/session";
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  user,
+}: {
+  children: React.ReactNode;
+  user: SessionUser;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -31,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         />
       )}
 
-      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} user={user} />
 
       <main className="min-h-[calc(100vh-3.5rem)] p-4 lg:ml-64 lg:min-h-screen lg:p-8">
         {children}

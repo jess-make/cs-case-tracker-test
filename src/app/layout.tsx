@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { AppLayout } from "@/components/layout/AppLayout";
 import { APP_NAME, APP_SUBTITLE } from "@/lib/constants";
 import "./globals.css";
 
@@ -26,9 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-TW">
-      <body>
-        <AppLayout>{children}</AppLayout>
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

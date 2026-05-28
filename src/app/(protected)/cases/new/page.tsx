@@ -1,6 +1,13 @@
+import { redirect } from "next/navigation";
 import { CreateCaseForm } from "@/components/cases/CreateCaseForm";
+import { requireUser } from "@/lib/auth/session";
+import { canCreateCase } from "@/lib/auth/permissions";
 
-export default function NewCasePage() {
+export default async function NewCasePage() {
+  const user = await requireUser();
+  if (!canCreateCase(user.role)) {
+    redirect("/cases");
+  }
   return (
     <div>
       <div className="mb-6 lg:mb-8">

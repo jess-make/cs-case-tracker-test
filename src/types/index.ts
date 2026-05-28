@@ -17,6 +17,7 @@ export interface User {
   role: UserRole;
   department: string | null;
   line_user_id: string | null;
+  is_active?: boolean;
   created_at: string;
   updated_at: string;
 }

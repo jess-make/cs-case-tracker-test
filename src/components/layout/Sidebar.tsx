@@ -2,23 +2,30 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PlusCircle, List, X } from "lucide-react";
+import { LayoutDashboard, PlusCircle, List, X, LogOut } from "lucide-react";
 import { BrandHeader } from "./BrandLogo";
 import { cn } from "@/lib/utils";
+import { signOutAction } from "@/app/actions/auth";
+import { canCreateCase } from "@/lib/auth/permissions";
+import type { SessionUser } from "@/lib/auth/session";
 
-const navItems = [
+const baseNavItems = [
   { href: "/", label: "案件總覽", icon: LayoutDashboard },
-  { href: "/cases/new", label: "建立案件", icon: PlusCircle },
+  { href: "/cases/new", label: "建立案件", icon: PlusCircle, requiresCreate: true },
   { href: "/cases", label: "案件列表", icon: List },
-];
+] as const;
 
 interface SidebarProps {
   open?: boolean;
   onClose?: () => void;
+  user: SessionUser;
 }
 
-export function Sidebar({ open = false, onClose }: SidebarProps) {
+export function Sidebar({ open = false, onClose, user }: SidebarProps) {
   const pathname = usePathname();
+  const navItems = baseNavItems.filter(
+    (item) => !("requiresCreate" in item) || canCreateCase(user.role)
+  );
 
   function handleNavClick() {
     onClose?.();
@@ -68,9 +75,21 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
       </nav>
 
       <div className="border-t border-slate-200 px-4 py-4">
-        <div className="rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-xs font-medium text-slate-700">業務部-客服</p>
+        <div className="rounded-lg bg-slate-50 px-3 py-2.5">
+          <p className="text-sm font-medium text-slate-800">{user.name}</p>
+          {user.department && (
+            <p className="mt-0.5 text-xs text-slate-500">{user.department}</p>
+          )}
         </div>
+        <form action={signOutAction} className="mt-3">
+          <button
+            type="submit"
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            登出
+          </button>
+        </form>
       </div>
     </aside>
   );

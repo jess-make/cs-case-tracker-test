@@ -17,9 +17,11 @@ import { CaseEditForm } from "@/components/cases/CaseEditForm";
 export function CaseDetailPanel({
   caseData,
   logs = [],
+  canEdit = true,
 }: {
   caseData: Case;
   logs?: CaseLog[] | null;
+  canEdit?: boolean;
 }) {
   const [reply, setReply] = useState("");
   const [editing, setEditing] = useState(false);
@@ -65,7 +67,7 @@ export function CaseDetailPanel({
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={caseData.status} />
               <UrgencyBadge urgency={caseData.urgency} />
-              {!editing && (
+              {!editing && canEdit && (
                 <button
                   type="button"
                   onClick={() => setEditing(true)}

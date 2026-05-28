@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CaseDetailPanel } from "@/components/cases/CaseDetailPanel";
 import { getCaseById, getCaseLogs } from "@/lib/data/cases";
+import { getCurrentUser } from "@/lib/auth/session";
+import { canUpdateCase } from "@/lib/auth/permissions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -10,10 +12,13 @@ interface PageProps {
 export default async function CaseDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [caseData, logsResult] = await Promise.all([
+  const [caseData, logsResult, currentUser] = await Promise.all([
     getCaseById(id),
     getCaseLogs(id).catch(() => [] as Awaited<ReturnType<typeof getCaseLogs>>),
+    getCurrentUser(),
   ]);
+
+  const canEdit = currentUser ? canUpdateCase(currentUser.role) : false;
 
   const logs = logsResult ?? [];
 
@@ -47,7 +52,7 @@ export default async function CaseDetailPage({ params }: PageProps) {
         返回列表
       </Link>
 
-      <CaseDetailPanel caseData={caseData} logs={logs} />
+      <CaseDetailPanel caseData={caseData} logs={logs} canEdit={canEdit} />
     </div>
   );
 }

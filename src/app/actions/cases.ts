@@ -8,8 +8,12 @@ import {
   updateCaseStatus,
   addCaseReply,
   uploadAttachment,
-  getDefaultActorUserId,
 } from "@/lib/data/cases";
+import {
+  requireActor,
+  requireCreatePermission,
+  requireUpdatePermission,
+} from "@/lib/auth/actor";
 import {
   notifyCaseCompleted,
   isLineConfigured,
@@ -35,8 +39,9 @@ function parseCaseFormData(formData: FormData) {
 }
 
 export async function createCaseAction(formData: FormData) {
+  const actor = await requireCreatePermission();
   const attachmentFiles = formData.getAll("attachments") as File[];
-  const actorId = await getDefaultActorUserId();
+  const actorId = actor.id;
 
   const attachmentUrls: string[] = [];
   for (const file of attachmentFiles) {
@@ -63,7 +68,8 @@ export async function createCaseAction(formData: FormData) {
 }
 
 export async function updateCaseAction(caseId: string, formData: FormData) {
-  const actorId = await getDefaultActorUserId();
+  const actor = await requireUpdatePermission();
+  const actorId = actor.id;
   const input = parseCaseFormData(formData);
 
   const result = await updateCase(caseId, input, actorId);
@@ -77,7 +83,8 @@ export async function updateCaseAction(caseId: string, formData: FormData) {
 
 export async function advanceCaseStatusAction(caseId: string) {
   const { getCaseById } = await import("@/lib/data/cases");
-  const actorId = await getDefaultActorUserId();
+  const actor = await requireActor();
+  const actorId = actor.id;
   const current = await getCaseById(caseId);
   if (!current) return { error: "案件不存在" };
 
@@ -92,7 +99,8 @@ export async function advanceCaseStatusAction(caseId: string) {
 }
 
 export async function closeCaseAction(caseId: string) {
-  const actorId = await getDefaultActorUserId();
+  const actor = await requireActor();
+  const actorId = actor.id;
   await updateCaseStatus(caseId, "closed", actorId);
   revalidatePath(`/cases/${caseId}`);
   revalidatePath("/");
@@ -103,7 +111,8 @@ export async function closeCaseAction(caseId: string) {
 export async function addReplyAction(caseId: string, content: string) {
   if (!content.trim()) return { error: "請輸入回覆內容" };
 
-  const actorId = await getDefaultActorUserId();
+  const actor = await requireActor();
+  const actorId = actor.id;
   const result = await addCaseReply(caseId, actorId, content);
 
   if (!result.ok) {
@@ -134,7 +143,8 @@ export async function addReplyAction(caseId: string, content: string) {
 }
 
 export async function confirmCaseAction(caseId: string) {
-  const actorId = await getDefaultActorUserId();
+  const actor = await requireActor();
+  const actorId = actor.id;
   await updateCaseStatus(caseId, "cs_confirming", actorId);
   revalidatePath(`/cases/${caseId}`);
   return { success: true };

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Case } from "@/types";
 import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatComplaintLabel } from "@/lib/constants";
+import { getAssigneeDisplayName } from "@/lib/case-display";
 import { formatDateOnly } from "@/lib/utils";
 
 function EmptyCases() {
@@ -59,7 +60,7 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
             </div>
             <div className="min-w-0">
               <dt className="text-xs text-slate-500">負責人</dt>
-              <dd className="truncate text-slate-700">{c.assignee?.name ?? "—"}</dd>
+              <dd className="truncate text-slate-700">{getAssigneeDisplayName(c)}</dd>
             </div>
           </dl>
         </Link>
@@ -112,7 +113,7 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
                 <StatusBadge status={c.status} />
               </td>
               <td className="px-4 py-3 text-slate-600">
-                {c.assignee?.name ?? "—"}
+                {getAssigneeDisplayName(c)}
               </td>
             </tr>
           ))}

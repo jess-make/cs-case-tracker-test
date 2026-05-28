@@ -1,5 +1,24 @@
-import type { Case, CaseLog, CaseStatus, UrgencyLevel } from "@/types";
+import type { Case, CaseLog, CaseStatus, UrgencyLevel, User } from "@/types";
 import { STATUS_FLOW } from "@/lib/constants";
+
+function coerceEmbeddedUser(raw: unknown): User | null {
+  if (raw == null) return null;
+  const row = Array.isArray(raw) ? raw[0] : raw;
+  if (!row || typeof row !== "object") return null;
+  const u = row as Record<string, unknown>;
+  if (!u.id && !u.name) return null;
+
+  return {
+    id: String(u.id ?? ""),
+    email: String(u.email ?? ""),
+    name: String(u.name ?? ""),
+    role: (u.role as User["role"]) ?? "cs",
+    department: (u.department as string | null) ?? null,
+    line_user_id: (u.line_user_id as string | null) ?? null,
+    created_at: String(u.created_at ?? ""),
+    updated_at: String(u.updated_at ?? ""),
+  };
+}
 
 const VALID_STATUS = new Set<CaseStatus>(STATUS_FLOW);
 const VALID_URGENCY = new Set<UrgencyLevel>(["low", "medium", "high", "critical"]);
@@ -39,8 +58,8 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     closed_at: (raw.closed_at as string | null) ?? null,
     created_at: String(raw.created_at ?? new Date().toISOString()),
     updated_at: String(raw.updated_at ?? new Date().toISOString()),
-    assignee: (raw.assignee as Case["assignee"]) ?? null,
-    created_by: (raw.created_by as Case["created_by"]) ?? null,
+    assignee: coerceEmbeddedUser(raw.assignee),
+    created_by: coerceEmbeddedUser(raw.created_by),
   };
 }
 

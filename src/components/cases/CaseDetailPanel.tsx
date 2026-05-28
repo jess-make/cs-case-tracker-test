@@ -6,6 +6,7 @@ import type { Case, CaseLog } from "@/types";
 import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/utils";
 import { CASE_STATUS_LABELS, getNextStatus } from "@/lib/constants";
+import { getAssigneeDisplayName } from "@/lib/case-display";
 import {
   advanceCaseStatusAction,
   closeCaseAction,
@@ -117,7 +118,7 @@ export function CaseDetailPanel({
               value={caseData.complaint_subtype ?? "—"}
             />
             <InfoRow icon={Building2} label="指派部門" value={caseData.department} />
-            <InfoRow icon={User} label="處理人" value={caseData.assignee?.name ?? "未指派"} />
+            <InfoRow icon={User} label="處理人" value={getAssigneeDisplayName(caseData)} />
           </div>
 
           <div className="mt-4 border-t border-slate-100 pt-4">

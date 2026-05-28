@@ -18,6 +18,17 @@ function supabase() {
   return createClient();
 }
 
+/** 查詢案件並 join 負責人／建立者姓名（保留 assignee_id 供篩選與轉派） */
+const CASE_SELECT_WITH_USERS = `
+  *,
+  assignee:users!cases_assignee_id_fkey (
+    id, name, email, role, department, line_user_id, created_at, updated_at
+  ),
+  created_by:users!cases_created_by_id_fkey (
+    id, name, email, role, department, line_user_id, created_at, updated_at
+  )
+`;
+
 async function fetchUsersByIds(ids: string[]): Promise<Map<string, User>> {
   const unique = [...new Set(ids.filter(Boolean))];
   if (unique.length === 0) return new Map();
@@ -49,8 +60,12 @@ async function enrichCases(cases: Case[]): Promise<Case[]> {
   return cases.map((c) =>
     normalizeCase({
       ...c,
-      assignee: c.assignee_id ? userMap.get(c.assignee_id) ?? null : null,
-      created_by: c.created_by_id ? userMap.get(c.created_by_id) ?? null : null,
+      assignee: c.assignee_id
+        ? userMap.get(c.assignee_id) ?? c.assignee ?? null
+        : null,
+      created_by: c.created_by_id
+        ? userMap.get(c.created_by_id) ?? c.created_by ?? null
+        : null,
     } as Record<string, unknown>)
   );
 }
@@ -119,9 +134,10 @@ export async function getCases(filters?: {
   filterByDate?: boolean;
 }): Promise<Case[]> {
   const client = await supabase();
-  let query = client.from("cases").select("*").order("created_at", {
-    ascending: false,
-  });
+  let query = client
+    .from("cases")
+    .select(CASE_SELECT_WITH_USERS)
+    .order("created_at", { ascending: false });
 
   if (filters?.status) query = query.eq("status", filters.status);
   if (filters?.assignee_id) query = query.eq("assignee_id", filters.assignee_id);
@@ -160,7 +176,7 @@ export async function getCaseById(id: string): Promise<Case | null> {
   try {
     const { data, error } = await (await supabase())
       .from("cases")
-      .select("*")
+      .select(CASE_SELECT_WITH_USERS)
       .eq("id", id)
       .maybeSingle();
 
@@ -243,7 +259,7 @@ export async function createCase(
       urgency: input.urgency,
       department: input.department,
       ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
-      assignee_id: null,
+      assignee_id: createdById,
       created_by_id: createdById,
       status: "new",
       due_date: null,

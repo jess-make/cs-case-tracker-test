@@ -16,7 +16,7 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-grevia-cream">
       <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-slate-200 bg-white px-3 lg:hidden">
         <button
           type="button"
@@ -40,7 +40,7 @@ export function AppShell({
 
       <Sidebar open={menuOpen} onClose={() => setMenuOpen(false)} user={user} />
 
-      <main className="min-h-[calc(100vh-3.5rem)] p-4 lg:ml-64 lg:min-h-screen lg:p-8">
+      <main className="min-h-[calc(100vh-3.5rem)] bg-grevia-cream p-4 lg:ml-64 lg:min-h-screen lg:p-8">
         {children}
       </main>
     </div>

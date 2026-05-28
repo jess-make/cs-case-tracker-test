@@ -42,6 +42,7 @@ export async function createCaseAction(formData: FormData) {
     description: (formData.get("description") as string)?.trim(),
     urgency: formData.get("urgency") as UrgencyLevel,
     department: formData.get("department") as string,
+    ecommerce_order_no: (formData.get("ecommerce_order_no") as string)?.trim() || null,
     attachment_urls: attachmentUrls,
   };
 

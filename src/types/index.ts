@@ -33,6 +33,7 @@ export interface Case {
   description: string;
   urgency: UrgencyLevel;
   department: string;
+  ecommerce_order_no: string | null;
   assignee_id: string | null;
   created_by_id: string | null;
   status: CaseStatus;
@@ -74,6 +75,7 @@ export interface CreateCaseInput {
   description: string;
   urgency: UrgencyLevel;
   department: string;
+  ecommerce_order_no?: string | null;
   attachment_urls?: string[];
 }
 

@@ -9,6 +9,7 @@ import {
 } from "@/lib/constants";
 import type { CaseStatus, UrgencyLevel } from "@/types";
 import { DateRangeFilter } from "@/components/cases/DateRangeFilter";
+import { CaseSearchInput } from "@/components/cases/CaseSearchInput";
 
 export function CaseFilters({ handlers }: { handlers: User[] }) {
   const router = useRouter();
@@ -89,6 +90,8 @@ export function CaseFilters({ handlers }: { handlers: User[] }) {
             ))}
           </select>
         </div>
+
+        <CaseSearchInput />
       </div>
     </div>
   );

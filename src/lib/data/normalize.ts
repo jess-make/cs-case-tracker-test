@@ -25,6 +25,7 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     description: String(raw.description ?? ""),
     urgency,
     department: String(raw.department ?? ""),
+    ecommerce_order_no: (raw.ecommerce_order_no as string | null) ?? null,
     assignee_id: (raw.assignee_id as string | null) ?? null,
     created_by_id: (raw.created_by_id as string | null) ?? null,
     status,

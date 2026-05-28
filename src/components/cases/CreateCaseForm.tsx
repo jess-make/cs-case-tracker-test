@@ -139,6 +139,14 @@ export function CreateCaseForm() {
             ))}
           </select>
         </div>
+        <div>
+          <label className={labelClass}>電商訂單編號</label>
+          <input
+            name="ecommerce_order_no"
+            className={inputClass}
+            placeholder="選填"
+          />
+        </div>
         <div className="md:col-span-2">
           <label className={labelClass}>指派部門 *</label>
           <select name="department" required className={inputClass} defaultValue="">

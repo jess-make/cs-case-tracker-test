@@ -138,9 +138,10 @@ export async function getCases(filters?: {
   }
 
   if (filters?.q?.trim()) {
-    const term = `%${filters.q.trim()}%`;
+    const sanitized = filters.q.trim().replace(/,/g, "");
+    const term = `%${sanitized}%`;
     query = query.or(
-      `case_number.ilike.${term},customer_name.ilike.${term}`
+      `case_number.ilike.${term},customer_name.ilike.${term},ecommerce_order_no.ilike.${term}`
     );
   }
 
@@ -238,6 +239,7 @@ export async function createCase(
       description: input.description,
       urgency: input.urgency,
       department: input.department,
+      ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
       assignee_id: null,
       created_by_id: createdById,
       status: "new",

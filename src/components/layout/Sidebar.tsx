@@ -69,8 +69,7 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
 
       <div className="border-t border-slate-200 px-4 py-4">
         <div className="rounded-lg bg-slate-50 px-3 py-2">
-          <p className="text-xs font-medium text-slate-700">客服-茹茹</p>
-          <p className="text-xs text-slate-500">客服 · 客服部</p>
+          <p className="text-xs font-medium text-slate-700">業務部-客服</p>
         </div>
       </div>
     </aside>

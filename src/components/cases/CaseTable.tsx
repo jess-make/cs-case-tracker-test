@@ -59,7 +59,7 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs text-slate-500">負責人</dt>
+              <dt className="text-xs text-slate-500">處理人</dt>
               <dd className="truncate text-slate-700">{getAssigneeDisplayName(c)}</dd>
             </div>
           </dl>
@@ -82,7 +82,7 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
             <th className="px-4 py-3 font-medium text-slate-600">客訴管道</th>
             <th className="px-4 py-3 font-medium text-slate-600">緊急程度</th>
             <th className="px-4 py-3 font-medium text-slate-600">案件狀態</th>
-            <th className="px-4 py-3 font-medium text-slate-600">負責人</th>
+            <th className="px-4 py-3 font-medium text-slate-600">處理人</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">

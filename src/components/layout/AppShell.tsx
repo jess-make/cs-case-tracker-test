@@ -21,7 +21,7 @@ export function AppShell({
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-slate-700 hover:bg-brand-50 hover:text-grevia-green"
           aria-label="開啟選單"
         >
           <Menu className="h-6 w-6" />

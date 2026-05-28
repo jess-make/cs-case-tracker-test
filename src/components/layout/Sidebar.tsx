@@ -44,7 +44,7 @@ export function Sidebar({ open = false, onClose, user }: SidebarProps) {
         <button
           type="button"
           onClick={onClose}
-          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-slate-600 hover:bg-brand-50 hover:text-grevia-green lg:hidden"
           aria-label="關閉選單"
         >
           <X className="h-5 w-5" />
@@ -61,13 +61,18 @@ export function Sidebar({ open = false, onClose, user }: SidebarProps) {
               href={href}
               onClick={handleNavClick}
               className={cn(
-                "flex min-h-11 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                "group flex min-h-11 items-center gap-3 rounded-lg border-l-2 px-3 py-2.5 text-sm font-medium transition-colors",
                 active
-                  ? "bg-brand-50 text-brand-700"
-                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                  ? "border-grevia-green bg-brand-50 text-grevia-green"
+                  : "border-transparent text-slate-600 hover:border-brand-200 hover:bg-brand-50 hover:text-grevia-green"
               )}
             >
-              <Icon className="h-5 w-5 shrink-0" />
+              <Icon
+                className={cn(
+                  "h-5 w-5 shrink-0",
+                  active ? "text-grevia-green" : "text-slate-500 group-hover:text-grevia-green"
+                )}
+              />
               {label}
             </Link>
           );
@@ -84,7 +89,7 @@ export function Sidebar({ open = false, onClose, user }: SidebarProps) {
         <form action={signOutAction} className="mt-3">
           <button
             type="submit"
-            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900"
+            className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-brand-50 hover:text-grevia-green"
           >
             <LogOut className="h-4 w-4 shrink-0" />
             登出

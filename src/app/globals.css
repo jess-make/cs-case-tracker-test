@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-brand-50: #eff6ff;
-  --color-brand-100: #dbeafe;
-  --color-brand-500: #3b82f6;
-  --color-brand-600: #2563eb;
-  --color-brand-700: #1d4ed8;
+  /* 品牌主色：深綠（與 grevia-green 一致，低彩度 SaaS 風格） */
+  --color-brand-50: #eef5f1;
+  --color-brand-100: #dcebe4;
+  --color-brand-200: #b8d6c8;
+  --color-brand-500: #2d6b52;
+  --color-brand-600: #1e4d3a;
+  --color-brand-700: #163829;
   --color-grevia-cream: #faf6e8;
   --color-grevia-green: #1e4d3a;
   --color-grevia-green-dark: #163829;

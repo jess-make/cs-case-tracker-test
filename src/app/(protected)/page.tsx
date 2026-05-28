@@ -20,7 +20,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-3 lg:mb-8 lg:grid-cols-4 lg:gap-4">
-        <StatCard title="全部案件" value={stats.total} icon={FolderOpen} color="blue" />
+        <StatCard title="全部案件" value={stats.total} icon={FolderOpen} color="green" />
         <StatCard title="處理中" value={stats.inProgress} icon={Loader} color="amber" />
         <StatCard title="待確認" value={stats.pendingConfirm} icon={Clock} color="cyan" />
         <StatCard title="已結案" value={stats.closed} icon={CheckCircle2} color="emerald" />

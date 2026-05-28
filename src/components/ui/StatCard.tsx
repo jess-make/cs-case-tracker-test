@@ -5,18 +5,18 @@ interface StatCardProps {
   title: string;
   value: number;
   icon: LucideIcon;
-  color?: "blue" | "amber" | "cyan" | "emerald" | "red";
+  color?: "green" | "amber" | "cyan" | "emerald" | "red";
 }
 
 const colorMap = {
-  blue: "bg-blue-50 text-blue-600",
+  green: "bg-brand-50 text-brand-600",
   amber: "bg-amber-50 text-amber-600",
   cyan: "bg-cyan-50 text-cyan-600",
   emerald: "bg-emerald-50 text-emerald-600",
   red: "bg-red-50 text-red-600",
 };
 
-export function StatCard({ title, value, icon: Icon, color = "blue" }: StatCardProps) {
+export function StatCard({ title, value, icon: Icon, color = "green" }: StatCardProps) {
   return (
     <div className="flex h-full min-h-[112px] flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:min-h-[120px] sm:p-6">
       <div className="flex flex-1 items-start justify-between gap-2">

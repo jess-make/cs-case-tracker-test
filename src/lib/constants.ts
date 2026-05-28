@@ -15,7 +15,7 @@ export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
 
 export const CASE_STATUS_COLORS: Record<CaseStatus, string> = {
   new: "bg-slate-100 text-slate-700",
-  assigned: "bg-blue-100 text-blue-700",
+  assigned: "bg-brand-50 text-brand-700",
   in_progress: "bg-amber-100 text-amber-700",
   replied: "bg-purple-100 text-purple-700",
   cs_confirming: "bg-cyan-100 text-cyan-700",
@@ -31,7 +31,7 @@ export const URGENCY_LABELS: Record<UrgencyLevel, string> = {
 
 export const URGENCY_COLORS: Record<UrgencyLevel, string> = {
   low: "bg-slate-100 text-slate-600",
-  medium: "bg-blue-100 text-blue-700",
+  medium: "bg-brand-50 text-brand-700",
   high: "bg-orange-100 text-orange-700",
   critical: "bg-red-100 text-red-700",
 };

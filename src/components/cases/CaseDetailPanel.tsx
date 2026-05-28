@@ -74,6 +74,11 @@ export function CaseDetailPanel({
               value={caseData.customer_gender ?? "—"}
             />
             <InfoRow icon={User} label="客戶聯繫方式" value={caseData.customer_contact} />
+            <InfoRow
+              icon={User}
+              label="電商訂單編號"
+              value={caseData.ecommerce_order_no?.trim() || "—"}
+            />
             <InfoRow icon={Building2} label="客訴來源" value={caseData.source} />
             <InfoRow icon={Building2} label="客訴類別" value={caseData.complaint_type} />
             <InfoRow

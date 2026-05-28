@@ -38,7 +38,7 @@ export function CaseSearchInput() {
         className={inputClass}
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="輸入 CS 案件編號、客戶姓名或電商訂單編號"
+        placeholder="輸入 CS 案件編號、客戶姓名、電話或電商訂單編號"
         aria-label="案件查詢"
       />
     </div>

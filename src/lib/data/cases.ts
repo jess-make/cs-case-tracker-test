@@ -141,7 +141,7 @@ export async function getCases(filters?: {
     const sanitized = filters.q.trim().replace(/,/g, "");
     const term = `%${sanitized}%`;
     query = query.or(
-      `case_number.ilike.${term},customer_name.ilike.${term},ecommerce_order_no.ilike.${term}`
+      `case_number.ilike.${term},customer_name.ilike.${term},customer_contact.ilike.${term},ecommerce_order_no.ilike.${term}`
     );
   }
 

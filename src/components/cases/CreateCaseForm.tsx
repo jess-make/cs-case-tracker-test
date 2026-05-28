@@ -78,6 +78,16 @@ export function CreateCaseForm() {
             placeholder="電話 / Email / LINE ID"
           />
         </div>
+        <div>
+          <label className={labelClass}>緊急程度 *</label>
+          <select name="urgency" required className={inputClass} defaultValue="medium">
+            {(Object.keys(URGENCY_LABELS) as UrgencyLevel[]).map((u) => (
+              <option key={u} value={u}>
+                {URGENCY_LABELS[u]}
+              </option>
+            ))}
+          </select>
+        </div>
         <SourceChannelFields
           source={source}
           sourceDetail={sourceDetail}
@@ -127,24 +137,6 @@ export function CreateCaseForm() {
           </select>
         </div>
         <div>
-          <label className={labelClass}>緊急程度 *</label>
-          <select name="urgency" required className={inputClass} defaultValue="medium">
-            {(Object.keys(URGENCY_LABELS) as UrgencyLevel[]).map((u) => (
-              <option key={u} value={u}>
-                {URGENCY_LABELS[u]}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelClass}>電商訂單編號</label>
-          <input
-            name="ecommerce_order_no"
-            className={inputClass}
-            placeholder="選填"
-          />
-        </div>
-        <div className="md:col-span-2">
           <label className={labelClass}>指派部門 *</label>
           <select name="department" required className={inputClass} defaultValue="">
             <option value="" disabled>
@@ -156,6 +148,14 @@ export function CreateCaseForm() {
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label className={labelClass}>電商訂單編號</label>
+          <input
+            name="ecommerce_order_no"
+            className={inputClass}
+            placeholder="選填"
+          />
         </div>
       </div>
 

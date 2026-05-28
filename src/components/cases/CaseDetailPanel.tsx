@@ -11,7 +11,8 @@ import {
   closeCaseAction,
   addReplyAction,
 } from "@/app/actions/cases";
-import { Loader2, User, Building2 } from "lucide-react";
+import { Loader2, User, Building2, Pencil } from "lucide-react";
+import { CaseEditForm } from "@/components/cases/CaseEditForm";
 
 export function CaseDetailPanel({
   caseData,
@@ -21,6 +22,7 @@ export function CaseDetailPanel({
   logs?: CaseLog[] | null;
 }) {
   const [reply, setReply] = useState("");
+  const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const safeLogs = logs ?? [];
@@ -60,12 +62,33 @@ export function CaseDetailPanel({
               <h2 className="break-all text-lg font-bold text-slate-900">{caseData.case_number}</h2>
               <p className="text-sm text-slate-500">建立於 {formatDate(caseData.created_at)}</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={caseData.status} />
               <UrgencyBadge urgency={caseData.urgency} />
+              {!editing && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(true)}
+                  className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                  編輯案件
+                </button>
+              )}
             </div>
           </div>
 
+          {editing ? (
+            <CaseEditForm
+              caseData={caseData}
+              onCancel={() => setEditing(false)}
+              onSaved={() => {
+                setEditing(false);
+                router.refresh();
+              }}
+            />
+          ) : (
+            <>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <InfoRow icon={User} label="客戶姓名" value={caseData.customer_name} />
             <InfoRow
@@ -80,6 +103,11 @@ export function CaseDetailPanel({
               value={caseData.ecommerce_order_no?.trim() || "—"}
             />
             <InfoRow icon={Building2} label="客訴來源" value={caseData.source} />
+            <InfoRow
+              icon={Building2}
+              label="客訴管道"
+              value={caseData.source_detail?.trim() || "—"}
+            />
             <InfoRow icon={Building2} label="客訴類別" value={caseData.complaint_type} />
             <InfoRow
               icon={Building2}
@@ -94,15 +122,17 @@ export function CaseDetailPanel({
             <p className="mb-1 text-sm font-medium text-slate-700">問題描述</p>
             <p className="whitespace-pre-wrap text-sm text-slate-600">{caseData.description}</p>
           </div>
+            </>
+          )}
 
-          {caseData.resolution && (
+          {!editing && caseData.resolution && (
             <div className="mt-4 rounded-lg bg-emerald-50 p-4">
               <p className="mb-1 text-sm font-medium text-emerald-800">改善結果</p>
               <p className="text-sm text-emerald-700">{caseData.resolution}</p>
             </div>
           )}
 
-          {attachmentUrls.length > 0 && (
+          {!editing && attachmentUrls.length > 0 && (
             <div className="mt-4">
               <p className="mb-2 text-sm font-medium text-slate-700">附件</p>
               <ul className="space-y-1">

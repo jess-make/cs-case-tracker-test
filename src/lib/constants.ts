@@ -42,18 +42,15 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "管理者",
 };
 
-export const COMPLAINT_SOURCES = [
-  "電話",
-  "Email",
-  "LINE",
-  "官網",
-  "門市",
-  "FB",
-  "IG",
-  "其他",
-] as const;
+export const COMPLAINT_SOURCE_TYPES = ["綠途", "通路"] as const;
 
-export const CUSTOMER_GENDERS = ["男", "女"] as const;
+/** 客訴來源 → 客訴管道（二層選單） */
+export const COMPLAINT_SOURCE_CHANNELS: Record<string, readonly string[]> = {
+  通路: ["vivo", "全國電子"],
+  綠途: ["MO+", "蝦皮直送", "蝦皮商城", "PCHOME", "門市"],
+};
+
+export const CUSTOMER_GENDERS = ["男", "女", "不透露"] as const;
 
 /** 客訴類別 → 客訴問題（二層選單） */
 export const COMPLAINT_CATEGORIES: Record<string, readonly string[]> = {

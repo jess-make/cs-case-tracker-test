@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   createCase,
+  updateCase,
   updateCaseStatus,
   addCaseReply,
   uploadAttachment,
@@ -15,6 +16,23 @@ import {
 } from "@/lib/line/notify";
 import { getNextStatus } from "@/lib/constants";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
+
+function parseCaseFormData(formData: FormData) {
+  return {
+    customer_name: (formData.get("customer_name") as string)?.trim(),
+    customer_contact: (formData.get("customer_contact") as string)?.trim(),
+    customer_gender: formData.get("customer_gender") as string,
+    source: formData.get("source") as string,
+    source_detail: formData.get("source_detail") as string,
+    complaint_type: formData.get("complaint_type") as string,
+    complaint_subtype: formData.get("complaint_subtype") as string,
+    description: (formData.get("description") as string)?.trim(),
+    urgency: formData.get("urgency") as UrgencyLevel,
+    department: formData.get("department") as string,
+    ecommerce_order_no:
+      (formData.get("ecommerce_order_no") as string)?.trim() || null,
+  };
+}
 
 export async function createCaseAction(formData: FormData) {
   const attachmentFiles = formData.getAll("attachments") as File[];
@@ -33,16 +51,7 @@ export async function createCaseAction(formData: FormData) {
   }
 
   const input: CreateCaseInput = {
-    customer_name: (formData.get("customer_name") as string)?.trim(),
-    customer_contact: (formData.get("customer_contact") as string)?.trim(),
-    customer_gender: formData.get("customer_gender") as string,
-    source: formData.get("source") as string,
-    complaint_type: formData.get("complaint_type") as string,
-    complaint_subtype: formData.get("complaint_subtype") as string,
-    description: (formData.get("description") as string)?.trim(),
-    urgency: formData.get("urgency") as UrgencyLevel,
-    department: formData.get("department") as string,
-    ecommerce_order_no: (formData.get("ecommerce_order_no") as string)?.trim() || null,
+    ...parseCaseFormData(formData),
     attachment_urls: attachmentUrls,
   };
 
@@ -51,6 +60,19 @@ export async function createCaseAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/cases");
   redirect(`/cases/${newCase.id}`);
+}
+
+export async function updateCaseAction(caseId: string, formData: FormData) {
+  const actorId = await getDefaultActorUserId();
+  const input = parseCaseFormData(formData);
+
+  const result = await updateCase(caseId, input, actorId);
+  if (result.error) return { error: result.error };
+
+  revalidatePath(`/cases/${caseId}`);
+  revalidatePath("/");
+  revalidatePath("/cases");
+  return { success: true, unchanged: result.unchanged };
 }
 
 export async function advanceCaseStatusAction(caseId: string) {

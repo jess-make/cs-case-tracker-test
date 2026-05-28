@@ -8,8 +8,10 @@ import type {
   CreateCaseInput,
   DashboardStats,
   CaseStatus,
+  UpdateCaseInput,
   User,
 } from "@/types";
+import { buildCaseEditSummary } from "@/lib/case-edit-summary";
 
 function supabase() {
   assertSupabaseEnv();
@@ -234,6 +236,7 @@ export async function createCase(
       customer_contact: input.customer_contact,
       customer_gender: input.customer_gender,
       source: input.source,
+      source_detail: input.source_detail,
       complaint_type: input.complaint_type,
       complaint_subtype: input.complaint_subtype,
       description: input.description,
@@ -258,6 +261,47 @@ export async function createCase(
     normalizeCase(data as Record<string, unknown>),
   ]);
   return enriched;
+}
+
+export async function updateCase(
+  caseId: string,
+  input: UpdateCaseInput,
+  userId: string | null
+): Promise<{ case: Case | null; error?: string; unchanged?: boolean }> {
+  const existing = await getCaseById(caseId);
+  if (!existing) return { case: null, error: "案件不存在" };
+
+  const summary = buildCaseEditSummary(existing, input);
+  if (!summary) return { case: existing, unchanged: true };
+
+  const client = await supabase();
+  const { data, error } = await client
+    .from("cases")
+    .update({
+      customer_name: input.customer_name,
+      customer_contact: input.customer_contact,
+      customer_gender: input.customer_gender,
+      source: input.source,
+      source_detail: input.source_detail,
+      complaint_type: input.complaint_type,
+      complaint_subtype: input.complaint_subtype,
+      description: input.description,
+      urgency: input.urgency,
+      department: input.department,
+      ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
+    })
+    .eq("id", caseId)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  await addCaseLog(caseId, userId, "編輯案件", summary);
+
+  const [enriched] = await enrichCases([
+    normalizeCase(data as Record<string, unknown>),
+  ]);
+  return { case: enriched };
 }
 
 export async function addCaseLog(

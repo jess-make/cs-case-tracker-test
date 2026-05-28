@@ -28,6 +28,7 @@ export interface Case {
   customer_contact: string;
   customer_gender: string | null;
   source: string;
+  source_detail: string | null;
   complaint_type: string;
   complaint_subtype: string | null;
   description: string;
@@ -70,6 +71,7 @@ export interface CreateCaseInput {
   customer_contact: string;
   customer_gender: string;
   source: string;
+  source_detail: string;
   complaint_type: string;
   complaint_subtype: string;
   description: string;
@@ -77,6 +79,20 @@ export interface CreateCaseInput {
   department: string;
   ecommerce_order_no?: string | null;
   attachment_urls?: string[];
+}
+
+export interface UpdateCaseInput {
+  customer_name: string;
+  customer_contact: string;
+  customer_gender: string;
+  source: string;
+  source_detail: string;
+  complaint_type: string;
+  complaint_subtype: string;
+  description: string;
+  urgency: UrgencyLevel;
+  department: string;
+  ecommerce_order_no: string | null;
 }
 
 export interface CaseFilters {

@@ -18,8 +18,9 @@ import {
   notifyCaseCompleted,
   isLineConfigured,
 } from "@/lib/line/notify";
-import { getNextStatus } from "@/lib/constants";
+import { getNextStatus } from "@/lib/case-status";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
+import { parseOptionalDepartment } from "@/lib/parse-form";
 
 function parseCaseFormData(formData: FormData) {
   return {
@@ -32,7 +33,7 @@ function parseCaseFormData(formData: FormData) {
     complaint_subtype: formData.get("complaint_subtype") as string,
     description: (formData.get("description") as string)?.trim(),
     urgency: formData.get("urgency") as UrgencyLevel,
-    department: formData.get("department") as string,
+    department: parseOptionalDepartment(formData.get("department")),
     ecommerce_order_no:
       (formData.get("ecommerce_order_no") as string)?.trim() || null,
   };

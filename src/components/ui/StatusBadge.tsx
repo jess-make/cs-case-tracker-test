@@ -1,16 +1,11 @@
 import type { CaseStatus, UrgencyLevel } from "@/types";
-import {
-  CASE_STATUS_LABELS,
-  CASE_STATUS_COLORS,
-  URGENCY_LABELS,
-  URGENCY_COLORS,
-} from "@/lib/constants";
+import { URGENCY_LABELS, URGENCY_COLORS } from "@/lib/constants";
+import { getCaseStatusColor, getCaseStatusLabel } from "@/lib/case-status";
 import { cn } from "@/lib/utils";
 
-export function StatusBadge({ status }: { status: CaseStatus }) {
-  const label = CASE_STATUS_LABELS[status] ?? status ?? "未知";
-  const color =
-    CASE_STATUS_COLORS[status] ?? "bg-slate-100 text-slate-600";
+export function StatusBadge({ status }: { status: CaseStatus | string }) {
+  const label = getCaseStatusLabel(String(status));
+  const color = getCaseStatusColor(String(status));
 
   return (
     <span

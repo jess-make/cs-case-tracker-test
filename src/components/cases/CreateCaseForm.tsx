@@ -6,12 +6,12 @@ import {
   COMPLAINT_CATEGORIES,
   COMPLAINT_CATEGORY_KEYS,
   CUSTOMER_GENDERS,
-  DEPARTMENTS,
   URGENCY_LABELS,
 } from "@/lib/constants";
 import type { UrgencyLevel } from "@/types";
 import { createCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
+import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
 import { Loader2 } from "lucide-react";
 
 export function CreateCaseForm() {
@@ -20,6 +20,7 @@ export function CreateCaseForm() {
   const [complaintSubtype, setComplaintSubtype] = useState("");
   const [source, setSource] = useState("");
   const [sourceDetail, setSourceDetail] = useState("");
+  const [department, setDepartment] = useState("");
 
   const subtypeOptions = complaintCategory
     ? COMPLAINT_CATEGORIES[complaintCategory] ?? []
@@ -119,7 +120,7 @@ export function CreateCaseForm() {
           <label className={labelClass}>客訴問題 *</label>
           <select
             name="complaint_subtype"
-            required
+            required={Boolean(complaintCategory)}
             className={`${inputClass} ${!complaintCategory ? "pointer-events-none opacity-60" : ""}`}
             value={complaintSubtype}
             onChange={(e) => setComplaintSubtype(e.target.value)}
@@ -136,19 +137,13 @@ export function CreateCaseForm() {
             ))}
           </select>
         </div>
-        <div>
-          <label className={labelClass}>指派部門 *</label>
-          <select name="department" required className={inputClass} defaultValue="">
-            <option value="" disabled>
-              請選擇
-            </option>
-            {DEPARTMENTS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </div>
+        <DepartmentSelect
+          id="create-department"
+          value={department}
+          onChange={setDepartment}
+          inputClass={inputClass}
+          labelClass={labelClass}
+        />
         <div>
           <label className={labelClass}>電商訂單編號</label>
           <input

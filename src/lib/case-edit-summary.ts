@@ -35,6 +35,8 @@ function beforeValue(before: Case, field: keyof UpdateCaseInput): string {
       return normalizeValue(before.complaint_subtype);
     case "customer_gender":
       return normalizeValue(before.customer_gender);
+    case "department":
+      return normalizeValue(before.department);
     default:
       return normalizeValue(before[field] as string);
   }

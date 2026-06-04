@@ -6,12 +6,12 @@ import {
   COMPLAINT_CATEGORIES,
   COMPLAINT_CATEGORY_KEYS,
   CUSTOMER_GENDERS,
-  DEPARTMENTS,
   URGENCY_LABELS,
 } from "@/lib/constants";
 import type { UrgencyLevel } from "@/types";
 import { updateCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
+import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
 import { Loader2 } from "lucide-react";
 
 interface CaseEditFormProps {
@@ -28,6 +28,7 @@ export function CaseEditForm({ caseData, onCancel, onSaved }: CaseEditFormProps)
   );
   const [source, setSource] = useState(caseData.source);
   const [sourceDetail, setSourceDetail] = useState(caseData.source_detail ?? "");
+  const [department, setDepartment] = useState(caseData.department ?? "");
 
   const subtypeOptions = complaintCategory
     ? COMPLAINT_CATEGORIES[complaintCategory] ?? []
@@ -132,7 +133,7 @@ export function CaseEditForm({ caseData, onCancel, onSaved }: CaseEditFormProps)
           <label className={labelClass}>客訴問題 *</label>
           <select
             name="complaint_subtype"
-            required
+            required={Boolean(complaintCategory)}
             className={`${inputClass} ${!complaintCategory ? "pointer-events-none opacity-60" : ""}`}
             value={complaintSubtype}
             onChange={(e) => setComplaintSubtype(e.target.value)}
@@ -164,24 +165,13 @@ export function CaseEditForm({ caseData, onCancel, onSaved }: CaseEditFormProps)
             ))}
           </select>
         </div>
-        <div className="sm:col-span-2">
-          <label className={labelClass}>指派部門 *</label>
-          <select
-            name="department"
-            required
-            className={inputClass}
-            defaultValue={caseData.department}
-          >
-            <option value="" disabled>
-              請選擇
-            </option>
-            {DEPARTMENTS.map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </div>
+        <DepartmentSelect
+          id="edit-department"
+          value={department}
+          onChange={setDepartment}
+          inputClass={inputClass}
+          labelClass={labelClass}
+        />
       </div>
 
       <div>

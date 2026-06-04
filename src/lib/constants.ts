@@ -6,7 +6,6 @@ export const APP_SUBTITLE = "客訴立案・處理・結案管理";
 
 export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   new: "新案件",
-  assigned: "已指派",
   in_progress: "處理中",
   replied: "已回覆",
   cs_confirming: "客服確認中",
@@ -15,7 +14,6 @@ export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
 
 export const CASE_STATUS_COLORS: Record<CaseStatus, string> = {
   new: "bg-slate-100 text-slate-700",
-  assigned: "bg-brand-50 text-brand-700",
   in_progress: "bg-amber-100 text-amber-700",
   replied: "bg-purple-100 text-purple-700",
   cs_confirming: "bg-cyan-100 text-cyan-700",
@@ -88,18 +86,10 @@ export const DEPARTMENTS = [
   "開發部",
 ] as const;
 
-/** 狀態流轉順序 */
-export const STATUS_FLOW: CaseStatus[] = [
-  "new",
-  "assigned",
-  "in_progress",
-  "replied",
-  "cs_confirming",
-  "closed",
-];
-
-export function getNextStatus(current: CaseStatus): CaseStatus | null {
-  const idx = STATUS_FLOW.indexOf(current);
-  if (idx < 0 || idx >= STATUS_FLOW.length - 1) return null;
-  return STATUS_FLOW[idx + 1];
-}
+/** 狀態流轉順序（新案件 → 處理中 → 已回覆 → 客服確認中 → 已結案） */
+export {
+  CASE_FLOW_STEPS as STATUS_FLOW,
+  getNextStatus,
+  normalizeCaseStatus,
+  CASE_STATUS_FILTER_OPTIONS,
+} from "@/lib/case-status";

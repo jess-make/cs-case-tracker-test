@@ -4,10 +4,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { User } from "@/types";
 import {
   CASE_STATUS_LABELS,
+  CASE_STATUS_FILTER_OPTIONS,
   COMPLAINT_CATEGORY_KEYS,
   URGENCY_LABELS,
 } from "@/lib/constants";
-import type { CaseStatus, UrgencyLevel } from "@/types";
+import type { UrgencyLevel } from "@/types";
 import { DateRangeFilter } from "@/components/cases/DateRangeFilter";
 import { CaseSearchInput } from "@/components/cases/CaseSearchInput";
 
@@ -35,7 +36,7 @@ export function CaseFilters({ handlers }: { handlers: User[] }) {
             onChange={(e) => update("status", e.target.value)}
           >
             <option value="">全部</option>
-            {(Object.keys(CASE_STATUS_LABELS) as CaseStatus[]).map((s) => (
+            {CASE_STATUS_FILTER_OPTIONS.map((s) => (
               <option key={s} value={s}>
                 {CASE_STATUS_LABELS[s]}
               </option>

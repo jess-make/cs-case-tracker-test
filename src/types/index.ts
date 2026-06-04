@@ -2,7 +2,6 @@ export type UserRole = "cs" | "handler" | "admin";
 
 export type CaseStatus =
   | "new"
-  | "assigned"
   | "in_progress"
   | "replied"
   | "cs_confirming"
@@ -34,7 +33,7 @@ export interface Case {
   complaint_subtype: string | null;
   description: string;
   urgency: UrgencyLevel;
-  department: string;
+  department: string | null;
   ecommerce_order_no: string | null;
   assignee_id: string | null;
   created_by_id: string | null;
@@ -56,6 +55,11 @@ export interface CaseLog {
   user_id: string | null;
   action: string;
   content: string | null;
+  /** 舊版 case_logs 欄位，僅供顯示，不刪除 */
+  cause?: string | null;
+  solution?: string | null;
+  improvement?: string | null;
+  note?: string | null;
   created_at: string;
   user?: User | null;
 }
@@ -77,7 +81,7 @@ export interface CreateCaseInput {
   complaint_subtype: string;
   description: string;
   urgency: UrgencyLevel;
-  department: string;
+  department: string | null;
   ecommerce_order_no?: string | null;
   attachment_urls?: string[];
 }
@@ -92,7 +96,7 @@ export interface UpdateCaseInput {
   complaint_subtype: string;
   description: string;
   urgency: UrgencyLevel;
-  department: string;
+  department: string | null;
   ecommerce_order_no: string | null;
 }
 

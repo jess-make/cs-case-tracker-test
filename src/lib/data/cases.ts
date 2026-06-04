@@ -12,6 +12,7 @@ import type {
   User,
 } from "@/types";
 import { buildCaseEditSummary } from "@/lib/case-edit-summary";
+import { normalizeCaseStatus } from "@/lib/case-status";
 
 function supabase() {
   assertSupabaseEnv();
@@ -139,7 +140,11 @@ export async function getCases(filters?: {
     .select(CASE_SELECT_WITH_USERS)
     .order("created_at", { ascending: false });
 
-  if (filters?.status) query = query.eq("status", filters.status);
+  if (filters?.status) {
+    const status =
+      filters.status === "assigned" ? "in_progress" : filters.status;
+    query = query.eq("status", status);
+  }
   if (filters?.assignee_id) query = query.eq("assignee_id", filters.assignee_id);
   if (filters?.complaint_type)
     query = query.eq("complaint_type", filters.complaint_type);
@@ -229,9 +234,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const cases = data ?? [];
   return {
     total: cases.length,
-    inProgress: cases.filter((c) =>
-      ["assigned", "in_progress", "replied"].includes(c.status)
-    ).length,
+    inProgress: cases.filter((c) => {
+      const s = normalizeCaseStatus(c.status);
+      return ["in_progress", "replied"].includes(s);
+    }).length,
     pendingConfirm: cases.filter((c) => c.status === "cs_confirming").length,
     closed: cases.filter((c) => c.status === "closed").length,
   };
@@ -257,7 +263,7 @@ export async function createCase(
       complaint_subtype: input.complaint_subtype,
       description: input.description,
       urgency: input.urgency,
-      department: input.department,
+      department: input.department ?? null,
       ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
       assignee_id: createdById,
       created_by_id: createdById,
@@ -303,7 +309,7 @@ export async function updateCase(
       complaint_subtype: input.complaint_subtype,
       description: input.description,
       urgency: input.urgency,
-      department: input.department,
+      department: input.department ?? null,
       ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
     })
     .eq("id", caseId)

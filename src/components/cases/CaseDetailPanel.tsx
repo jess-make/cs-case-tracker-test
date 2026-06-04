@@ -5,7 +5,14 @@ import { useRouter } from "next/navigation";
 import type { Case, CaseLog } from "@/types";
 import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/utils";
-import { CASE_STATUS_LABELS, getNextStatus } from "@/lib/constants";
+import { getCaseLogDisplayContent } from "@/lib/case-log-display";
+import {
+  CASE_FLOW_STEPS,
+  getCaseStatusLabel,
+  getNextStatus,
+  isActiveFlowStep,
+  normalizeCaseStatus,
+} from "@/lib/case-status";
 import { getAssigneeDisplayName } from "@/lib/case-display";
 import {
   advanceCaseStatusAction,
@@ -30,7 +37,8 @@ export function CaseDetailPanel({
   const router = useRouter();
   const safeLogs = logs ?? [];
   const attachmentUrls = caseData.attachment_urls ?? [];
-  const nextStatus = getNextStatus(caseData.status);
+  const displayStatus = normalizeCaseStatus(caseData.status);
+  const nextStatus = getNextStatus(displayStatus);
 
   function handleAdvance() {
     startTransition(async () => {
@@ -66,7 +74,7 @@ export function CaseDetailPanel({
               <p className="text-sm text-slate-500">建立於 {formatDate(caseData.created_at)}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={caseData.status} />
+              <StatusBadge status={displayStatus} />
               <UrgencyBadge urgency={caseData.urgency} />
               {!editing && canEdit && (
                 <button
@@ -117,7 +125,7 @@ export function CaseDetailPanel({
               label="客訴問題"
               value={caseData.complaint_subtype ?? "—"}
             />
-            <InfoRow icon={Building2} label="指派部門" value={caseData.department} />
+            <InfoRow icon={Building2} label="指派部門" value={caseData.department?.trim() || "—"} />
             <InfoRow icon={User} label="處理人" value={getAssigneeDisplayName(caseData)} />
           </div>
 
@@ -153,7 +161,7 @@ export function CaseDetailPanel({
 
         <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h3 className="mb-4 text-base font-semibold text-slate-900">處理回覆</h3>
-          {caseData.status !== "closed" && (
+          {displayStatus !== "closed" && (
             <form onSubmit={handleReply} className="mb-6">
               <textarea
                 value={reply}
@@ -178,7 +186,9 @@ export function CaseDetailPanel({
             {safeLogs.length === 0 ? (
               <p className="text-sm text-slate-500">尚無處理紀錄</p>
             ) : (
-              safeLogs.map((log, index) => (
+              safeLogs.map((log, index) => {
+                const displayContent = getCaseLogDisplayContent(log);
+                return (
                 <div
                   key={log.id || `log-${index}`}
                   className="min-w-0 border-l-2 border-brand-200 pl-3 sm:pl-4"
@@ -190,15 +200,18 @@ export function CaseDetailPanel({
                         {formatDate(log.created_at)}
                       </span>
                     </div>
-                    {log.content && (
-                      <p className="mt-1 break-words text-sm text-slate-600">{log.content}</p>
+                    {displayContent && (
+                      <p className="mt-1 whitespace-pre-wrap break-words text-sm text-slate-600">
+                        {displayContent}
+                      </p>
                     )}
                     {log.user && (
                       <p className="mt-0.5 text-xs text-slate-400">{log.user.name}</p>
                     )}
                   </div>
                 </div>
-              ))
+              );
+              })
             )}
           </div>
         </section>
@@ -209,20 +222,28 @@ export function CaseDetailPanel({
           <h3 className="mb-4 text-base font-semibold text-slate-900">案件操作</h3>
 
           <div className="mb-4 space-y-2">
-            {(["new", "assigned", "in_progress", "replied", "cs_confirming", "closed"] as const).map((s) => (
+            {CASE_FLOW_STEPS.map((s) => (
               <div
                 key={s}
                 className={`flex items-center gap-2 text-sm ${
-                  caseData.status === s ? "font-semibold text-brand-600" : "text-slate-400"
+                  isActiveFlowStep(caseData.status, s)
+                    ? "font-semibold text-brand-600"
+                    : "text-slate-400"
                 }`}
               >
-                <span className={`h-2 w-2 rounded-full ${caseData.status === s ? "bg-brand-600" : "bg-slate-200"}`} />
-                {CASE_STATUS_LABELS[s]}
+                <span
+                  className={`h-2 w-2 rounded-full ${
+                    isActiveFlowStep(caseData.status, s)
+                      ? "bg-brand-600"
+                      : "bg-slate-200"
+                  }`}
+                />
+                {getCaseStatusLabel(s)}
               </div>
             ))}
           </div>
 
-          {caseData.status !== "closed" && (
+          {displayStatus !== "closed" && (
             <div className="space-y-2">
               {nextStatus && (
                 <button
@@ -230,10 +251,10 @@ export function CaseDetailPanel({
                   disabled={pending}
                   className="min-h-11 w-full rounded-lg bg-brand-600 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
                 >
-                  推進至：{CASE_STATUS_LABELS[nextStatus]}
+                  推進至：{getCaseStatusLabel(nextStatus)}
                 </button>
               )}
-              {(caseData.status === "cs_confirming" || caseData.status === "replied") && (
+              {(displayStatus === "cs_confirming" || displayStatus === "replied") && (
                 <button
                   onClick={handleClose}
                   disabled={pending}
@@ -245,7 +266,7 @@ export function CaseDetailPanel({
             </div>
           )}
 
-          {caseData.status === "closed" && (
+          {displayStatus === "closed" && (
             <p className="text-center text-sm text-emerald-600">
               已於 {formatDate(caseData.closed_at)} 結案
             </p>

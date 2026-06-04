@@ -1,5 +1,5 @@
 import type { Case, CaseLog, CaseStatus, UrgencyLevel, User } from "@/types";
-import { STATUS_FLOW } from "@/lib/constants";
+import { normalizeCaseStatus } from "@/lib/case-status";
 
 function coerceEmbeddedUser(raw: unknown): User | null {
   if (raw == null) return null;
@@ -20,17 +20,16 @@ function coerceEmbeddedUser(raw: unknown): User | null {
   };
 }
 
-const VALID_STATUS = new Set<CaseStatus>(STATUS_FLOW);
+
 const VALID_URGENCY = new Set<UrgencyLevel>(["low", "medium", "high", "critical"]);
 
 /** 將 Supabase 回傳資料正規化，避免 null 欄位導致前端 Runtime Error */
 export function normalizeCase(raw: Record<string, unknown>): Case {
-  const status = VALID_STATUS.has(raw.status as CaseStatus)
-    ? (raw.status as CaseStatus)
-    : "new";
+  const status = normalizeCaseStatus(String(raw.status ?? "new"));
   const urgency = VALID_URGENCY.has(raw.urgency as UrgencyLevel)
     ? (raw.urgency as UrgencyLevel)
     : "medium";
+  const dept = raw.department as string | null | undefined;
 
   return {
     id: String(raw.id ?? ""),
@@ -44,7 +43,7 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     complaint_subtype: (raw.complaint_subtype as string | null) ?? null,
     description: String(raw.description ?? ""),
     urgency,
-    department: String(raw.department ?? ""),
+    department: dept?.trim() ? String(dept).trim() : null,
     ecommerce_order_no: (raw.ecommerce_order_no as string | null) ?? null,
     assignee_id: (raw.assignee_id as string | null) ?? null,
     created_by_id: (raw.created_by_id as string | null) ?? null,
@@ -76,7 +75,11 @@ export function normalizeCaseLog(raw: Record<string, unknown>): CaseLog {
     user_id: (raw.user_id as string | null) ?? null,
     action,
     content: (raw.content as string | null) ?? null,
+    cause: (raw.cause as string | null) ?? null,
+    solution: (raw.solution as string | null) ?? null,
+    improvement: (raw.improvement as string | null) ?? null,
+    note: (raw.note as string | null) ?? null,
     created_at: String(raw.created_at ?? new Date().toISOString()),
-    user: (raw.user as CaseLog["user"]) ?? null,
+    user: coerceEmbeddedUser(raw.user),
   };
 }

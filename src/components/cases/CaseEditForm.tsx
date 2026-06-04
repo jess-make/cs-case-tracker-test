@@ -29,6 +29,7 @@ export function CaseEditForm({
   onSaved,
 }: CaseEditFormProps) {
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const [complaintCategory, setComplaintCategory] = useState(caseData.complaint_type);
   const [complaintSubtype, setComplaintSubtype] = useState(
     caseData.complaint_subtype ?? ""
@@ -48,10 +49,14 @@ export function CaseEditForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setError(null);
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
       const result = await updateCaseAction(caseData.id, formData);
-      if (result?.error) return;
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
       onSaved();
     });
   }
@@ -61,7 +66,19 @@ export function CaseEditForm({
   const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form
+      onSubmit={handleSubmit}
+      encType="multipart/form-data"
+      className="space-y-5"
+    >
+      {error && (
+        <p
+          className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label className={labelClass}>客戶姓名 *</label>

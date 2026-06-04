@@ -11,6 +11,8 @@ import {
 import {
   uploadAndRecordCaseAttachments,
   deleteCaseAttachments,
+  getAttachmentFilesFromFormData,
+  AttachmentError,
 } from "@/lib/data/attachments";
 import {
   requireActor,
@@ -42,50 +44,83 @@ function parseCaseFormData(formData: FormData) {
   };
 }
 
-export async function createCaseAction(formData: FormData) {
-  const actor = await requireCreatePermission();
-  const attachmentFiles = formData.getAll("attachments") as File[];
-  const actorId = actor.id;
+export async function createCaseAction(
+  formData: FormData
+): Promise<{ error?: string } | void> {
+  try {
+    const actor = await requireCreatePermission();
+    const actorId = actor.id;
+    const attachmentFiles = getAttachmentFilesFromFormData(formData);
 
-  const input: CreateCaseInput = {
-    ...parseCaseFormData(formData),
-  };
+    const input: CreateCaseInput = {
+      ...parseCaseFormData(formData),
+    };
 
-  const newCase = await createCase(input, actorId);
+    const newCase = await createCase(input, actorId);
 
-  const filesToUpload = attachmentFiles.filter((f) => f.size > 0);
-  if (filesToUpload.length > 0) {
-    await uploadAndRecordCaseAttachments(newCase.id, filesToUpload, actorId);
+    if (attachmentFiles.length > 0) {
+      await uploadAndRecordCaseAttachments(
+        newCase.id,
+        attachmentFiles,
+        actorId
+      );
+    }
+
+    revalidatePath("/");
+    revalidatePath("/cases");
+    revalidatePath(`/cases/${newCase.id}`);
+    redirect(`/cases/${newCase.id}`);
+  } catch (err) {
+    if (err instanceof AttachmentError) {
+      return { error: err.message };
+    }
+    if (err && typeof err === "object" && "digest" in err) {
+      const digest = String((err as { digest?: string }).digest ?? "");
+      if (digest.startsWith("NEXT_REDIRECT")) throw err;
+    }
+    console.error("[createCaseAction]", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "建立案件失敗，請稍後再試",
+    };
   }
-
-  revalidatePath("/");
-  revalidatePath("/cases");
-  redirect(`/cases/${newCase.id}`);
 }
 
 export async function updateCaseAction(caseId: string, formData: FormData) {
-  const actor = await requireUpdatePermission();
-  const actorId = actor.id;
-  const input = parseCaseFormData(formData);
-  const attachmentFiles = formData.getAll("attachments") as File[];
-  const removeAttachmentIds = formData.getAll("remove_attachment_ids") as string[];
+  try {
+    const actor = await requireUpdatePermission();
+    const actorId = actor.id;
+    const input = parseCaseFormData(formData);
+    const attachmentFiles = getAttachmentFilesFromFormData(formData);
+    const removeAttachmentIds = formData.getAll(
+      "remove_attachment_ids"
+    ) as string[];
 
-  const result = await updateCase(caseId, input, actorId);
-  if (result.error) return { error: result.error };
+    const result = await updateCase(caseId, input, actorId);
+    if (result.error) return { error: result.error };
 
-  if (removeAttachmentIds.length > 0) {
-    await deleteCaseAttachments(caseId, removeAttachmentIds);
+    if (removeAttachmentIds.length > 0) {
+      await deleteCaseAttachments(caseId, removeAttachmentIds);
+    }
+
+    if (attachmentFiles.length > 0) {
+      await uploadAndRecordCaseAttachments(caseId, attachmentFiles, actorId);
+    }
+
+    revalidatePath(`/cases/${caseId}`);
+    revalidatePath("/");
+    revalidatePath("/cases");
+    return { success: true, unchanged: result.unchanged };
+  } catch (err) {
+    if (err instanceof AttachmentError) {
+      return { error: err.message };
+    }
+    console.error("[updateCaseAction]", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "更新案件失敗，請稍後再試",
+    };
   }
-
-  const filesToUpload = attachmentFiles.filter((f) => f.size > 0);
-  if (filesToUpload.length > 0) {
-    await uploadAndRecordCaseAttachments(caseId, filesToUpload, actorId);
-  }
-
-  revalidatePath(`/cases/${caseId}`);
-  revalidatePath("/");
-  revalidatePath("/cases");
-  return { success: true, unchanged: result.unchanged };
 }
 
 export async function advanceCaseStatusAction(caseId: string) {

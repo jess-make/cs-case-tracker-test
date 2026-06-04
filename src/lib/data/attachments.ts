@@ -16,6 +16,24 @@ const ALLOWED_MIME_TYPES = new Set([
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ]);
 
+const ALLOWED_EXTENSIONS = new Set([
+  "jpg",
+  "jpeg",
+  "png",
+  "gif",
+  "webp",
+  "pdf",
+  "doc",
+  "docx",
+]);
+
+export class AttachmentError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AttachmentError";
+  }
+}
+
 function supabase() {
   assertSupabaseEnv();
   return createClient();
@@ -25,18 +43,19 @@ function sanitizeFileName(name: string): string {
   return name.replace(/[^\w.\-()\u4e00-\u9fff ]+/g, "_").slice(0, 200);
 }
 
-function isAllowedFile(file: File): boolean {
-  if (file.size <= 0 || file.size > MAX_FILE_SIZE_BYTES) return false;
-  if (ALLOWED_MIME_TYPES.has(file.type)) return true;
-  const ext = file.name.split(".").pop()?.toLowerCase();
-  return ["jpg", "jpeg", "png", "gif", "webp", "pdf", "doc", "docx"].includes(
-    ext ?? ""
-  );
+function fileExtension(name: string): string {
+  return name.split(".").pop()?.toLowerCase() ?? "";
 }
 
-function contentTypeForUpload(file: File): string | undefined {
+export function isAllowedAttachmentFile(file: File): boolean {
+  if (file.size <= 0 || file.size > MAX_FILE_SIZE_BYTES) return false;
+  if (file.type && ALLOWED_MIME_TYPES.has(file.type)) return true;
+  return ALLOWED_EXTENSIONS.has(fileExtension(file.name));
+}
+
+function contentTypeForUpload(file: File): string {
   if (file.type && ALLOWED_MIME_TYPES.has(file.type)) return file.type;
-  const ext = file.name.split(".").pop()?.toLowerCase();
+  const ext = fileExtension(file.name);
   const byExt: Record<string, string> = {
     jpg: "image/jpeg",
     jpeg: "image/jpeg",
@@ -47,7 +66,19 @@ function contentTypeForUpload(file: File): string | undefined {
     doc: "application/msword",
     docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   };
-  return ext ? byExt[ext] : undefined;
+  return byExt[ext] ?? "application/octet-stream";
+}
+
+/** 從 FormData 取出有效 File（Server Action 環境） */
+export function getAttachmentFilesFromFormData(formData: FormData): File[] {
+  return formData
+    .getAll("attachments")
+    .filter((item): item is File => item instanceof File && item.size > 0);
+}
+
+async function fileToBuffer(file: File): Promise<Buffer> {
+  const arrayBuffer = await file.arrayBuffer();
+  return Buffer.from(arrayBuffer);
 }
 
 function normalizeAttachmentRow(raw: Record<string, unknown>): CaseAttachment {
@@ -57,8 +88,7 @@ function normalizeAttachmentRow(raw: Record<string, unknown>): CaseAttachment {
     file_name: String(raw.file_name ?? "附件"),
     file_path: String(raw.file_path ?? ""),
     file_type: (raw.file_type as string | null) ?? null,
-    file_size:
-      raw.file_size != null ? Number(raw.file_size) : null,
+    file_size: raw.file_size != null ? Number(raw.file_size) : null,
     uploaded_by_id: (raw.uploaded_by_id as string | null) ?? null,
     created_at: String(raw.created_at ?? new Date().toISOString()),
   };
@@ -69,27 +99,51 @@ export async function uploadAndRecordCaseAttachments(
   files: File[],
   uploadedById: string | null
 ): Promise<CaseAttachment[]> {
-  const validFiles = files.filter(isAllowedFile);
-  if (validFiles.length === 0) return [];
+  if (files.length === 0) return [];
+
+  const validFiles = files.filter(isAllowedAttachmentFile);
+  if (validFiles.length === 0) {
+    throw new AttachmentError(
+      "附件格式或大小不符合（支援圖片、PDF、Word，單檔最大 10MB）"
+    );
+  }
+
+  if (validFiles.length < files.length) {
+    console.error(
+      "[uploadAndRecordCaseAttachments] 部分檔案被略過：格式或大小不符"
+    );
+  }
 
   const client = await supabase();
   const saved: CaseAttachment[] = [];
 
   for (const file of validFiles) {
     const attachmentId = crypto.randomUUID();
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+    const ext = fileExtension(file.name) || "bin";
     const filePath = `${caseId}/${attachmentId}.${ext}`;
+
+    let body: Buffer;
+    try {
+      body = await fileToBuffer(file);
+    } catch (err) {
+      console.error("[uploadCaseAttachment] read file", err);
+      throw new AttachmentError(`讀取檔案「${file.name}」失敗`);
+    }
+
+    const contentType = contentTypeForUpload(file);
 
     const { error: uploadError } = await client.storage
       .from(BUCKET)
-      .upload(filePath, file, {
-        contentType: contentTypeForUpload(file),
+      .upload(filePath, body, {
+        contentType,
         upsert: false,
       });
 
     if (uploadError) {
-      console.error("[uploadCaseAttachment]", uploadError.message);
-      continue;
+      console.error("[uploadCaseAttachment]", file.name, uploadError.message);
+      throw new AttachmentError(
+        `上傳「${file.name}」至 Storage 失敗：${uploadError.message}`
+      );
     }
 
     const { data, error: insertError } = await client
@@ -99,7 +153,7 @@ export async function uploadAndRecordCaseAttachments(
         case_id: caseId,
         file_name: sanitizeFileName(file.name),
         file_path: filePath,
-        file_type: file.type || null,
+        file_type: contentType,
         file_size: file.size,
         uploaded_by_id: uploadedById,
       })
@@ -107,9 +161,11 @@ export async function uploadAndRecordCaseAttachments(
       .single();
 
     if (insertError) {
-      console.error("[case_attachments insert]", insertError.message);
+      console.error("[case_attachments insert]", file.name, insertError.message);
       await client.storage.from(BUCKET).remove([filePath]);
-      continue;
+      throw new AttachmentError(
+        `寫入附件紀錄「${file.name}」失敗：${insertError.message}`
+      );
     }
 
     saved.push(normalizeAttachmentRow(data as Record<string, unknown>));
@@ -138,7 +194,7 @@ export async function deleteCaseAttachments(
 
   if (selectError) {
     console.error("[deleteCaseAttachments select]", selectError.message);
-    return;
+    throw new AttachmentError(`讀取附件紀錄失敗：${selectError.message}`);
   }
 
   if (!rows?.length) return;
@@ -151,6 +207,9 @@ export async function deleteCaseAttachments(
       .remove(paths);
     if (storageError) {
       console.error("[deleteCaseAttachments storage]", storageError.message);
+      throw new AttachmentError(
+        `刪除 Storage 檔案失敗：${storageError.message}`
+      );
     }
   }
 
@@ -165,6 +224,7 @@ export async function deleteCaseAttachments(
 
   if (deleteError) {
     console.error("[deleteCaseAttachments]", deleteError.message);
+    throw new AttachmentError(`刪除附件紀錄失敗：${deleteError.message}`);
   }
 }
 
@@ -177,12 +237,16 @@ async function attachSignedUrls(
 
   return Promise.all(
     attachments.map(async (att) => {
+      if (att.id.startsWith("legacy-")) {
+        return { ...att, download_url: att.file_path };
+      }
+
       const { data, error } = await client.storage
         .from(BUCKET)
         .createSignedUrl(att.file_path, SIGNED_URL_EXPIRES_SEC);
 
       if (error) {
-        console.error("[createSignedUrl]", error.message);
+        console.error("[createSignedUrl]", att.file_path, error.message);
         return { ...att, download_url: null };
       }
 

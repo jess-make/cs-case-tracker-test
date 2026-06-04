@@ -16,6 +16,7 @@ import { Loader2 } from "lucide-react";
 
 export function CreateCaseForm() {
   const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [complaintCategory, setComplaintCategory] = useState("");
   const [complaintSubtype, setComplaintSubtype] = useState("");
   const [source, setSource] = useState("");
@@ -34,10 +35,16 @@ export function CreateCaseForm() {
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setPending(true);
+    setError(null);
     const formData = new FormData(e.currentTarget);
     try {
-      await createCaseAction(formData);
+      const result = await createCaseAction(formData);
+      if (result?.error) {
+        setError(result.error);
+        setPending(false);
+      }
     } catch {
+      setError("建立案件失敗，請稍後再試");
       setPending(false);
     }
   }
@@ -51,7 +58,19 @@ export function CreateCaseForm() {
     "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5 sm:space-y-6">
+    <form
+      onSubmit={handleSubmit}
+      encType="multipart/form-data"
+      className="space-y-5 sm:space-y-6"
+    >
+      {error && (
+        <p
+          className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+          role="alert"
+        >
+          {error}
+        </p>
+      )}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-6">
         <div>
           <label className={labelClass}>客戶姓名 *</label>

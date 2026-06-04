@@ -47,6 +47,19 @@ export interface Case {
   updated_at: string;
   assignee?: User | null;
   created_by?: User | null;
+  attachments?: CaseAttachment[];
+}
+
+export interface CaseAttachment {
+  id: string;
+  case_id: string;
+  file_name: string;
+  file_path: string;
+  file_type: string | null;
+  file_size: number | null;
+  uploaded_by_id: string | null;
+  created_at: string;
+  download_url?: string | null;
 }
 
 export interface CaseLog {
@@ -83,7 +96,6 @@ export interface CreateCaseInput {
   urgency: UrgencyLevel;
   department: string | null;
   ecommerce_order_no?: string | null;
-  attachment_urls?: string[];
 }
 
 export interface UpdateCaseInput {

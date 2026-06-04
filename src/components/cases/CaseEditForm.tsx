@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { Case } from "@/types";
+import type { Case, CaseAttachment } from "@/types";
 import {
   COMPLAINT_CATEGORIES,
   COMPLAINT_CATEGORY_KEYS,
@@ -12,15 +12,22 @@ import type { UrgencyLevel } from "@/types";
 import { updateCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
+import { CaseAttachmentEditFields } from "@/components/cases/CaseAttachmentEditFields";
 import { Loader2 } from "lucide-react";
 
 interface CaseEditFormProps {
   caseData: Case;
+  attachments?: CaseAttachment[];
   onCancel: () => void;
   onSaved: () => void;
 }
 
-export function CaseEditForm({ caseData, onCancel, onSaved }: CaseEditFormProps) {
+export function CaseEditForm({
+  caseData,
+  attachments = [],
+  onCancel,
+  onSaved,
+}: CaseEditFormProps) {
   const [pending, startTransition] = useTransition();
   const [complaintCategory, setComplaintCategory] = useState(caseData.complaint_type);
   const [complaintSubtype, setComplaintSubtype] = useState(
@@ -184,6 +191,11 @@ export function CaseEditForm({ caseData, onCancel, onSaved }: CaseEditFormProps)
           defaultValue={caseData.description}
         />
       </div>
+
+      <CaseAttachmentEditFields
+        attachments={attachments}
+        labelClass={labelClass}
+      />
 
       <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
         <button

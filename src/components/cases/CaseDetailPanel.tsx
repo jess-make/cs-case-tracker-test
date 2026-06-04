@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { Case, CaseLog } from "@/types";
+import type { Case, CaseLog, CaseAttachment } from "@/types";
 import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/utils";
 import { getCaseLogDisplayContent } from "@/lib/case-log-display";
@@ -21,14 +21,17 @@ import {
 } from "@/app/actions/cases";
 import { Loader2, User, Building2, Pencil } from "lucide-react";
 import { CaseEditForm } from "@/components/cases/CaseEditForm";
+import { CaseAttachmentsSection } from "@/components/cases/CaseAttachmentsSection";
 
 export function CaseDetailPanel({
   caseData,
   logs = [],
+  attachments = [],
   canEdit = true,
 }: {
   caseData: Case;
   logs?: CaseLog[] | null;
+  attachments?: CaseAttachment[];
   canEdit?: boolean;
 }) {
   const [reply, setReply] = useState("");
@@ -36,7 +39,6 @@ export function CaseDetailPanel({
   const [pending, startTransition] = useTransition();
   const router = useRouter();
   const safeLogs = logs ?? [];
-  const attachmentUrls = caseData.attachment_urls ?? [];
   const displayStatus = normalizeCaseStatus(caseData.status);
   const nextStatus = getNextStatus(displayStatus);
 
@@ -92,6 +94,7 @@ export function CaseDetailPanel({
           {editing ? (
             <CaseEditForm
               caseData={caseData}
+              attachments={attachments}
               onCancel={() => setEditing(false)}
               onSaved={() => {
                 setEditing(false);
@@ -143,19 +146,8 @@ export function CaseDetailPanel({
             </div>
           )}
 
-          {!editing && attachmentUrls.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-sm font-medium text-slate-700">附件</p>
-              <ul className="space-y-1">
-                {attachmentUrls.map((url, i) => (
-                  <li key={i}>
-                    <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-brand-600 hover:underline">
-                      附件 {i + 1}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {!editing && (
+            <CaseAttachmentsSection attachments={attachments} />
           )}
         </section>
 

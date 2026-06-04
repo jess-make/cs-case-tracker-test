@@ -2,6 +2,10 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CaseDetailPanel } from "@/components/cases/CaseDetailPanel";
 import { getCaseById, getCaseLogs } from "@/lib/data/cases";
+import {
+  getCaseAttachments,
+  legacyAttachmentsFromUrls,
+} from "@/lib/data/attachments";
 import { getCurrentUser } from "@/lib/auth/session";
 import { canUpdateCase } from "@/lib/auth/permissions";
 
@@ -12,15 +16,22 @@ interface PageProps {
 export default async function CaseDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  const [caseData, logsResult, currentUser] = await Promise.all([
+  const [caseData, logsResult, currentUser, caseAttachments] = await Promise.all([
     getCaseById(id),
     getCaseLogs(id).catch(() => [] as Awaited<ReturnType<typeof getCaseLogs>>),
     getCurrentUser(),
+    getCaseAttachments(id).catch(() => []),
   ]);
 
   const canEdit = currentUser ? canUpdateCase(currentUser.role) : false;
 
   const logs = logsResult ?? [];
+  const attachments =
+    caseAttachments.length > 0
+      ? caseAttachments
+      : caseData
+        ? legacyAttachmentsFromUrls(id, caseData.attachment_urls ?? [])
+        : [];
 
   if (!caseData) {
     return (
@@ -52,7 +63,12 @@ export default async function CaseDetailPage({ params }: PageProps) {
         返回列表
       </Link>
 
-      <CaseDetailPanel caseData={caseData} logs={logs} canEdit={canEdit} />
+      <CaseDetailPanel
+        caseData={caseData}
+        logs={logs}
+        attachments={attachments}
+        canEdit={canEdit}
+      />
     </div>
   );
 }

@@ -50,10 +50,8 @@ cp .env.example .env.local
 ### 3. Supabase 設定
 
 1. 在 [Supabase](https://supabase.com) 建立專案
-2. 於 SQL Editor 執行：
-   - `supabase/migrations/001_initial_schema.sql`
-   - `supabase/migrations/002_anon_rls_policies.sql`（允許 anon 讀寫，開發用）
-3. 建立 Storage bucket：`case-attachments`（公開讀取，選用）
+2. 於 SQL Editor 依序執行 `supabase/migrations/` 內所有 migration（含 `010_case_attachments.sql`：建立 `case_attachments` 表與 **private** bucket `case-attachments`）
+3. 附件下載透過 signed URL；bucket 請保持非公開（migration 已設定 `public = false`）
 4. 將 URL 與 anon key 填入 `.env.local`：
 
 ```env

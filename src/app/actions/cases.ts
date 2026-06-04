@@ -7,8 +7,11 @@ import {
   updateCase,
   updateCaseStatus,
   addCaseReply,
-  uploadAttachment,
 } from "@/lib/data/cases";
+import {
+  uploadAndRecordCaseAttachments,
+  deleteCaseAttachments,
+} from "@/lib/data/attachments";
 import {
   requireActor,
   requireCreatePermission,
@@ -44,24 +47,16 @@ export async function createCaseAction(formData: FormData) {
   const attachmentFiles = formData.getAll("attachments") as File[];
   const actorId = actor.id;
 
-  const attachmentUrls: string[] = [];
-  for (const file of attachmentFiles) {
-    if (file.size > 0) {
-      try {
-        const url = await uploadAttachment(file);
-        attachmentUrls.push(url);
-      } catch (err) {
-        console.error("附件上傳失敗:", err);
-      }
-    }
-  }
-
   const input: CreateCaseInput = {
     ...parseCaseFormData(formData),
-    attachment_urls: attachmentUrls,
   };
 
   const newCase = await createCase(input, actorId);
+
+  const filesToUpload = attachmentFiles.filter((f) => f.size > 0);
+  if (filesToUpload.length > 0) {
+    await uploadAndRecordCaseAttachments(newCase.id, filesToUpload, actorId);
+  }
 
   revalidatePath("/");
   revalidatePath("/cases");
@@ -72,9 +67,20 @@ export async function updateCaseAction(caseId: string, formData: FormData) {
   const actor = await requireUpdatePermission();
   const actorId = actor.id;
   const input = parseCaseFormData(formData);
+  const attachmentFiles = formData.getAll("attachments") as File[];
+  const removeAttachmentIds = formData.getAll("remove_attachment_ids") as string[];
 
   const result = await updateCase(caseId, input, actorId);
   if (result.error) return { error: result.error };
+
+  if (removeAttachmentIds.length > 0) {
+    await deleteCaseAttachments(caseId, removeAttachmentIds);
+  }
+
+  const filesToUpload = attachmentFiles.filter((f) => f.size > 0);
+  if (filesToUpload.length > 0) {
+    await uploadAndRecordCaseAttachments(caseId, filesToUpload, actorId);
+  }
 
   revalidatePath(`/cases/${caseId}`);
   revalidatePath("/");

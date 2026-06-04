@@ -276,7 +276,7 @@ export async function createCase(
       created_by_id: createdById,
       status: initialStatus,
       due_date: null,
-      attachment_urls: input.attachment_urls ?? [],
+      attachment_urls: [],
       case_number: caseNumber,
     })
     .select()
@@ -430,19 +430,4 @@ export async function addCaseReply(
   if (error) throw error;
 
   return { ok: true, logSaved };
-}
-
-export async function uploadAttachment(file: File): Promise<string> {
-  const client = await supabase();
-  const ext = file.name.split(".").pop() ?? "bin";
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-
-  const { error } = await client.storage
-    .from("case-attachments")
-    .upload(path, file);
-
-  if (error) throw error;
-
-  const { data } = client.storage.from("case-attachments").getPublicUrl(path);
-  return data.publicUrl;
 }

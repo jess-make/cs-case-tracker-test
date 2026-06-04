@@ -12,6 +12,11 @@ import type {
   User,
 } from "@/types";
 import { buildCaseEditSummary } from "@/lib/case-edit-summary";
+import {
+  hasAssignedDepartment,
+  LOG_DEPARTMENT_ASSIGNED_ON_CREATE,
+  LOG_DEPARTMENT_ASSIGNED_ON_EDIT,
+} from "@/lib/case-department";
 import { normalizeCaseStatus } from "@/lib/case-status";
 
 function supabase() {
@@ -250,6 +255,8 @@ export async function createCase(
   const client = await supabase();
   const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const caseNumber = `CS-${datePart}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
+  const assignedDepartment = hasAssignedDepartment(input.department);
+  const initialStatus = assignedDepartment ? "in_progress" : "new";
 
   const { data, error } = await client
     .from("cases")
@@ -267,7 +274,7 @@ export async function createCase(
       ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
       assignee_id: createdById,
       created_by_id: createdById,
-      status: "new",
+      status: initialStatus,
       due_date: null,
       attachment_urls: input.attachment_urls ?? [],
       case_number: caseNumber,
@@ -278,6 +285,15 @@ export async function createCase(
   if (error) throw error;
 
   await addCaseLog(data.id, createdById, "建立案件", "客服建立新案件");
+
+  if (assignedDepartment) {
+    await addCaseLog(
+      data.id,
+      createdById,
+      "指派部門",
+      LOG_DEPARTMENT_ASSIGNED_ON_CREATE
+    );
+  }
 
   const [enriched] = await enrichCases([
     normalizeCase(data as Record<string, unknown>),
@@ -294,31 +310,56 @@ export async function updateCase(
   if (!existing) return { case: null, error: "案件不存在" };
 
   const summary = buildCaseEditSummary(existing, input);
-  if (!summary) return { case: existing, unchanged: true };
+  const hadDepartment = hasAssignedDepartment(existing.department);
+  const hasDepartment = hasAssignedDepartment(input.department);
+  const newlyAssignedDepartment = !hadDepartment && hasDepartment;
+  const promoteToInProgress =
+    newlyAssignedDepartment && existing.status === "new";
+
+  if (!summary && !promoteToInProgress) {
+    return { case: existing, unchanged: true };
+  }
 
   const client = await supabase();
+  const updates: Record<string, unknown> = {
+    customer_name: input.customer_name,
+    customer_contact: input.customer_contact,
+    customer_gender: input.customer_gender,
+    source: input.source,
+    source_detail: input.source_detail,
+    complaint_type: input.complaint_type,
+    complaint_subtype: input.complaint_subtype,
+    description: input.description,
+    urgency: input.urgency,
+    department: input.department ?? null,
+    ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
+  };
+
+  if (promoteToInProgress) {
+    updates.status = "in_progress";
+  }
+
   const { data, error } = await client
     .from("cases")
-    .update({
-      customer_name: input.customer_name,
-      customer_contact: input.customer_contact,
-      customer_gender: input.customer_gender,
-      source: input.source,
-      source_detail: input.source_detail,
-      complaint_type: input.complaint_type,
-      complaint_subtype: input.complaint_subtype,
-      description: input.description,
-      urgency: input.urgency,
-      department: input.department ?? null,
-      ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
-    })
+    .update(updates)
     .eq("id", caseId)
     .select()
     .single();
 
   if (error) throw error;
 
-  await addCaseLog(caseId, userId, "編輯案件", summary);
+  if (summary) {
+    await addCaseLog(caseId, userId, "編輯案件", summary);
+  }
+
+  if (promoteToInProgress) {
+    await addCaseLog(
+      caseId,
+      userId,
+      "指派部門",
+      LOG_DEPARTMENT_ASSIGNED_ON_EDIT
+    );
+  }
 
   const [enriched] = await enrichCases([
     normalizeCase(data as Record<string, unknown>),

@@ -14,6 +14,8 @@ const ALLOWED_MIME_TYPES = new Set([
   "application/pdf",
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ]);
 
 const ALLOWED_EXTENSIONS = new Set([
@@ -25,6 +27,8 @@ const ALLOWED_EXTENSIONS = new Set([
   "pdf",
   "doc",
   "docx",
+  "xls",
+  "xlsx",
 ]);
 
 export class AttachmentError extends Error {
@@ -65,6 +69,8 @@ function contentTypeForUpload(file: File): string {
     pdf: "application/pdf",
     doc: "application/msword",
     docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   };
   return byExt[ext] ?? "application/octet-stream";
 }
@@ -104,7 +110,7 @@ export async function uploadAndRecordCaseAttachments(
   const validFiles = files.filter(isAllowedAttachmentFile);
   if (validFiles.length === 0) {
     throw new AttachmentError(
-      "附件格式或大小不符合（支援圖片、PDF、Word，單檔最大 10MB）"
+      "附件格式或大小不符合（支援圖片、PDF、Word、Excel，單檔最大 10MB）"
     );
   }
 

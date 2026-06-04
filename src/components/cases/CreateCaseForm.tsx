@@ -197,6 +197,7 @@ export function CreateCaseForm() {
         files={pendingAttachments}
         onFilesChange={setPendingAttachments}
         inputId="create-attachments"
+        hint="支援jpg、jpeg、png、pdf、doc、xls、xlsx，可多選但單個檔案不超過10MB"
       />
 
       <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end sm:pt-6">

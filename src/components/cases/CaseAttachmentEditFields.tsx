@@ -102,7 +102,7 @@ export function CaseAttachmentEditFields({
       <LocalAttachmentPicker
         label="新增附件"
         labelClass="mb-1 block text-sm font-medium text-slate-700"
-        hint="支援圖片、PDF、Word，可多選。選擇後可預覽，儲存後才會上傳。"
+        hint="支援圖片、PDF、Word、Excel，可多選。選擇後可預覽，儲存後才會上傳。"
         files={pendingFiles}
         onFilesChange={onPendingFilesChange}
         inputId="edit-attachments"

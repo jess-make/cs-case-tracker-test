@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { FileText, X } from "lucide-react";
+import { FileText, FileSpreadsheet, X } from "lucide-react";
 import {
   type PendingAttachment,
   createPendingAttachment,
@@ -9,6 +9,7 @@ import {
   revokeAllPendingAttachments,
   formatAttachmentFileSize,
   getAttachmentTypeLabel,
+  isExcelFile,
   ATTACHMENT_ACCEPT,
   ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
@@ -59,10 +60,12 @@ function PdfPreview({ item, onRemove }: { item: PendingAttachment; onRemove: () 
 }
 
 function DocumentPreview({ item, onRemove }: { item: PendingAttachment; onRemove: () => void }) {
+  const Icon = isExcelFile(item.file) ? FileSpreadsheet : FileText;
+
   return (
     <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50">
-        <FileText className="h-5 w-5 text-brand-600" />
+        <Icon className="h-5 w-5 text-brand-600" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="break-all text-sm font-medium text-slate-800">{item.file.name}</p>

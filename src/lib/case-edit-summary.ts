@@ -44,7 +44,8 @@ function beforeValue(before: Case, field: keyof UpdateCaseInput): string {
 
 export function buildCaseEditSummary(
   before: Case,
-  after: UpdateCaseInput
+  after: UpdateCaseInput,
+  options?: { afterAssigneeName?: string | null }
 ): string | null {
   const changes: string[] = [];
 
@@ -54,11 +55,19 @@ export function buildCaseEditSummary(
 
     if (oldVal !== newVal) {
       changes.push(
-        `${FIELD_LABELS[field]}「${formatDisplay(field, oldVal)}」→「${formatDisplay(field, newVal)}」`
+        `${FIELD_LABELS[field]}：「${formatDisplay(field, oldVal)}」→「${formatDisplay(field, newVal)}」`
       );
     }
   }
 
+  const beforeAssignee = normalizeValue(before.assignee?.name);
+  const afterAssignee = normalizeValue(options?.afterAssigneeName);
+  if (options?.afterAssigneeName !== undefined && beforeAssignee !== afterAssignee) {
+    changes.push(
+      `處理人：「${beforeAssignee || "—"}」→「${afterAssignee || "—"}」`
+    );
+  }
+
   if (changes.length === 0) return null;
-  return `案件資料已編輯：${changes.join("、")}`;
+  return `案件資料已編輯：\n${changes.map((line) => `- ${line}`).join("\n")}`;
 }

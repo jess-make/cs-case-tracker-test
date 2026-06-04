@@ -11,12 +11,14 @@ import type {
   UpdateCaseInput,
   User,
 } from "@/types";
-import { buildCaseEditSummary } from "@/lib/case-edit-summary";
 import {
-  hasAssignedDepartment,
-  LOG_DEPARTMENT_ASSIGNED_ON_CREATE,
-  LOG_DEPARTMENT_ASSIGNED_ON_EDIT,
-} from "@/lib/case-department";
+  createCaseLog,
+  logCaseEdited,
+  logStatusChange,
+  logCaseReply,
+} from "@/lib/data/case-logs";
+import { buildCaseEditSummary } from "@/lib/case-edit-summary";
+import { hasAssignedDepartment } from "@/lib/case-department";
 import { normalizeCaseStatus } from "@/lib/case-status";
 
 function supabase() {
@@ -284,17 +286,6 @@ export async function createCase(
 
   if (error) throw error;
 
-  await addCaseLog(data.id, createdById, "建立案件", "客服建立新案件");
-
-  if (assignedDepartment) {
-    await addCaseLog(
-      data.id,
-      createdById,
-      "指派部門",
-      LOG_DEPARTMENT_ASSIGNED_ON_CREATE
-    );
-  }
-
   const [enriched] = await enrichCases([
     normalizeCase(data as Record<string, unknown>),
   ]);
@@ -349,16 +340,11 @@ export async function updateCase(
   if (error) throw error;
 
   if (summary) {
-    await addCaseLog(caseId, userId, "編輯案件", summary);
+    await logCaseEdited(caseId, userId, summary);
   }
 
   if (promoteToInProgress) {
-    await addCaseLog(
-      caseId,
-      userId,
-      "指派部門",
-      LOG_DEPARTMENT_ASSIGNED_ON_EDIT
-    );
+    await logStatusChange(caseId, userId, "in_progress");
   }
 
   const [enriched] = await enrichCases([
@@ -373,17 +359,7 @@ export async function addCaseLog(
   action: string,
   content: string
 ): Promise<boolean> {
-  const { error } = await (await supabase()).from("case_logs").insert({
-    case_id: caseId,
-    user_id: userId,
-    action,
-    content,
-  });
-  if (error) {
-    console.error("[addCaseLog]", error.message);
-    return false;
-  }
-  return true;
+  return createCaseLog(caseId, userId, action, content);
 }
 
 export async function updateCaseStatus(
@@ -407,7 +383,7 @@ export async function updateCaseStatus(
 
   if (error) throw error;
 
-  await addCaseLog(caseId, userId, "狀態更新", `狀態變更為：${status}`);
+  await logStatusChange(caseId, userId, status);
 
   const [enriched] = await enrichCases([
     normalizeCase(data as Record<string, unknown>),
@@ -420,7 +396,8 @@ export async function addCaseReply(
   userId: string | null,
   content: string
 ): Promise<{ ok: boolean; logSaved: boolean }> {
-  const logSaved = await addCaseLog(caseId, userId, "處理回覆", content);
+  const existing = await getCaseById(caseId);
+  const replyLogSaved = await logCaseReply(caseId, userId, content);
 
   const { error } = await (await supabase())
     .from("cases")
@@ -429,5 +406,10 @@ export async function addCaseReply(
 
   if (error) throw error;
 
-  return { ok: true, logSaved };
+  let statusLogSaved = true;
+  if (existing && existing.status !== "replied") {
+    statusLogSaved = await logStatusChange(caseId, userId, "replied");
+  }
+
+  return { ok: true, logSaved: replyLogSaved && statusLogSaved };
 }

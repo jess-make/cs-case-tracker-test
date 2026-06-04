@@ -180,21 +180,21 @@ export async function uploadAndRecordCaseAttachments(
   return saved;
 }
 
-/** 刪除案件附件（Storage 物件 + DB 紀錄） */
+/** 刪除案件附件（Storage 物件 + DB 紀錄），回傳已刪除檔名 */
 export async function deleteCaseAttachments(
   caseId: string,
   attachmentIds: string[]
-): Promise<void> {
+): Promise<string[]> {
   const ids = attachmentIds.filter(
     (id) => id?.trim() && !id.startsWith("legacy-")
   );
-  if (ids.length === 0) return;
+  if (ids.length === 0) return [];
 
   const client = await supabase();
 
   const { data: rows, error: selectError } = await client
     .from("case_attachments")
-    .select("id, file_path")
+    .select("id, file_path, file_name")
     .eq("case_id", caseId)
     .in("id", ids);
 
@@ -203,7 +203,11 @@ export async function deleteCaseAttachments(
     throw new AttachmentError(`讀取附件紀錄失敗：${selectError.message}`);
   }
 
-  if (!rows?.length) return;
+  if (!rows?.length) return [];
+
+  const deletedNames = rows
+    .map((r) => String(r.file_name ?? "").trim())
+    .filter(Boolean);
 
   const paths = rows.map((r) => r.file_path as string).filter(Boolean);
 
@@ -232,6 +236,8 @@ export async function deleteCaseAttachments(
     console.error("[deleteCaseAttachments]", deleteError.message);
     throw new AttachmentError(`刪除附件紀錄失敗：${deleteError.message}`);
   }
+
+  return deletedNames;
 }
 
 async function attachSignedUrls(

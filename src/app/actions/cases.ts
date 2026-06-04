@@ -15,6 +15,11 @@ import {
   AttachmentError,
 } from "@/lib/data/attachments";
 import {
+  logCaseCreated,
+  logAttachmentsAdded,
+  logAttachmentsDeleted,
+} from "@/lib/data/case-logs";
+import {
   requireActor,
   requireCreatePermission,
   requireUpdatePermission,
@@ -58,12 +63,19 @@ export async function createCaseAction(
 
     const newCase = await createCase(input, actorId);
 
+    let uploadedNames: string[] = [];
     if (attachmentFiles.length > 0) {
-      await uploadAndRecordCaseAttachments(
+      const uploaded = await uploadAndRecordCaseAttachments(
         newCase.id,
         attachmentFiles,
         actorId
       );
+      uploadedNames = uploaded.map((a) => a.file_name);
+    }
+
+    await logCaseCreated(newCase.id, actorId, uploadedNames);
+    if (uploadedNames.length > 0) {
+      await logAttachmentsAdded(newCase.id, actorId, uploadedNames);
     }
 
     revalidatePath("/");
@@ -100,11 +112,25 @@ export async function updateCaseAction(caseId: string, formData: FormData) {
     if (result.error) return { error: result.error };
 
     if (removeAttachmentIds.length > 0) {
-      await deleteCaseAttachments(caseId, removeAttachmentIds);
+      const deletedNames = await deleteCaseAttachments(
+        caseId,
+        removeAttachmentIds
+      );
+      if (deletedNames.length > 0) {
+        await logAttachmentsDeleted(caseId, actorId, deletedNames);
+      }
     }
 
     if (attachmentFiles.length > 0) {
-      await uploadAndRecordCaseAttachments(caseId, attachmentFiles, actorId);
+      const uploaded = await uploadAndRecordCaseAttachments(
+        caseId,
+        attachmentFiles,
+        actorId
+      );
+      const uploadedNames = uploaded.map((a) => a.file_name);
+      if (uploadedNames.length > 0) {
+        await logAttachmentsAdded(caseId, actorId, uploadedNames);
+      }
     }
 
     revalidatePath(`/cases/${caseId}`);

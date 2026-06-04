@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { FileText, X } from "lucide-react";
 import type { CaseAttachment } from "@/types";
-
-function formatFileSize(bytes: number | null): string {
-  if (bytes == null || bytes <= 0) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
+import {
+  type PendingAttachment,
+  appendAttachmentsToFormData,
+  formatAttachmentFileSize,
+} from "@/lib/attachment-preview";
 
 function isLegacyAttachment(id: string): boolean {
   return id.startsWith("legacy-");
@@ -18,9 +17,13 @@ function isLegacyAttachment(id: string): boolean {
 export function CaseAttachmentEditFields({
   attachments,
   labelClass,
+  pendingFiles,
+  onPendingFilesChange,
 }: {
   attachments: CaseAttachment[];
   labelClass: string;
+  pendingFiles: PendingAttachment[];
+  onPendingFilesChange: (files: PendingAttachment[]) => void;
 }) {
   const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
 
@@ -66,7 +69,7 @@ export function CaseAttachmentEditFields({
                 )}
                 {att.file_size != null && att.file_size > 0 && (
                   <span className="ml-2 text-xs text-slate-500">
-                    {formatFileSize(att.file_size)}
+                    {formatAttachmentFileSize(att.file_size)}
                   </span>
                 )}
               </div>
@@ -96,19 +99,25 @@ export function CaseAttachmentEditFields({
         <input key={id} type="hidden" name="remove_attachment_ids" value={id} />
       ))}
 
-      <label className="mb-1 block text-sm font-medium text-slate-700">
-        新增附件
-      </label>
-      <input
-        type="file"
-        name="attachments"
-        multiple
-        accept="image/*,.pdf,.doc,.docx"
-        className="block w-full min-h-11 text-sm text-slate-600 file:mr-4 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100"
+      <LocalAttachmentPicker
+        label="新增附件"
+        labelClass="mb-1 block text-sm font-medium text-slate-700"
+        hint="支援圖片、PDF、Word，可多選。選擇後可預覽，儲存後才會上傳。"
+        files={pendingFiles}
+        onFilesChange={onPendingFilesChange}
+        inputId="edit-attachments"
       />
-      <p className="mt-1 text-xs text-slate-500">
-        支援圖片、PDF、Word，可多選。儲存後才會上傳或刪除。
-      </p>
     </div>
+  );
+}
+
+/** 編輯表單 submit 時附加待上傳檔案 */
+export function appendEditPendingAttachments(
+  formData: FormData,
+  pendingFiles: PendingAttachment[]
+): void {
+  appendAttachmentsToFormData(
+    formData,
+    pendingFiles.map((item) => item.file)
   );
 }

@@ -12,8 +12,12 @@ import type { UrgencyLevel } from "@/types";
 import { updateCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
-import { CaseAttachmentEditFields } from "@/components/cases/CaseAttachmentEditFields";
+import {
+  CaseAttachmentEditFields,
+  appendEditPendingAttachments,
+} from "@/components/cases/CaseAttachmentEditFields";
 import { Loader2 } from "lucide-react";
+import type { PendingAttachment } from "@/lib/attachment-preview";
 
 interface CaseEditFormProps {
   caseData: Case;
@@ -37,6 +41,7 @@ export function CaseEditForm({
   const [source, setSource] = useState(caseData.source);
   const [sourceDetail, setSourceDetail] = useState(caseData.source_detail ?? "");
   const [department, setDepartment] = useState(caseData.department ?? "");
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
 
   const subtypeOptions = complaintCategory
     ? COMPLAINT_CATEGORIES[complaintCategory] ?? []
@@ -51,6 +56,7 @@ export function CaseEditForm({
     e.preventDefault();
     setError(null);
     const formData = new FormData(e.currentTarget);
+    appendEditPendingAttachments(formData, pendingAttachments);
     startTransition(async () => {
       const result = await updateCaseAction(caseData.id, formData);
       if (result?.error) {
@@ -212,6 +218,8 @@ export function CaseEditForm({
       <CaseAttachmentEditFields
         attachments={attachments}
         labelClass={labelClass}
+        pendingFiles={pendingAttachments}
+        onPendingFilesChange={setPendingAttachments}
       />
 
       <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">

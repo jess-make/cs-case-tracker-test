@@ -12,7 +12,10 @@ import type { UrgencyLevel } from "@/types";
 import { createCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
+import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
 import { Loader2 } from "lucide-react";
+import type { PendingAttachment } from "@/lib/attachment-preview";
+import { appendAttachmentsToFormData } from "@/lib/attachment-preview";
 
 export function CreateCaseForm() {
   const [pending, setPending] = useState(false);
@@ -22,6 +25,7 @@ export function CreateCaseForm() {
   const [source, setSource] = useState("");
   const [sourceDetail, setSourceDetail] = useState("");
   const [department, setDepartment] = useState("");
+  const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
 
   const subtypeOptions = complaintCategory
     ? COMPLAINT_CATEGORIES[complaintCategory] ?? []
@@ -37,6 +41,10 @@ export function CreateCaseForm() {
     setPending(true);
     setError(null);
     const formData = new FormData(e.currentTarget);
+    appendAttachmentsToFormData(
+      formData,
+      pendingAttachments.map((item) => item.file)
+    );
     try {
       const result = await createCaseAction(formData);
       if (result?.error) {
@@ -184,17 +192,12 @@ export function CreateCaseForm() {
         />
       </div>
 
-      <div>
-        <label className={labelClass}>附件上傳</label>
-        <input
-          type="file"
-          name="attachments"
-          multiple
-          accept="image/*,.pdf,.doc,.docx"
-          className="block w-full min-h-11 text-sm text-slate-600 file:mr-4 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100"
-        />
-        <p className="mt-1 text-xs text-slate-500">支援圖片、PDF、Word，可多選（選填）</p>
-      </div>
+      <LocalAttachmentPicker
+        labelClass={labelClass}
+        files={pendingAttachments}
+        onFilesChange={setPendingAttachments}
+        inputId="create-attachments"
+      />
 
       <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end sm:pt-6">
         <Link href="/cases" className={btnSecondary}>

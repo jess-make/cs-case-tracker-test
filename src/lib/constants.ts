@@ -40,6 +40,8 @@ export const ROLE_LABELS: Record<UserRole, string> = {
   user: "一般使用者",
 };
 
+export const USER_ROLES: UserRole[] = ["admin", "manager", "user"];
+
 export const COMPLAINT_SOURCE_TYPES = ["綠途", "通路"] as const;
 
 /** 客訴來源 → 客訴管道（二層選單） */
@@ -85,6 +87,9 @@ export const DEPARTMENTS = [
   "行銷部",
   "開發部",
 ] as const;
+
+/** 客服部（案件入口，可查看全部案件） */
+export const CS_DEPARTMENT = "業務部-客服";
 
 /** 狀態流轉順序（新案件 → 處理中 → 已回覆 → 客服確認中 → 已結案） */
 export {

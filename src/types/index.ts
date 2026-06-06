@@ -113,6 +113,14 @@ export interface UpdateCaseInput {
   ecommerce_order_no: string | null;
 }
 
+export interface UpdateUserInput {
+  name: string;
+  role: UserRole;
+  department: string | null;
+  line_user_id: string | null;
+  is_active: boolean;
+}
+
 export interface CaseFilters {
   status?: CaseStatus | "";
   assignee_id?: string | "";

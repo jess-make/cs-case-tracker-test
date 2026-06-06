@@ -5,7 +5,7 @@ import { canCreateCase } from "@/lib/auth/permissions";
 
 export default async function NewCasePage() {
   const user = await requireUser();
-  if (!canCreateCase(user.role)) {
+  if (!canCreateCase(user)) {
     redirect("/cases");
   }
   return (

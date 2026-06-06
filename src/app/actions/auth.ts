@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { DEACTIVATED_ACCOUNT_MESSAGE } from "@/lib/auth/messages";
+import { fetchUserIsActive } from "@/lib/auth/inactive-account";
 
 export async function signInAction(
   _prev: { error?: string } | null,
@@ -16,10 +18,18 @@ export async function signInAction(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: "登入失敗，請確認帳號與密碼" };
+  }
+
+  if (data.user) {
+    const isActive = await fetchUserIsActive(data.user.id);
+    if (isActive === false) {
+      await supabase.auth.signOut();
+      return { error: DEACTIVATED_ACCOUNT_MESSAGE };
+    }
   }
 
   revalidatePath("/", "layout");

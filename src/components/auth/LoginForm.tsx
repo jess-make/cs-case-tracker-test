@@ -4,14 +4,19 @@ import { useActionState } from "react";
 import { Loader2 } from "lucide-react";
 import { signInAction } from "@/app/actions/auth";
 
-export function LoginForm() {
+interface LoginFormProps {
+  initialError?: string;
+}
+
+export function LoginForm({ initialError }: LoginFormProps) {
   const [state, formAction, pending] = useActionState(signInAction, null);
+  const errorMessage = state?.error ?? initialError;
 
   return (
     <form action={formAction} className="space-y-5">
-      {state?.error && (
+      {errorMessage && (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">
-          {state.error}
+          {errorMessage}
         </p>
       )}
 

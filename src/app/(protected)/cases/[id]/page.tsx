@@ -6,7 +6,7 @@ import {
   getCaseAttachments,
   legacyAttachmentsFromUrls,
 } from "@/lib/data/attachments";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
 import { canUpdateCase } from "@/lib/auth/permissions";
 
 interface PageProps {
@@ -15,15 +15,15 @@ interface PageProps {
 
 export default async function CaseDetailPage({ params }: PageProps) {
   const { id } = await params;
+  const currentUser = await requireUser();
 
-  const [caseData, logsResult, currentUser, caseAttachments] = await Promise.all([
-    getCaseById(id),
+  const [caseData, logsResult, caseAttachments] = await Promise.all([
+    getCaseById(id, currentUser),
     getCaseLogs(id).catch(() => [] as Awaited<ReturnType<typeof getCaseLogs>>),
-    getCurrentUser(),
     getCaseAttachments(id).catch(() => []),
   ]);
 
-  const canEdit = currentUser ? canUpdateCase(currentUser.role) : false;
+  const canEdit = caseData ? canUpdateCase(currentUser, caseData) : false;
 
   const logs = logsResult ?? [];
   const attachments =

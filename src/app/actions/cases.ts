@@ -20,9 +20,8 @@ import {
   logAttachmentsDeleted,
 } from "@/lib/data/case-logs";
 import {
-  requireActor,
   requireCreatePermission,
-  requireUpdatePermission,
+  requireCaseUpdatePermission,
 } from "@/lib/auth/actor";
 import {
   notifyCaseCompleted,
@@ -100,7 +99,7 @@ export async function createCaseAction(
 
 export async function updateCaseAction(caseId: string, formData: FormData) {
   try {
-    const actor = await requireUpdatePermission();
+    const { user: actor } = await requireCaseUpdatePermission(caseId);
     const actorId = actor.id;
     const input = parseCaseFormData(formData);
     const attachmentFiles = getAttachmentFilesFromFormData(formData);
@@ -151,9 +150,9 @@ export async function updateCaseAction(caseId: string, formData: FormData) {
 
 export async function advanceCaseStatusAction(caseId: string) {
   const { getCaseById } = await import("@/lib/data/cases");
-  const actor = await requireActor();
+  const { user: actor } = await requireCaseUpdatePermission(caseId);
   const actorId = actor.id;
-  const current = await getCaseById(caseId);
+  const current = await getCaseById(caseId, actor);
   if (!current) return { error: "案件不存在" };
 
   const next = getNextStatus(current.status);
@@ -167,7 +166,7 @@ export async function advanceCaseStatusAction(caseId: string) {
 }
 
 export async function closeCaseAction(caseId: string) {
-  const actor = await requireActor();
+  const { user: actor } = await requireCaseUpdatePermission(caseId);
   const actorId = actor.id;
   await updateCaseStatus(caseId, "closed", actorId);
   revalidatePath(`/cases/${caseId}`);
@@ -179,7 +178,7 @@ export async function closeCaseAction(caseId: string) {
 export async function addReplyAction(caseId: string, content: string) {
   if (!content.trim()) return { error: "請輸入回覆內容" };
 
-  const actor = await requireActor();
+  const { user: actor } = await requireCaseUpdatePermission(caseId);
   const actorId = actor.id;
   const result = await addCaseReply(caseId, actorId, content);
 
@@ -189,18 +188,18 @@ export async function addReplyAction(caseId: string, content: string) {
 
   if (isLineConfigured()) {
     const { getCaseById, getUsers } = await import("@/lib/data/cases");
-    const caseData = await getCaseById(caseId);
+    const caseData = await getCaseById(caseId, actor);
     const users = await getUsers();
     const notifyUser =
       users.find((u) => u.role === "user" && u.line_user_id) ??
       users.find((u) => u.line_user_id);
-    const actor = actorId ? users.find((u) => u.id === actorId) : null;
+    const actorUser = users.find((u) => u.id === actorId);
 
     if (caseData && notifyUser?.line_user_id) {
       await notifyCaseCompleted({
         caseNumber: caseData.case_number,
         csLineUserId: notifyUser.line_user_id,
-        handlerName: actor?.name ?? "處理人",
+        handlerName: actorUser?.name ?? actor.name ?? "處理人",
       });
     }
   }
@@ -213,7 +212,7 @@ export async function addReplyAction(caseId: string, content: string) {
 }
 
 export async function confirmCaseAction(caseId: string) {
-  const actor = await requireActor();
+  const { user: actor } = await requireCaseUpdatePermission(caseId);
   const actorId = actor.id;
   await updateCaseStatus(caseId, "cs_confirming", actorId);
   revalidatePath(`/cases/${caseId}`);

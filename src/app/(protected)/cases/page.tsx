@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { CaseTable } from "@/components/cases/CaseTable";
 import { CaseFilters } from "@/components/cases/CaseFilters";
 import { getCases, getAssigneeFilterUsers } from "@/lib/data/cases";
-import { getCurrentUser } from "@/lib/auth/session";
+import { requireUser } from "@/lib/auth/session";
 import { canCreateCase } from "@/lib/auth/permissions";
 import { Suspense } from "react";
 
@@ -22,11 +22,11 @@ interface PageProps {
 
 export default async function CasesPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const currentUser = await getCurrentUser();
-  const showCreate = currentUser ? canCreateCase(currentUser.role) : false;
+  const currentUser = await requireUser();
+  const showCreate = canCreateCase(currentUser);
 
   const [cases, handlers] = await Promise.all([
-    getCases({
+    getCases(currentUser, {
       status: params.status,
       assignee_id: params.assignee_id,
       complaint_type: params.complaint_type,

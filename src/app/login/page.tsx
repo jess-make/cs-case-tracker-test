@@ -1,8 +1,20 @@
 import Image from "next/image";
 import { APP_NAME, APP_SUBTITLE } from "@/lib/constants";
 import { LoginForm } from "@/components/auth/LoginForm";
+import {
+  DEACTIVATED_ACCOUNT_MESSAGE,
+  DEACTIVATED_LOGIN_REASON,
+} from "@/lib/auth/messages";
 
-export default function LoginPage() {
+interface LoginPageProps {
+  searchParams: Promise<{ reason?: string }>;
+}
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const params = await searchParams;
+  const deactivatedMessage =
+    params.reason === DEACTIVATED_LOGIN_REASON ? DEACTIVATED_ACCOUNT_MESSAGE : undefined;
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
       <div className="w-full max-w-md">
@@ -22,7 +34,7 @@ export default function LoginPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
-          <LoginForm />
+          <LoginForm initialError={deactivatedMessage} />
         </div>
       </div>
     </div>

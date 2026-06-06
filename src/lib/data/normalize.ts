@@ -8,16 +8,21 @@ function coerceEmbeddedUser(raw: unknown): User | null {
   if (!row || typeof row !== "object") return null;
   const u = row as Record<string, unknown>;
   if (!u.id && !u.name) return null;
+  return normalizeUser(u);
+}
 
+/** 將 Supabase users 列正規化 */
+export function normalizeUser(raw: Record<string, unknown>): User {
   return {
-    id: String(u.id ?? ""),
-    email: String(u.email ?? ""),
-    name: String(u.name ?? ""),
-    role: normalizeUserRole(u.role as string),
-    department: (u.department as string | null) ?? null,
-    line_user_id: (u.line_user_id as string | null) ?? null,
-    created_at: String(u.created_at ?? ""),
-    updated_at: String(u.updated_at ?? ""),
+    id: String(raw.id ?? ""),
+    email: String(raw.email ?? ""),
+    name: String(raw.name ?? ""),
+    role: normalizeUserRole(raw.role as string),
+    department: (raw.department as string | null) ?? null,
+    line_user_id: (raw.line_user_id as string | null) ?? null,
+    is_active: raw.is_active !== false,
+    created_at: String(raw.created_at ?? ""),
+    updated_at: String(raw.updated_at ?? ""),
   };
 }
 

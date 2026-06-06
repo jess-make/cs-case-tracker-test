@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeUserRole } from "@/lib/auth/roles";
+import { fetchUserIsActive, signOutDeactivatedUser } from "@/lib/auth/inactive-account";
 import type { User, UserRole } from "@/types";
 
 export interface SessionUser {
@@ -50,8 +51,20 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   return mapProfile(row as User);
 }
 
-/** 未登入則導向登入頁 */
+/** 未登入或停用帳號則導向登入頁（停用時自動 signOut） */
 export async function requireUser(): Promise<SessionUser> {
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) redirect("/login");
+
+  const isActive = await fetchUserIsActive(authUser.id);
+  if (isActive === false) {
+    await signOutDeactivatedUser();
+  }
+
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   return user;

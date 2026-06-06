@@ -2,6 +2,12 @@ import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { resolveDateRange, toCreatedAtBounds } from "@/lib/date-range";
 import { normalizeCase, normalizeCaseLog } from "@/lib/data/normalize";
+import {
+  canViewCase,
+  getCaseVisibilityFilter,
+  NO_ACCESS_CASE_ID,
+} from "@/lib/auth/case-access";
+import type { SessionUser } from "@/lib/auth/session";
 import type {
   Case,
   CaseLog,
@@ -134,7 +140,9 @@ export async function getAssigneeFilterUsers(): Promise<User[]> {
 /** @deprecated 請改用 getAssigneeFilterUsers */
 export const getHandlers = getAssigneeFilterUsers;
 
-export async function getCases(filters?: {
+export async function getCases(
+  viewer: SessionUser,
+  filters?: {
   status?: string;
   assignee_id?: string;
   complaint_type?: string;
@@ -144,12 +152,33 @@ export async function getCases(filters?: {
   date_from?: string;
   date_to?: string;
   filterByDate?: boolean;
-}): Promise<Case[]> {
+  }
+): Promise<Case[]> {
   const client = await supabase();
   let query = client
     .from("cases")
     .select(CASE_SELECT_WITH_USERS)
     .order("created_at", { ascending: false });
+
+  const visibility = getCaseVisibilityFilter(viewer);
+  switch (visibility.type) {
+    case "none":
+      query = query.eq("id", NO_ACCESS_CASE_ID);
+      break;
+    case "department":
+      query = query.eq("department", visibility.department);
+      break;
+    case "assignee":
+      query = query.eq("assignee_id", visibility.userId);
+      break;
+    case "assignee_or_department":
+      query = query.or(
+        `assignee_id.eq.${visibility.userId},department.eq.${visibility.department}`
+      );
+      break;
+    case "all":
+      break;
+  }
 
   if (filters?.status) {
     const status =
@@ -188,7 +217,10 @@ export async function getCases(filters?: {
   return enrichCases(rows);
 }
 
-export async function getCaseById(id: string): Promise<Case | null> {
+export async function getCaseById(
+  id: string,
+  viewer?: SessionUser
+): Promise<Case | null> {
   try {
     const { data, error } = await (await supabase())
       .from("cases")
@@ -205,6 +237,11 @@ export async function getCaseById(id: string): Promise<Case | null> {
     const [enriched] = await enrichCases([
       normalizeCase(data as Record<string, unknown>),
     ]);
+
+    if (viewer && !canViewCase(viewer, enriched)) {
+      return null;
+    }
+
     return enriched;
   } catch (err) {
     console.error("[getCaseById]", err);
@@ -235,14 +272,9 @@ export async function getCaseLogs(caseId: string): Promise<CaseLog[]> {
   }
 }
 
-export async function getDashboardStats(): Promise<DashboardStats> {
-  const { data, error } = await (await supabase())
-    .from("cases")
-    .select("status");
+export async function getDashboardStats(viewer: SessionUser): Promise<DashboardStats> {
+  const cases = await getCases(viewer);
 
-  if (error) throw error;
-
-  const cases = data ?? [];
   return {
     total: cases.length,
     newCases: cases.filter((c) => normalizeCaseStatus(c.status) === "new").length,

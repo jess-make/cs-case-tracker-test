@@ -2,17 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PlusCircle, List, X, LogOut } from "lucide-react";
+import { LayoutDashboard, PlusCircle, List, Users, X, LogOut } from "lucide-react";
 import { BrandHeader } from "./BrandLogo";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
-import { canCreateCase } from "@/lib/auth/permissions";
+import { canCreateCase, canManageUsers } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 
 const baseNavItems = [
   { href: "/", label: "案件總覽", icon: LayoutDashboard },
   { href: "/cases/new", label: "建立案件", icon: PlusCircle, requiresCreate: true },
   { href: "/cases", label: "案件列表", icon: List },
+  { href: "/users", label: "使用者管理", icon: Users, requiresAdmin: true },
 ] as const;
 
 interface SidebarProps {
@@ -23,9 +24,15 @@ interface SidebarProps {
 
 export function Sidebar({ open = false, onClose, user }: SidebarProps) {
   const pathname = usePathname();
-  const navItems = baseNavItems.filter(
-    (item) => !("requiresCreate" in item) || canCreateCase(user.role)
-  );
+  const navItems = baseNavItems.filter((item) => {
+    if ("requiresCreate" in item && item.requiresCreate) {
+      return canCreateCase(user);
+    }
+    if ("requiresAdmin" in item && item.requiresAdmin) {
+      return canManageUsers(user.role);
+    }
+    return true;
+  });
 
   function handleNavClick() {
     onClose?.();

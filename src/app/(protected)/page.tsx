@@ -3,11 +3,13 @@ import { FolderOpen, FilePlus, Loader, CheckCircle2, Clock } from "lucide-react"
 import { StatCard } from "@/components/ui/StatCard";
 import { CaseTable } from "@/components/cases/CaseTable";
 import { getDashboardStats, getCases } from "@/lib/data/cases";
+import { requireUser } from "@/lib/auth/session";
 
 export default async function DashboardPage() {
+  const user = await requireUser();
   const [stats, allCases] = await Promise.all([
-    getDashboardStats(),
-    getCases(),
+    getDashboardStats(user),
+    getCases(user),
   ]);
 
   const recentCases = allCases.slice(0, 5);

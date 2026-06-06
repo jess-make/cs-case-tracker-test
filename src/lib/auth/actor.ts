@@ -1,6 +1,13 @@
 import { requireUser } from "@/lib/auth/session";
 import { canCreateCase, canManageUsers } from "@/lib/auth/permissions";
-import { canViewCase } from "@/lib/auth/case-access";
+import {
+  canViewCase,
+  canEditCase,
+  canReplyCase,
+  canManageAttachments,
+  canDeleteAttachment,
+  canAdvanceWorkflow,
+} from "@/lib/auth/case-access";
 import { getCaseById } from "@/lib/data/cases";
 import type { SessionUser } from "@/lib/auth/session";
 import type { Case } from "@/types";
@@ -28,9 +35,44 @@ export async function requireCaseViewPermission(
   return { user, caseData };
 }
 
-export async function requireCaseUpdatePermission(
-  caseId: string
+async function requireCaseCapability(
+  caseId: string,
+  check: (user: SessionUser, caseData: Case) => boolean,
+  errorMessage: string
 ): Promise<{ user: SessionUser; caseData: Case }> {
+  const ctx = await requireCaseViewPermission(caseId);
+  if (!check(ctx.user, ctx.caseData)) {
+    throw new Error(errorMessage);
+  }
+  return ctx;
+}
+
+export async function requireCaseEditPermission(caseId: string) {
+  return requireCaseCapability(caseId, canEditCase, "無權限編輯案件");
+}
+
+export async function requireCaseReplyPermission(caseId: string) {
+  return requireCaseCapability(caseId, canReplyCase, "無權限回覆案件");
+}
+
+export async function requireCaseAttachmentUploadPermission(caseId: string) {
+  return requireCaseCapability(
+    caseId,
+    canManageAttachments,
+    "無權限上傳附件"
+  );
+}
+
+export async function requireCaseWorkflowPermission(caseId: string) {
+  return requireCaseCapability(
+    caseId,
+    canAdvanceWorkflow,
+    "無權限變更案件流程"
+  );
+}
+
+/** @deprecated 請改用細分權限函式 */
+export async function requireCaseUpdatePermission(caseId: string) {
   return requireCaseViewPermission(caseId);
 }
 
@@ -42,4 +84,11 @@ export async function requireManageUsersPermission(): Promise<SessionUser> {
   return user;
 }
 
-export { canViewCase };
+export {
+  canViewCase,
+  canEditCase,
+  canReplyCase,
+  canManageAttachments,
+  canDeleteAttachment,
+  canAdvanceWorkflow,
+};

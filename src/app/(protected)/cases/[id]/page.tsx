@@ -7,7 +7,7 @@ import {
   legacyAttachmentsFromUrls,
 } from "@/lib/data/attachments";
 import { requireUser } from "@/lib/auth/session";
-import { canUpdateCase } from "@/lib/auth/permissions";
+import { getCasePermissions } from "@/lib/auth/permissions";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -22,8 +22,6 @@ export default async function CaseDetailPage({ params }: PageProps) {
     getCaseLogs(id).catch(() => [] as Awaited<ReturnType<typeof getCaseLogs>>),
     getCaseAttachments(id).catch(() => []),
   ]);
-
-  const canEdit = caseData ? canUpdateCase(currentUser, caseData) : false;
 
   const logs = logsResult ?? [];
   const attachments =
@@ -53,6 +51,8 @@ export default async function CaseDetailPage({ params }: PageProps) {
     );
   }
 
+  const permissions = getCasePermissions(currentUser, caseData);
+
   return (
     <div>
       <Link
@@ -67,7 +67,7 @@ export default async function CaseDetailPage({ params }: PageProps) {
         caseData={caseData}
         logs={logs}
         attachments={attachments}
-        canEdit={canEdit}
+        permissions={permissions}
       />
     </div>
   );

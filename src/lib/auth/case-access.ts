@@ -67,3 +67,60 @@ export function getCaseVisibilityFilter(user: SessionUser): CaseVisibilityFilter
 }
 
 export { NO_ACCESS_CASE_ID };
+
+export interface CasePermissions {
+  canEditCase: boolean;
+  canReplyCase: boolean;
+  canManageAttachments: boolean;
+  canDeleteAttachment: boolean;
+  canAdvanceWorkflow: boolean;
+}
+
+/** admin 或客服部：完整案件操作權限 */
+export function hasFullCaseControl(user: SessionUser): boolean {
+  return hasUnrestrictedCaseAccess(user);
+}
+
+export function getCasePermissions(
+  user: SessionUser,
+  caseData: Case
+): CasePermissions {
+  if (!canViewCase(user, caseData)) {
+    return {
+      canEditCase: false,
+      canReplyCase: false,
+      canManageAttachments: false,
+      canDeleteAttachment: false,
+      canAdvanceWorkflow: false,
+    };
+  }
+
+  const full = hasFullCaseControl(user);
+  return {
+    canEditCase: full,
+    canReplyCase: true,
+    canManageAttachments: true,
+    canDeleteAttachment: full,
+    canAdvanceWorkflow: full,
+  };
+}
+
+export function canEditCase(user: SessionUser, caseData: Case): boolean {
+  return getCasePermissions(user, caseData).canEditCase;
+}
+
+export function canReplyCase(user: SessionUser, caseData: Case): boolean {
+  return getCasePermissions(user, caseData).canReplyCase;
+}
+
+export function canManageAttachments(user: SessionUser, caseData: Case): boolean {
+  return getCasePermissions(user, caseData).canManageAttachments;
+}
+
+export function canDeleteAttachment(user: SessionUser, caseData: Case): boolean {
+  return getCasePermissions(user, caseData).canDeleteAttachment;
+}
+
+export function canAdvanceWorkflow(user: SessionUser, caseData: Case): boolean {
+  return getCasePermissions(user, caseData).canAdvanceWorkflow;
+}

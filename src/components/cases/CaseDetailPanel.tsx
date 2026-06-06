@@ -22,19 +22,30 @@ import {
 import { Loader2, User, Building2, Pencil } from "lucide-react";
 import { CaseEditForm } from "@/components/cases/CaseEditForm";
 import { CaseAttachmentsSection } from "@/components/cases/CaseAttachmentsSection";
+import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
+import type { CasePermissions } from "@/lib/auth/permissions";
+
+const REPLY_REQUIRED_MESSAGE = "請輸入處理說明後再送出。";
+import {
+  type PendingAttachment,
+  appendAttachmentsToFormData,
+  revokeAllPendingAttachments,
+} from "@/lib/attachment-preview";
 
 export function CaseDetailPanel({
   caseData,
   logs = [],
   attachments = [],
-  canEdit = true,
+  permissions,
 }: {
   caseData: Case;
   logs?: CaseLog[] | null;
   attachments?: CaseAttachment[];
-  canEdit?: boolean;
+  permissions: CasePermissions;
 }) {
   const [reply, setReply] = useState("");
+  const [replyError, setReplyError] = useState<string | null>(null);
+  const [replyAttachments, setReplyAttachments] = useState<PendingAttachment[]>([]);
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -59,9 +70,28 @@ export function CaseDetailPanel({
 
   function handleReply(e: React.FormEvent) {
     e.preventDefault();
+    if (!reply.trim()) {
+      setReplyError(REPLY_REQUIRED_MESSAGE);
+      return;
+    }
+
+    setReplyError(null);
+    const formData = new FormData();
+    formData.set("content", reply);
+    appendAttachmentsToFormData(
+      formData,
+      replyAttachments.map((item) => item.file)
+    );
+
     startTransition(async () => {
-      await addReplyAction(caseData.id, reply);
+      const result = await addReplyAction(caseData.id, formData);
+      if (result?.error) {
+        setReplyError(result.error);
+        return;
+      }
       setReply("");
+      revokeAllPendingAttachments(replyAttachments);
+      setReplyAttachments([]);
       router.refresh();
     });
   }
@@ -78,7 +108,7 @@ export function CaseDetailPanel({
             <div className="flex flex-wrap items-center gap-2">
               <StatusBadge status={displayStatus} />
               <UrgencyBadge urgency={caseData.urgency} />
-              {!editing && canEdit && (
+              {!editing && permissions.canEditCase && (
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
@@ -95,6 +125,7 @@ export function CaseDetailPanel({
             <CaseEditForm
               caseData={caseData}
               attachments={attachments}
+              canDeleteAttachment={permissions.canDeleteAttachment}
               onCancel={() => setEditing(false)}
               onSaved={() => {
                 setEditing(false);
@@ -151,21 +182,54 @@ export function CaseDetailPanel({
           )}
         </section>
 
+        {permissions.canReplyCase && (
         <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h3 className="mb-4 text-base font-semibold text-slate-900">處理回覆</h3>
           {displayStatus !== "closed" && (
             <form onSubmit={handleReply} className="mb-6">
+              {replyError && (
+                <p
+                  className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+                  role="alert"
+                >
+                  {replyError}
+                </p>
+              )}
+              <label
+                htmlFor={`reply-content-${caseData.id}`}
+                className="mb-1 block text-sm font-medium text-slate-700"
+              >
+                處理回覆 *
+              </label>
               <textarea
+                id={`reply-content-${caseData.id}`}
+                name="content"
                 value={reply}
-                onChange={(e) => setReply(e.target.value)}
+                onChange={(e) => {
+                  setReply(e.target.value);
+                  if (replyError) setReplyError(null);
+                }}
                 rows={3}
+                required
                 className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                placeholder="輸入處理回覆或改善說明..."
+                placeholder="請輸入處理回覆或改善說明（必填）"
               />
+              {permissions.canManageAttachments && (
+                <div className="mt-3">
+                  <LocalAttachmentPicker
+                    label="附加檔案"
+                    labelClass="mb-1 block text-sm font-medium text-slate-700"
+                    hint="選填。支援圖片、PDF、Word、Excel，可多選，單檔最大 10MB。"
+                    files={replyAttachments}
+                    onFilesChange={setReplyAttachments}
+                    inputId={`reply-attachments-${caseData.id}`}
+                  />
+                </div>
+              )}
               <button
                 type="submit"
-                disabled={pending || !reply.trim()}
-                className="mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+                disabled={pending}
+                className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
               >
                 {pending && <Loader2 className="h-4 w-4 animate-spin" />}
                 送出回覆
@@ -207,11 +271,12 @@ export function CaseDetailPanel({
             )}
           </div>
         </section>
+        )}
       </div>
 
       <div className="min-w-0 space-y-4">
         <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-          <h3 className="mb-4 text-base font-semibold text-slate-900">案件操作</h3>
+          <h3 className="mb-4 text-base font-semibold text-slate-900">案件流程</h3>
 
           <div className="mb-4 space-y-2">
             {CASE_FLOW_STEPS.map((s) => (
@@ -235,7 +300,7 @@ export function CaseDetailPanel({
             ))}
           </div>
 
-          {displayStatus !== "closed" && (
+          {permissions.canAdvanceWorkflow && displayStatus !== "closed" && (
             <div className="space-y-2">
               {nextStatus && (
                 <button

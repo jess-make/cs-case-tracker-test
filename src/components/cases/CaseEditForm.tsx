@@ -22,6 +22,7 @@ import type { PendingAttachment } from "@/lib/attachment-preview";
 interface CaseEditFormProps {
   caseData: Case;
   attachments?: CaseAttachment[];
+  canDeleteAttachment?: boolean;
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -29,6 +30,7 @@ interface CaseEditFormProps {
 export function CaseEditForm({
   caseData,
   attachments = [],
+  canDeleteAttachment = true,
   onCancel,
   onSaved,
 }: CaseEditFormProps) {
@@ -220,6 +222,7 @@ export function CaseEditForm({
         labelClass={labelClass}
         pendingFiles={pendingAttachments}
         onPendingFilesChange={setPendingAttachments}
+        allowDelete={canDeleteAttachment}
       />
 
       <div className="flex flex-col-reverse gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">

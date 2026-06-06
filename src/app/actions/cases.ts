@@ -21,8 +21,14 @@ import {
 } from "@/lib/data/case-logs";
 import {
   requireCreatePermission,
-  requireCaseUpdatePermission,
+  requireCaseEditPermission,
+  requireCaseReplyPermission,
+  requireCaseAttachmentUploadPermission,
+  requireCaseWorkflowPermission,
 } from "@/lib/auth/actor";
+import {
+  canDeleteAttachment,
+} from "@/lib/auth/case-access";
 import {
   notifyCaseCompleted,
   isLineConfigured,
@@ -99,13 +105,20 @@ export async function createCaseAction(
 
 export async function updateCaseAction(caseId: string, formData: FormData) {
   try {
-    const { user: actor } = await requireCaseUpdatePermission(caseId);
+    const { user: actor, caseData } = await requireCaseEditPermission(caseId);
     const actorId = actor.id;
     const input = parseCaseFormData(formData);
     const attachmentFiles = getAttachmentFilesFromFormData(formData);
     const removeAttachmentIds = formData.getAll(
       "remove_attachment_ids"
     ) as string[];
+
+    if (
+      removeAttachmentIds.length > 0 &&
+      !canDeleteAttachment(actor, caseData)
+    ) {
+      return { error: "無權限刪除附件" };
+    }
 
     const result = await updateCase(caseId, input, actorId);
     if (result.error) return { error: result.error };
@@ -148,9 +161,48 @@ export async function updateCaseAction(caseId: string, formData: FormData) {
   }
 }
 
+export async function uploadCaseAttachmentsAction(
+  caseId: string,
+  formData: FormData
+) {
+  try {
+    const { user: actor } = await requireCaseAttachmentUploadPermission(caseId);
+    const actorId = actor.id;
+    const attachmentFiles = getAttachmentFilesFromFormData(formData);
+
+    if (attachmentFiles.length === 0) {
+      return { error: "請選擇要上傳的附件" };
+    }
+
+    const uploaded = await uploadAndRecordCaseAttachments(
+      caseId,
+      attachmentFiles,
+      actorId
+    );
+    const uploadedNames = uploaded.map((a) => a.file_name);
+    if (uploadedNames.length > 0) {
+      await logAttachmentsAdded(caseId, actorId, uploadedNames);
+    }
+
+    revalidatePath(`/cases/${caseId}`);
+    revalidatePath("/");
+    revalidatePath("/cases");
+    return { success: true };
+  } catch (err) {
+    if (err instanceof AttachmentError) {
+      return { error: err.message };
+    }
+    console.error("[uploadCaseAttachmentsAction]", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "上傳附件失敗，請稍後再試",
+    };
+  }
+}
+
 export async function advanceCaseStatusAction(caseId: string) {
   const { getCaseById } = await import("@/lib/data/cases");
-  const { user: actor } = await requireCaseUpdatePermission(caseId);
+  const { user: actor } = await requireCaseWorkflowPermission(caseId);
   const actorId = actor.id;
   const current = await getCaseById(caseId, actor);
   if (!current) return { error: "案件不存在" };
@@ -166,7 +218,7 @@ export async function advanceCaseStatusAction(caseId: string) {
 }
 
 export async function closeCaseAction(caseId: string) {
-  const { user: actor } = await requireCaseUpdatePermission(caseId);
+  const { user: actor } = await requireCaseWorkflowPermission(caseId);
   const actorId = actor.id;
   await updateCaseStatus(caseId, "closed", actorId);
   revalidatePath(`/cases/${caseId}`);
@@ -175,44 +227,75 @@ export async function closeCaseAction(caseId: string) {
   return { success: true };
 }
 
-export async function addReplyAction(caseId: string, content: string) {
-  if (!content.trim()) return { error: "請輸入回覆內容" };
+export async function addReplyAction(caseId: string, formData: FormData) {
+  const content = (formData.get("content") as string)?.trim() ?? "";
+  if (!content) return { error: "請輸入處理說明後再送出。" };
 
-  const { user: actor } = await requireCaseUpdatePermission(caseId);
-  const actorId = actor.id;
-  const result = await addCaseReply(caseId, actorId, content);
+  try {
+    const { user: actor } = await requireCaseReplyPermission(caseId);
+    const actorId = actor.id;
+    const attachmentFiles = getAttachmentFilesFromFormData(formData);
 
-  if (!result.ok) {
-    return { error: "更新案件狀態失敗，請稍後再試" };
-  }
-
-  if (isLineConfigured()) {
-    const { getCaseById, getUsers } = await import("@/lib/data/cases");
-    const caseData = await getCaseById(caseId, actor);
-    const users = await getUsers();
-    const notifyUser =
-      users.find((u) => u.role === "user" && u.line_user_id) ??
-      users.find((u) => u.line_user_id);
-    const actorUser = users.find((u) => u.id === actorId);
-
-    if (caseData && notifyUser?.line_user_id) {
-      await notifyCaseCompleted({
-        caseNumber: caseData.case_number,
-        csLineUserId: notifyUser.line_user_id,
-        handlerName: actorUser?.name ?? actor.name ?? "處理人",
-      });
+    if (attachmentFiles.length > 0) {
+      await requireCaseAttachmentUploadPermission(caseId);
+      const uploaded = await uploadAndRecordCaseAttachments(
+        caseId,
+        attachmentFiles,
+        actorId
+      );
+      const uploadedNames = uploaded.map((a) => a.file_name);
+      if (uploadedNames.length > 0) {
+        await logAttachmentsAdded(caseId, actorId, uploadedNames);
+      }
     }
-  }
 
-  revalidatePath(`/cases/${caseId}`);
-  return {
-    success: true,
-    warning: result.logSaved ? undefined : "回覆已儲存至案件，但處理紀錄寫入失敗",
-  };
+    const result = await addCaseReply(caseId, actorId, content);
+
+    if (!result.ok) {
+      return { error: "更新案件狀態失敗，請稍後再試" };
+    }
+
+    if (isLineConfigured()) {
+      const { getCaseById, getUsers } = await import("@/lib/data/cases");
+      const caseData = await getCaseById(caseId, actor);
+      const users = await getUsers();
+      const notifyUser =
+        users.find((u) => u.role === "user" && u.line_user_id) ??
+        users.find((u) => u.line_user_id);
+      const actorUser = users.find((u) => u.id === actorId);
+
+      if (caseData && notifyUser?.line_user_id) {
+        await notifyCaseCompleted({
+          caseNumber: caseData.case_number,
+          csLineUserId: notifyUser.line_user_id,
+          handlerName: actorUser?.name ?? actor.name ?? "處理人",
+        });
+      }
+    }
+
+    revalidatePath(`/cases/${caseId}`);
+    revalidatePath("/");
+    revalidatePath("/cases");
+    return {
+      success: true,
+      warning: result.logSaved
+        ? undefined
+        : "回覆已儲存至案件，但處理紀錄寫入失敗",
+    };
+  } catch (err) {
+    if (err instanceof AttachmentError) {
+      return { error: err.message };
+    }
+    console.error("[addReplyAction]", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "送出回覆失敗，請稍後再試",
+    };
+  }
 }
 
 export async function confirmCaseAction(caseId: string) {
-  const { user: actor } = await requireCaseUpdatePermission(caseId);
+  const { user: actor } = await requireCaseWorkflowPermission(caseId);
   const actorId = actor.id;
   await updateCaseStatus(caseId, "cs_confirming", actorId);
   revalidatePath(`/cases/${caseId}`);

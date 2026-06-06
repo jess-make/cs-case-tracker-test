@@ -19,11 +19,13 @@ export function CaseAttachmentEditFields({
   labelClass,
   pendingFiles,
   onPendingFilesChange,
+  allowDelete = true,
 }: {
   attachments: CaseAttachment[];
   labelClass: string;
   pendingFiles: PendingAttachment[];
   onPendingFilesChange: (files: PendingAttachment[]) => void;
+  allowDelete?: boolean;
 }) {
   const [removedIds, setRemovedIds] = useState<Set<string>>(() => new Set());
 
@@ -73,7 +75,7 @@ export function CaseAttachmentEditFields({
                   </span>
                 )}
               </div>
-              {!isLegacyAttachment(att.id) && (
+              {allowDelete && !isLegacyAttachment(att.id) && (
                 <button
                   type="button"
                   onClick={() => markRemoved(att.id)}

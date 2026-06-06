@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { normalizeUserRole } from "@/lib/auth/roles";
 import type { User, UserRole } from "@/types";
 
 export interface SessionUser {
@@ -16,7 +17,7 @@ function mapProfile(row: User): SessionUser {
     id: row.id,
     email: row.email,
     name: row.name,
-    role: row.role,
+    role: normalizeUserRole(row.role),
     department: row.department,
     line_user_id: row.line_user_id,
   };

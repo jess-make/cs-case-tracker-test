@@ -1,5 +1,6 @@
-import type { Case, CaseLog, CaseStatus, UrgencyLevel, User } from "@/types";
+import type { Case, CaseLog, UrgencyLevel, User } from "@/types";
 import { normalizeCaseStatus } from "@/lib/case-status";
+import { normalizeUserRole } from "@/lib/auth/roles";
 
 function coerceEmbeddedUser(raw: unknown): User | null {
   if (raw == null) return null;
@@ -12,7 +13,7 @@ function coerceEmbeddedUser(raw: unknown): User | null {
     id: String(u.id ?? ""),
     email: String(u.email ?? ""),
     name: String(u.name ?? ""),
-    role: (u.role as User["role"]) ?? "cs",
+    role: normalizeUserRole(u.role as string),
     department: (u.department as string | null) ?? null,
     line_user_id: (u.line_user_id as string | null) ?? null,
     created_at: String(u.created_at ?? ""),

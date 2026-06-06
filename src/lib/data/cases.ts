@@ -91,17 +91,17 @@ async function enrichLogs(logs: CaseLog[]): Promise<CaseLog[]> {
   );
 }
 
-/** 取得預設操作者（第一筆客服，否則第一筆使用者） */
+/** 取得預設操作者（第一筆一般使用者，否則第一筆使用者） */
 export async function getDefaultActorUserId(): Promise<string | null> {
   const client = await supabase();
 
-  const { data: csUser } = await client
+  const { data: defaultUser } = await client
     .from("users")
     .select("id")
-    .eq("role", "cs")
+    .eq("role", "user")
     .limit(1)
     .maybeSingle();
-  if (csUser?.id) return csUser.id;
+  if (defaultUser?.id) return defaultUser.id;
 
   const { data: anyUser } = await client
     .from("users")
@@ -120,15 +120,19 @@ export async function getUsers(): Promise<User[]> {
   return (data as User[]) ?? [];
 }
 
-export async function getHandlers(): Promise<User[]> {
+/** 案件列表「處理人」篩選選項（全部可指派使用者） */
+export async function getAssigneeFilterUsers(): Promise<User[]> {
   const { data, error } = await (await supabase())
     .from("users")
     .select("*")
-    .in("role", ["handler", "admin"])
+    .in("role", ["admin", "manager", "user"])
     .order("name");
   if (error) throw error;
   return (data as User[]) ?? [];
 }
+
+/** @deprecated 請改用 getAssigneeFilterUsers */
+export const getHandlers = getAssigneeFilterUsers;
 
 export async function getCases(filters?: {
   status?: string;

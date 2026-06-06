@@ -1,4 +1,4 @@
-export type UserRole = "cs" | "handler" | "admin";
+export type UserRole = "admin" | "manager" | "user";
 
 export type CaseStatus =
   | "new"

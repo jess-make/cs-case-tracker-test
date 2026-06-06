@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { CaseTable } from "@/components/cases/CaseTable";
 import { CaseFilters } from "@/components/cases/CaseFilters";
-import { getCases, getHandlers } from "@/lib/data/cases";
+import { getCases, getAssigneeFilterUsers } from "@/lib/data/cases";
 import { getCurrentUser } from "@/lib/auth/session";
 import { canCreateCase } from "@/lib/auth/permissions";
 import { Suspense } from "react";
@@ -37,7 +37,7 @@ export default async function CasesPage({ searchParams }: PageProps) {
       date_to: params.date_to,
       filterByDate: true,
     }),
-    getHandlers(),
+    getAssigneeFilterUsers(),
   ]);
 
   return (

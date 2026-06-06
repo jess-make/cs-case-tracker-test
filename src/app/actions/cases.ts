@@ -191,14 +191,16 @@ export async function addReplyAction(caseId: string, content: string) {
     const { getCaseById, getUsers } = await import("@/lib/data/cases");
     const caseData = await getCaseById(caseId);
     const users = await getUsers();
-    const csUser = users.find((u) => u.role === "cs" && u.line_user_id);
-    const handler = actorId ? users.find((u) => u.id === actorId) : null;
+    const notifyUser =
+      users.find((u) => u.role === "user" && u.line_user_id) ??
+      users.find((u) => u.line_user_id);
+    const actor = actorId ? users.find((u) => u.id === actorId) : null;
 
-    if (caseData && csUser?.line_user_id) {
+    if (caseData && notifyUser?.line_user_id) {
       await notifyCaseCompleted({
         caseNumber: caseData.case_number,
-        csLineUserId: csUser.line_user_id,
-        handlerName: handler?.name ?? "處理人",
+        csLineUserId: notifyUser.line_user_id,
+        handlerName: actor?.name ?? "處理人",
       });
     }
   }

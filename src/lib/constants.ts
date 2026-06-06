@@ -35,9 +35,9 @@ export const URGENCY_COLORS: Record<UrgencyLevel, string> = {
 };
 
 export const ROLE_LABELS: Record<UserRole, string> = {
-  cs: "客服",
-  handler: "處理人",
-  admin: "管理者",
+  admin: "系統管理員",
+  manager: "主管",
+  user: "一般使用者",
 };
 
 export const COMPLAINT_SOURCE_TYPES = ["綠途", "通路"] as const;

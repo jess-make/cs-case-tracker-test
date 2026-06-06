@@ -241,6 +241,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   const cases = data ?? [];
   return {
     total: cases.length,
+    newCases: cases.filter((c) => normalizeCaseStatus(c.status) === "new").length,
     inProgress: cases.filter((c) => {
       const s = normalizeCaseStatus(c.status);
       return ["in_progress", "replied"].includes(s);

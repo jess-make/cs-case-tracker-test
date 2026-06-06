@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FolderOpen, Loader, CheckCircle2, Clock } from "lucide-react";
+import { FolderOpen, FilePlus, Loader, CheckCircle2, Clock } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { CaseTable } from "@/components/cases/CaseTable";
 import { getDashboardStats, getCases } from "@/lib/data/cases";
@@ -19,8 +19,9 @@ export default async function DashboardPage() {
         <p className="mt-1 text-sm text-slate-500">客訴案件總覽</p>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 lg:mb-8 lg:grid-cols-4 lg:gap-4">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 lg:mb-8 lg:grid-cols-5 lg:gap-3">
         <StatCard title="全部案件" value={stats.total} icon={FolderOpen} color="green" />
+        <StatCard title="新案件" value={stats.newCases} icon={FilePlus} color="slate" />
         <StatCard title="處理中" value={stats.inProgress} icon={Loader} color="amber" />
         <StatCard title="待確認" value={stats.pendingConfirm} icon={Clock} color="cyan" />
         <StatCard title="已結案" value={stats.closed} icon={CheckCircle2} color="emerald" />

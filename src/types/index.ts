@@ -79,6 +79,7 @@ export interface CaseLog {
 
 export interface DashboardStats {
   total: number;
+  newCases: number;
   inProgress: number;
   pendingConfirm: number;
   closed: number;

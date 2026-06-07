@@ -333,11 +333,19 @@ export async function updateCase(
   caseId: string,
   input: UpdateCaseInput,
   userId: string | null
-): Promise<{ case: Case | null; error?: string; unchanged?: boolean }> {
+): Promise<{
+  case: Case | null;
+  error?: string;
+  unchanged?: boolean;
+  departmentAssigned?: boolean;
+}> {
   const existing = await getCaseById(caseId);
   if (!existing) return { case: null, error: "案件不存在" };
 
   const summary = buildCaseEditSummary(existing, input);
+  const prevDept = existing.department?.trim() ?? "";
+  const nextDept = (input.department ?? "").trim();
+  const departmentAssigned = Boolean(nextDept) && prevDept !== nextDept;
   const hadDepartment = hasAssignedDepartment(existing.department);
   const hasDepartment = hasAssignedDepartment(input.department);
   const newlyAssignedDepartment = !hadDepartment && hasDepartment;
@@ -345,7 +353,7 @@ export async function updateCase(
     newlyAssignedDepartment && existing.status === "new";
 
   if (!summary && !promoteToInProgress) {
-    return { case: existing, unchanged: true };
+    return { case: existing, unchanged: true, departmentAssigned: false };
   }
 
   const client = await supabase();
@@ -387,7 +395,7 @@ export async function updateCase(
   const [enriched] = await enrichCases([
     normalizeCase(data as Record<string, unknown>),
   ]);
-  return { case: enriched };
+  return { case: enriched, departmentAssigned };
 }
 
 export async function addCaseLog(

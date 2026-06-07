@@ -1,11 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { fetchLineUserProfile } from "@/lib/line/profile";
+
+interface LineWebhookEvent {
+  type: string;
+  source?: {
+    userId?: string;
+    type?: string;
+  };
+}
+
+function getEventUserId(event: LineWebhookEvent): string | undefined {
+  return event.source?.userId?.trim() || undefined;
+}
+
+async function logWebhookEvent(event: LineWebhookEvent): Promise<void> {
+  const userId = getEventUserId(event);
+  if (!userId) return;
+
+  console.log(`[LINE webhook] userId: ${userId}`);
+  console.log(`[LINE webhook] type: ${event.type}`);
+
+  if (event.type === "follow") {
+    const profile = await fetchLineUserProfile(userId);
+    if (profile?.displayName) {
+      console.log(`[LINE webhook] displayName: ${profile.displayName}`);
+    }
+  }
+}
 
 /**
  * POST /api/line/webhook
  *
- * LINE Messaging API Webhook 接收端點（預留）
- * 用於接收使用者回覆、已讀回執等事件
+ * LINE Messaging API Webhook（除錯：log userId 供手動填入 users.line_user_id）
  */
 export async function POST(request: NextRequest) {
   const channelSecret = process.env.LINE_CHANNEL_SECRET;
@@ -31,11 +58,10 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const events = JSON.parse(body).events ?? [];
+  const events: LineWebhookEvent[] = JSON.parse(body).events ?? [];
 
   for (const event of events) {
-    console.log("[LINE Webhook]", event.type, event);
-    // 預留：處理 message、follow、postback 等事件
+    await logWebhookEvent(event);
   }
 
   return NextResponse.json({ ok: true });

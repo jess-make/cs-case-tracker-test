@@ -1,20 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCaseById } from "@/lib/data/cases";
 import {
-  dispatchLineNotification,
-  isLineConfigured,
   notifyCaseCreated,
-  notifyCaseCompleted,
-} from "@/lib/line/notify";
-import type { LineNotifyType } from "@/lib/line/notify";
+  notifyCaseClosed,
+  notifyCaseReplied,
+  notifyDepartmentAssigned,
+} from "@/lib/line/case-notifications";
+import { isLineConfigured, isLineNotifyApiAuthorized } from "@/lib/line/notify";
+
+const NOTIFY_TYPES = [
+  "case_created",
+  "department_assigned",
+  "case_replied",
+  "case_closed",
+] as const;
+
+type LineNotifyApiType = (typeof NOTIFY_TYPES)[number];
+
+function unauthorized() {
+  return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+}
 
 /**
  * POST /api/line/notify
  *
- * 預留 LINE 通知 API：
- * - case_created: 建立案件通知負責人
- * - case_completed: 處理完成通知客服
+ * 手動觸發 LINE 通知（測試 / 外部整合）
+ * Header: Authorization: Bearer {LINE_NOTIFY_INTERNAL_SECRET}
+ *
+ * Body: { type, caseId, actorId?, replyContent? }
  */
 export async function POST(request: NextRequest) {
+  if (!isLineNotifyApiAuthorized(request.headers.get("authorization"))) {
+    return unauthorized();
+  }
+
   if (!isLineConfigured()) {
     return NextResponse.json(
       { ok: false, message: "LINE Messaging API 尚未設定" },
@@ -24,23 +43,67 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { type } = body as { type: LineNotifyType };
+    const { type, caseId, actorId, replyContent } = body as {
+      type: LineNotifyApiType;
+      caseId: string;
+      actorId?: string;
+      replyContent?: string;
+    };
 
-    let result;
+    if (!caseId || !type) {
+      return NextResponse.json(
+        { ok: false, error: "缺少 type 或 caseId" },
+        { status: 400 }
+      );
+    }
+
+    const caseData = await getCaseById(caseId);
+    if (!caseData) {
+      return NextResponse.json({ ok: false, error: "案件不存在" }, { status: 404 });
+    }
 
     switch (type) {
       case "case_created":
-        result = await notifyCaseCreated(body);
+        await notifyCaseCreated(caseData);
         break;
-      case "case_completed":
-        result = await notifyCaseCompleted(body);
+      case "department_assigned":
+        await notifyDepartmentAssigned(caseData);
+        break;
+      case "case_replied": {
+        if (!actorId) {
+          return NextResponse.json(
+            { ok: false, error: "case_replied 需要 actorId" },
+            { status: 400 }
+          );
+        }
+        const { fetchUserById } = await import("@/lib/line/recipients");
+        const actor = await fetchUserById(actorId);
+        if (!actor) {
+          return NextResponse.json(
+            { ok: false, error: "找不到 actor 使用者" },
+            { status: 404 }
+          );
+        }
+        await notifyCaseReplied(
+          caseData,
+          {
+            id: actor.id,
+            name: actor.name,
+            role: actor.role,
+            department: actor.department,
+          },
+          replyContent ?? "（測試回覆）"
+        );
+        break;
+      }
+      case "case_closed":
+        await notifyCaseClosed(caseData);
         break;
       default:
-        result = await dispatchLineNotification(body);
-    }
-
-    if (!result.ok) {
-      return NextResponse.json({ ok: false, error: result.error }, { status: 500 });
+        return NextResponse.json(
+          { ok: false, error: "Unknown notification type" },
+          { status: 400 }
+        );
     }
 
     return NextResponse.json({ ok: true });
@@ -53,10 +116,11 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   return NextResponse.json({
     configured: isLineConfigured(),
+    notifyApiProtected: Boolean(process.env.LINE_NOTIFY_INTERNAL_SECRET?.trim()),
     endpoints: {
       notify: "POST /api/line/notify",
       webhook: "POST /api/line/webhook",
     },
-    types: ["case_created", "case_completed"],
+    types: NOTIFY_TYPES,
   });
 }

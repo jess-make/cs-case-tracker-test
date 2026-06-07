@@ -30,9 +30,11 @@ import {
   canDeleteAttachment,
 } from "@/lib/auth/case-access";
 import {
-  notifyCaseCompleted,
-  isLineConfigured,
-} from "@/lib/line/notify";
+  notifyCaseCreated,
+  notifyCaseClosed,
+  notifyCaseReplied,
+  notifyDepartmentAssigned,
+} from "@/lib/line/case-notifications";
 import { getNextStatus } from "@/lib/case-status";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
 import { parseOptionalDepartment } from "@/lib/parse-form";
@@ -82,6 +84,8 @@ export async function createCaseAction(
     if (uploadedNames.length > 0) {
       await logAttachmentsAdded(newCase.id, actorId, uploadedNames);
     }
+
+    await notifyCaseCreated(newCase);
 
     revalidatePath("/");
     revalidatePath("/cases");
@@ -143,6 +147,10 @@ export async function updateCaseAction(caseId: string, formData: FormData) {
       if (uploadedNames.length > 0) {
         await logAttachmentsAdded(caseId, actorId, uploadedNames);
       }
+    }
+
+    if (result.departmentAssigned && result.case) {
+      await notifyDepartmentAssigned(result.case);
     }
 
     revalidatePath(`/cases/${caseId}`);
@@ -220,7 +228,10 @@ export async function advanceCaseStatusAction(caseId: string) {
 export async function closeCaseAction(caseId: string) {
   const { user: actor } = await requireCaseWorkflowPermission(caseId);
   const actorId = actor.id;
-  await updateCaseStatus(caseId, "closed", actorId);
+  const closedCase = await updateCaseStatus(caseId, "closed", actorId);
+  if (closedCase) {
+    await notifyCaseClosed(closedCase);
+  }
   revalidatePath(`/cases/${caseId}`);
   revalidatePath("/");
   revalidatePath("/cases");
@@ -255,22 +266,10 @@ export async function addReplyAction(caseId: string, formData: FormData) {
       return { error: "更新案件狀態失敗，請稍後再試" };
     }
 
-    if (isLineConfigured()) {
-      const { getCaseById, getUsers } = await import("@/lib/data/cases");
-      const caseData = await getCaseById(caseId, actor);
-      const users = await getUsers();
-      const notifyUser =
-        users.find((u) => u.role === "user" && u.line_user_id) ??
-        users.find((u) => u.line_user_id);
-      const actorUser = users.find((u) => u.id === actorId);
-
-      if (caseData && notifyUser?.line_user_id) {
-        await notifyCaseCompleted({
-          caseNumber: caseData.case_number,
-          csLineUserId: notifyUser.line_user_id,
-          handlerName: actorUser?.name ?? actor.name ?? "處理人",
-        });
-      }
+    const { getCaseById } = await import("@/lib/data/cases");
+    const caseData = await getCaseById(caseId, actor);
+    if (caseData) {
+      await notifyCaseReplied(caseData, actor, content);
     }
 
     revalidatePath(`/cases/${caseId}`);

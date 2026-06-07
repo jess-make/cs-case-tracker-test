@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DEACTIVATED_ACCOUNT_MESSAGE } from "@/lib/auth/messages";
 import { fetchUserIsActive } from "@/lib/auth/inactive-account";
+import { validatePassword } from "@/lib/auth/password";
+import { clearMustChangePassword, getUserProfileFlags } from "@/lib/data/users";
 
 export async function signInAction(
   _prev: { error?: string } | null,
@@ -30,6 +32,12 @@ export async function signInAction(
       await supabase.auth.signOut();
       return { error: DEACTIVATED_ACCOUNT_MESSAGE };
     }
+
+    const flags = await getUserProfileFlags(data.user.id);
+    revalidatePath("/", "layout");
+    if (flags?.must_change_password) {
+      redirect("/change-password");
+    }
   }
 
   revalidatePath("/", "layout");
@@ -41,4 +49,47 @@ export async function signOutAction() {
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
   redirect("/login");
+}
+
+export async function changePasswordAction(
+  _prev: { error?: string } | null,
+  formData: FormData
+): Promise<{ error?: string } | null> {
+  const password = formData.get("password") as string;
+  const confirmPassword = formData.get("confirm_password") as string;
+
+  if (!password || !confirmPassword) {
+    return { error: "請填寫新密碼與確認密碼" };
+  }
+  if (password !== confirmPassword) {
+    return { error: "兩次輸入的密碼不一致" };
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return { error: passwordError };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: "請先登入" };
+  }
+
+  const flags = await getUserProfileFlags(user.id);
+  if (!flags?.must_change_password) {
+    redirect("/");
+  }
+
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) {
+    return { error: "密碼更新失敗，請稍後再試" };
+  }
+
+  await clearMustChangePassword(user.id);
+  revalidatePath("/", "layout");
+  redirect("/");
 }

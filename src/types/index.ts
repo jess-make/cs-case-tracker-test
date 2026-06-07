@@ -17,6 +17,7 @@ export interface User {
   department: string | null;
   line_user_id: string | null;
   is_active?: boolean;
+  must_change_password?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -119,6 +120,14 @@ export interface UpdateUserInput {
   department: string | null;
   line_user_id: string | null;
   is_active: boolean;
+  must_change_password?: boolean;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  role: UserRole;
+  department: string | null;
 }
 
 export interface CaseFilters {

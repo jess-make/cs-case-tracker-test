@@ -8,6 +8,10 @@ export function getSupabaseAnonKey(): string {
   return process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() ?? "";
 }
 
+export function getServiceRoleKey(): string {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() ?? "";
+}
+
 export function assertSupabaseEnv(): void {
   const url = getSupabaseUrl();
   const key = getSupabaseAnonKey();
@@ -15,5 +19,12 @@ export function assertSupabaseEnv(): void {
     throw new Error(
       "請在 .env.local 設定 NEXT_PUBLIC_SUPABASE_URL 與 NEXT_PUBLIC_SUPABASE_ANON_KEY"
     );
+  }
+}
+
+export function assertServiceRoleEnv(): void {
+  assertSupabaseEnv();
+  if (!getServiceRoleKey()) {
+    throw new Error("請在 .env.local 設定 SUPABASE_SERVICE_ROLE_KEY（僅 server 使用）");
   }
 }

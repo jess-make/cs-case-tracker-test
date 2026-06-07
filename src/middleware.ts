@@ -39,8 +39,10 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
   const isLogin = pathname.startsWith("/login");
+  const isChangePassword = pathname.startsWith("/change-password");
   const isPublic =
     isLogin ||
+    isChangePassword ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next") ||
     pathname.includes(".");
@@ -48,7 +50,7 @@ export async function middleware(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("users")
-      .select("is_active")
+      .select("is_active, must_change_password")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -61,6 +63,22 @@ export async function middleware(request: NextRequest) {
       copyCookies(supabaseResponse, redirect);
       return redirect;
     }
+
+    const mustChangePassword = profile?.must_change_password === true;
+
+    if (mustChangePassword && !isChangePassword) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/change-password";
+      const redirect = NextResponse.redirect(url);
+      copyCookies(supabaseResponse, redirect);
+      return redirect;
+    }
+
+    if (!mustChangePassword && isChangePassword) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
   }
 
   if (!user && !isPublic) {
@@ -71,8 +89,16 @@ export async function middleware(request: NextRequest) {
 
   if (user && isLogin) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+    const { data: profile } = await supabase
+      .from("users")
+      .select("must_change_password")
+      .eq("id", user.id)
+      .maybeSingle();
+    url.pathname =
+      profile?.must_change_password === true ? "/change-password" : "/";
+    const redirect = NextResponse.redirect(url);
+    copyCookies(supabaseResponse, redirect);
+    return redirect;
   }
 
   return supabaseResponse;

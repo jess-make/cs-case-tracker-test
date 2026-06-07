@@ -11,6 +11,7 @@ export interface SessionUser {
   role: UserRole;
   department: string | null;
   line_user_id: string | null;
+  must_change_password: boolean;
 }
 
 function mapProfile(row: User): SessionUser {
@@ -21,6 +22,7 @@ function mapProfile(row: User): SessionUser {
     role: normalizeUserRole(row.role),
     department: row.department,
     line_user_id: row.line_user_id,
+    must_change_password: row.must_change_password === true,
   };
 }
 
@@ -67,5 +69,6 @@ export async function requireUser(): Promise<SessionUser> {
 
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.must_change_password) redirect("/change-password");
   return user;
 }

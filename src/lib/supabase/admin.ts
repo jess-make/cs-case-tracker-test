@@ -1,10 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
-import { getSupabaseUrl } from "./env";
+import { assertServiceRoleEnv, getSupabaseUrl, getServiceRoleKey } from "./env";
 
-/** Service role client — use only in server-side API routes */
+/** Service role client — 僅供 server action / route handler，不可在 client 使用 */
 export function createAdminClient() {
-  return createClient(
-    getSupabaseUrl(),
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  assertServiceRoleEnv();
+  return createClient(getSupabaseUrl(), getServiceRoleKey(), {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
 }

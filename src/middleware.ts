@@ -10,6 +10,19 @@ function copyCookies(from: NextResponse, to: NextResponse) {
 }
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // API 路徑尾隨斜線改寫（避免 LINE webhook POST 收到 308）
+  if (
+    pathname.startsWith("/api/") &&
+    pathname.endsWith("/") &&
+    pathname.length > "/api/".length
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname.replace(/\/+$/, "");
+    return NextResponse.rewrite(url);
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
@@ -37,7 +50,6 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
   const isLogin = pathname.startsWith("/login");
   const isChangePassword = pathname.startsWith("/change-password");
   const isPublic =

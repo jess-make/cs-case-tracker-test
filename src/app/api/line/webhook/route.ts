@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { fetchLineUserProfile } from "@/lib/line/profile";
 
+/** 避免 trailing slash 造成 308 redirect（與 next.config trailingSlash: false 一致） */
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 interface LineWebhookEvent {
   type: string;
   source?: {
@@ -64,5 +68,10 @@ export async function POST(request: NextRequest) {
     await logWebhookEvent(event);
   }
 
+  return NextResponse.json({ ok: true });
+}
+
+/** LINE Verify / 健康檢查 */
+export async function GET() {
   return NextResponse.json({ ok: true });
 }

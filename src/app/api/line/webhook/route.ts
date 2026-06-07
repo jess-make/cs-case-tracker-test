@@ -14,21 +14,16 @@ interface LineWebhookEvent {
   };
 }
 
-function getEventUserId(event: LineWebhookEvent): string | undefined {
-  return event.source?.userId?.trim() || undefined;
-}
-
 async function logWebhookEvent(event: LineWebhookEvent): Promise<void> {
-  const userId = getEventUserId(event);
-  if (!userId) return;
+  console.log("[LINE webhook] type:", event.type);
+  console.log("[LINE webhook] userId:", event.source?.userId);
+  console.log("[LINE webhook] event:", JSON.stringify(event));
 
-  console.log(`[LINE webhook] userId: ${userId}`);
-  console.log(`[LINE webhook] type: ${event.type}`);
-
-  if (event.type === "follow") {
+  const userId = event.source?.userId?.trim();
+  if (event.type === "follow" && userId) {
     const profile = await fetchLineUserProfile(userId);
     if (profile?.displayName) {
-      console.log(`[LINE webhook] displayName: ${profile.displayName}`);
+      console.log("[LINE webhook] displayName:", profile.displayName);
     }
   }
 }

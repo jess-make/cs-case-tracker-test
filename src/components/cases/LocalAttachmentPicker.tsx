@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FileText, FileSpreadsheet, X } from "lucide-react";
 import {
   type PendingAttachment,
@@ -10,6 +10,7 @@ import {
   formatAttachmentFileSize,
   getAttachmentTypeLabel,
   isExcelFile,
+  partitionAttachmentFiles,
   ATTACHMENT_ACCEPT,
   ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
@@ -52,6 +53,25 @@ function PdfPreview({ item, onRemove }: { item: PendingAttachment; onRemove: () 
           title={item.file.name}
           className="h-48 w-full border-0 sm:h-56"
         />
+        <RemoveButton onRemove={onRemove} fileName={item.file.name} className="absolute right-2 top-2" />
+      </div>
+      <PreviewMeta item={item} />
+    </div>
+  );
+}
+
+function VideoPreview({ item, onRemove }: { item: PendingAttachment; onRemove: () => void }) {
+  return (
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div className="relative bg-slate-900">
+        <video
+          src={item.previewUrl}
+          controls
+          preload="metadata"
+          className="h-48 w-full object-contain sm:h-56"
+        >
+          您的瀏覽器不支援影片播放
+        </video>
         <RemoveButton onRemove={onRemove} fileName={item.file.name} className="absolute right-2 top-2" />
       </div>
       <PreviewMeta item={item} />
@@ -133,6 +153,7 @@ export function LocalAttachmentPicker({
 }: LocalAttachmentPickerProps) {
   const filesRef = useRef(files);
   filesRef.current = files;
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
   useEffect(() => {
     return () => revokeAllPendingAttachments(filesRef.current);
@@ -142,8 +163,15 @@ export function LocalAttachmentPicker({
     const selected = Array.from(e.target.files ?? []);
     if (selected.length === 0) return;
 
-    const newItems = selected.map(createPendingAttachment);
-    onFilesChange([...files, ...newItems]);
+    const { accepted, errors } = partitionAttachmentFiles(selected);
+
+    setValidationErrors(errors);
+
+    if (accepted.length > 0) {
+      const newItems = accepted.map(createPendingAttachment);
+      onFilesChange([...files, ...newItems]);
+    }
+
     e.target.value = "";
   }
 
@@ -151,6 +179,7 @@ export function LocalAttachmentPicker({
     const item = files.find((f) => f.id === id);
     if (item) revokePendingAttachment(item);
     onFilesChange(files.filter((f) => f.id !== id));
+    setValidationErrors([]);
   }
 
   return (
@@ -168,6 +197,19 @@ export function LocalAttachmentPicker({
       />
       <p className="mt-1 text-xs text-slate-500">{hint}</p>
 
+      {validationErrors.length > 0 && (
+        <div
+          className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+          role="alert"
+        >
+          <ul className="list-inside list-disc space-y-1">
+            {validationErrors.map((error) => (
+              <li key={error}>{error}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {files.length > 0 && (
         <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {files.map((item) => (
@@ -177,6 +219,9 @@ export function LocalAttachmentPicker({
               )}
               {item.kind === "pdf" && (
                 <PdfPreview item={item} onRemove={() => handleRemove(item.id)} />
+              )}
+              {item.kind === "video" && (
+                <VideoPreview item={item} onRemove={() => handleRemove(item.id)} />
               )}
               {item.kind === "document" && (
                 <DocumentPreview item={item} onRemove={() => handleRemove(item.id)} />

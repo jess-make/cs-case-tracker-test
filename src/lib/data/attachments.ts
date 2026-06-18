@@ -1,35 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
+import {
+  getAttachmentContentType,
+  isAllowedAttachmentFile,
+} from "@/lib/attachment-preview";
 import type { CaseAttachment } from "@/types";
 
 const BUCKET = "case-attachments";
 const SIGNED_URL_EXPIRES_SEC = 3600;
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
-
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/webp",
-  "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-]);
-
-const ALLOWED_EXTENSIONS = new Set([
-  "jpg",
-  "jpeg",
-  "png",
-  "gif",
-  "webp",
-  "pdf",
-  "doc",
-  "docx",
-  "xls",
-  "xlsx",
-]);
 
 export class AttachmentError extends Error {
   constructor(message: string) {
@@ -51,29 +29,7 @@ function fileExtension(name: string): string {
   return name.split(".").pop()?.toLowerCase() ?? "";
 }
 
-export function isAllowedAttachmentFile(file: File): boolean {
-  if (file.size <= 0 || file.size > MAX_FILE_SIZE_BYTES) return false;
-  if (file.type && ALLOWED_MIME_TYPES.has(file.type)) return true;
-  return ALLOWED_EXTENSIONS.has(fileExtension(file.name));
-}
-
-function contentTypeForUpload(file: File): string {
-  if (file.type && ALLOWED_MIME_TYPES.has(file.type)) return file.type;
-  const ext = fileExtension(file.name);
-  const byExt: Record<string, string> = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    gif: "image/gif",
-    webp: "image/webp",
-    pdf: "application/pdf",
-    doc: "application/msword",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    xls: "application/vnd.ms-excel",
-    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  };
-  return byExt[ext] ?? "application/octet-stream";
-}
+export { isAllowedAttachmentFile } from "@/lib/attachment-preview";
 
 /** 從 FormData 取出有效 File（Server Action 環境） */
 export function getAttachmentFilesFromFormData(formData: FormData): File[] {
@@ -110,7 +66,7 @@ export async function uploadAndRecordCaseAttachments(
   const validFiles = files.filter(isAllowedAttachmentFile);
   if (validFiles.length === 0) {
     throw new AttachmentError(
-      "附件格式或大小不符合（支援圖片、PDF、Word、Excel，單檔最大 10MB）"
+      "附件格式或大小不符合（支援圖片、PDF、Office 文件及 MP4/MOV 影片；圖片／文件單檔上限 10MB，影片單檔上限 50MB）"
     );
   }
 
@@ -136,7 +92,7 @@ export async function uploadAndRecordCaseAttachments(
       throw new AttachmentError(`讀取檔案「${file.name}」失敗`);
     }
 
-    const contentType = contentTypeForUpload(file);
+    const contentType = getAttachmentContentType(file);
 
     const { error: uploadError } = await client.storage
       .from(BUCKET)

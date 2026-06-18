@@ -30,6 +30,7 @@ import {
   type PendingAttachment,
   appendAttachmentsToFormData,
   revokeAllPendingAttachments,
+  ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
 
 export function CaseDetailPanel({
@@ -219,7 +220,7 @@ export function CaseDetailPanel({
                   <LocalAttachmentPicker
                     label="附加檔案"
                     labelClass="mb-1 block text-sm font-medium text-slate-700"
-                    hint="選填。支援圖片、PDF、Word、Excel，可多選，單檔最大 10MB。"
+                    hint={ATTACHMENT_HINT}
                     files={replyAttachments}
                     onFilesChange={setReplyAttachments}
                     inputId={`reply-attachments-${caseData.id}`}

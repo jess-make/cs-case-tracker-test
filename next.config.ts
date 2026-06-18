@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
   skipTrailingSlashRedirect: true,
   experimental: {
     serverActions: {
-      bodySizeLimit: "12mb",
+      bodySizeLimit: "52mb",
     },
   },
 };

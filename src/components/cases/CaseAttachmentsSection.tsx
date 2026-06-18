@@ -4,6 +4,7 @@ import {
   formatAttachmentFileSize,
   getStoredAttachmentTypeLabel,
   isExcelAttachment,
+  isVideoAttachment,
 } from "@/lib/attachment-preview";
 
 export function CaseAttachmentsSection({
@@ -17,9 +18,51 @@ export function CaseAttachmentsSection({
       {attachments.length === 0 ? (
         <p className="text-sm text-slate-500">尚無附件</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {attachments.map((att) => {
             const Icon = isExcelAttachment(att) ? FileSpreadsheet : FileText;
+            const meta = (
+              <span className="text-xs text-slate-500">
+                {getStoredAttachmentTypeLabel(att)}
+                {att.file_size != null && att.file_size > 0 && (
+                  <>
+                    <span className="mx-1 text-slate-300">·</span>
+                    {formatAttachmentFileSize(att.file_size)}
+                  </>
+                )}
+              </span>
+            );
+
+            if (isVideoAttachment(att) && att.download_url) {
+              return (
+                <li key={att.id} className="overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                  <video
+                    src={att.download_url}
+                    controls
+                    preload="metadata"
+                    className="max-h-80 w-full bg-black object-contain"
+                  >
+                    您的瀏覽器不支援影片播放
+                  </video>
+                  <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="break-all text-sm font-medium text-slate-800">
+                        {att.file_name}
+                      </p>
+                      {meta}
+                    </div>
+                    <a
+                      href={att.download_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-sm font-medium text-brand-600 hover:text-brand-700"
+                    >
+                      下載
+                    </a>
+                  </div>
+                </li>
+              );
+            }
 
             return (
               <li key={att.id}>
@@ -35,15 +78,7 @@ export function CaseAttachmentsSection({
                       <span className="font-medium text-slate-800">
                         {att.file_name}
                       </span>
-                      <span className="ml-2 text-xs text-slate-500">
-                        {getStoredAttachmentTypeLabel(att)}
-                        {att.file_size != null && att.file_size > 0 && (
-                          <>
-                            <span className="mx-1 text-slate-300">·</span>
-                            {formatAttachmentFileSize(att.file_size)}
-                          </>
-                        )}
-                      </span>
+                      <span className="ml-2">{meta}</span>
                     </span>
                   </a>
                 ) : (

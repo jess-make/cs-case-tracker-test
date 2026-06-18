@@ -14,8 +14,11 @@ import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
 import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
 import { Loader2 } from "lucide-react";
-import type { PendingAttachment } from "@/lib/attachment-preview";
-import { appendAttachmentsToFormData } from "@/lib/attachment-preview";
+import {
+  type PendingAttachment,
+  appendAttachmentsToFormData,
+  ATTACHMENT_HINT,
+} from "@/lib/attachment-preview";
 
 export function CreateCaseForm() {
   const [pending, setPending] = useState(false);
@@ -197,7 +200,7 @@ export function CreateCaseForm() {
         files={pendingAttachments}
         onFilesChange={setPendingAttachments}
         inputId="create-attachments"
-        hint="支援jpg、jpeg、png、pdf、doc、xls、xlsx，可多選但單個檔案不超過10MB"
+        hint={ATTACHMENT_HINT}
       />
 
       <div className="flex flex-col-reverse gap-3 border-t border-slate-200 pt-5 sm:flex-row sm:justify-end sm:pt-6">

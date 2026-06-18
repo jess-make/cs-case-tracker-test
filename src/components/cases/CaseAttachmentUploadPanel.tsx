@@ -7,6 +7,7 @@ import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker"
 import {
   type PendingAttachment,
   appendAttachmentsToFormData,
+  ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
 import { uploadCaseAttachmentsAction } from "@/app/actions/cases";
 
@@ -52,7 +53,7 @@ export function CaseAttachmentUploadPanel({ caseId }: CaseAttachmentUploadPanelP
       <LocalAttachmentPicker
         label="新增附件"
         labelClass="mb-1 block text-sm font-medium text-slate-700"
-        hint="支援圖片、PDF、Word、Excel，可多選。選擇後可預覽，上傳後才會儲存。"
+        hint={ATTACHMENT_HINT}
         files={pendingFiles}
         onFilesChange={setPendingFiles}
         inputId={`upload-attachments-${caseId}`}

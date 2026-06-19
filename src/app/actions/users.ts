@@ -11,7 +11,7 @@ import {
   updateUserAsAdmin,
   waitForUserProfile,
 } from "@/lib/data/users-admin";
-import { getUsersForManagement, updateUser } from "@/lib/data/users";
+import { getUsersForManagement, requestUserLineBind, unbindUserLine, updateUser } from "@/lib/data/users";
 import type { UserRole } from "@/types";
 
 function parseUserFormData(formData: FormData) {
@@ -190,6 +190,51 @@ export async function updateUserAction(userId: string, formData: FormData) {
     return {
       error:
         err instanceof Error ? err.message : "更新使用者失敗，請稍後再試",
+    };
+  }
+}
+
+export async function requestLineBindAction(
+  userId: string,
+  options: { clearLineId: boolean }
+) {
+  try {
+    await requireManageUsersPermission();
+    if (!userId?.trim()) return { error: "無效的使用者" };
+
+    const users = await getUsersForManagement();
+    const target = users.find((u) => u.id === userId);
+    if (!target) return { error: "找不到使用者" };
+
+    await requestUserLineBind(userId, options.clearLineId);
+    revalidatePath("/users");
+    return { success: true as const };
+  } catch (err) {
+    console.error("[requestLineBindAction]", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "要求 LINE 綁定失敗，請稍後再試",
+    };
+  }
+}
+
+export async function unbindLineAction(userId: string) {
+  try {
+    await requireManageUsersPermission();
+    if (!userId?.trim()) return { error: "無效的使用者" };
+
+    const users = await getUsersForManagement();
+    const target = users.find((u) => u.id === userId);
+    if (!target) return { error: "找不到使用者" };
+
+    await unbindUserLine(userId);
+    revalidatePath("/users");
+    return { success: true as const };
+  } catch (err) {
+    console.error("[unbindLineAction]", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "解除 LINE 綁定失敗，請稍後再試",
     };
   }
 }

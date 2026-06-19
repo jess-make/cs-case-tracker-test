@@ -86,3 +86,40 @@ export function isOnboardingIncomplete(flags: {
 }): boolean {
   return flags.must_change_password || flags.must_bind_line;
 }
+
+/** 要求使用者綁定 LINE（可選擇清空既有 line_user_id） */
+export async function requestUserLineBind(
+  userId: string,
+  clearLineId: boolean
+): Promise<User> {
+  const payload: Record<string, unknown> = { must_bind_line: true };
+  if (clearLineId) {
+    payload.line_user_id = null;
+  }
+
+  const { data, error } = await (await supabase())
+    .from("users")
+    .update(payload)
+    .eq("id", userId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return normalizeUser(data as Record<string, unknown>);
+}
+
+/** 解除 LINE 綁定並要求下次登入重新綁定 */
+export async function unbindUserLine(userId: string): Promise<User> {
+  const { data, error } = await (await supabase())
+    .from("users")
+    .update({
+      line_user_id: null,
+      must_bind_line: true,
+    })
+    .eq("id", userId)
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return normalizeUser(data as Record<string, unknown>);
+}

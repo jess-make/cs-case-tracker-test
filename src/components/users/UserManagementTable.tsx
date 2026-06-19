@@ -2,11 +2,22 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Loader2, Pencil, Plus, X } from "lucide-react";
+import { KeyRound, Link2, Link2Off, Loader2, Pencil, Plus, Copy, X } from "lucide-react";
 import type { User, UserRole } from "@/types";
 import { ROLE_LABELS, USER_ROLES } from "@/lib/constants";
 import { buildDepartmentOptions } from "@/lib/case-department";
-import { resetUserPasswordAction, updateUserAction } from "@/app/actions/users";
+import {
+  requestLineBindAction,
+  resetUserPasswordAction,
+  unbindLineAction,
+  updateUserAction,
+} from "@/app/actions/users";
+import {
+  getLineBindStatus,
+  LINE_BIND_INSTRUCTION_TEXT,
+  LINE_BIND_STATUS_LABELS,
+  type LineBindStatus,
+} from "@/lib/user-line-bind";
 import { UserCreateDialog } from "@/components/users/UserCreateDialog";
 import { TempPasswordDialog } from "@/components/users/TempPasswordDialog";
 import { cn } from "@/lib/utils";
@@ -42,6 +53,136 @@ function RoleBadge({ role }: { role: UserRole }) {
     <span className="inline-flex rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-medium text-brand-700">
       {ROLE_LABELS[role]}
     </span>
+  );
+}
+
+function LineBindStatusBadge({ user }: { user: User }) {
+  const status = getLineBindStatus(user);
+  const label = LINE_BIND_STATUS_LABELS[status];
+  const styles: Record<LineBindStatus, string> = {
+    bound: "bg-emerald-100 text-emerald-700",
+    required: "bg-amber-100 text-amber-800",
+    unbound: "bg-slate-100 text-slate-600",
+  };
+
+  return (
+    <span
+      className={cn(
+        "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium",
+        styles[status]
+      )}
+    >
+      {label}
+    </span>
+  );
+}
+
+function CopyBindInstructionButton() {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(LINE_BIND_INSTRUCTION_TEXT);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      window.prompt("請複製以下綁定說明：", LINE_BIND_INSTRUCTION_TEXT);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
+    >
+      <Copy className="h-4 w-4" />
+      {copied ? "已複製" : "複製綁定說明"}
+    </button>
+  );
+}
+
+function LineBindActionButtons({ user }: { user: User }) {
+  const router = useRouter();
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function handleRequestBind() {
+    setError(null);
+    const hasLine = Boolean(user.line_user_id?.trim());
+
+    if (hasLine) {
+      const confirmed = window.confirm(
+        "此使用者已綁定 LINE，是否要求重新綁定？確認後將清空 LINE User ID，使用者下次登入須重新綁定。"
+      );
+      if (!confirmed) return;
+      startTransition(async () => {
+        const result = await requestLineBindAction(user.id, { clearLineId: true });
+        if (result?.error) {
+          setError(result.error);
+          return;
+        }
+        router.refresh();
+      });
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await requestLineBindAction(user.id, { clearLineId: false });
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  function handleUnbind() {
+    setError(null);
+    const confirmed = window.confirm(
+      "確定要解除此使用者的 LINE 綁定嗎？下次登入時需重新綁定。"
+    );
+    if (!confirmed) return;
+
+    startTransition(async () => {
+      const result = await unbindLineAction(user.id);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
+
+  return (
+    <div className="inline-flex flex-col items-start">
+      <div className="flex flex-wrap items-center gap-1">
+        <button
+          type="button"
+          onClick={handleRequestBind}
+          disabled={pending}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+        >
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Link2 className="h-4 w-4" />
+          )}
+          要求綁定 LINE
+        </button>
+        <button
+          type="button"
+          onClick={handleUnbind}
+          disabled={pending || !user.line_user_id?.trim()}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <Link2Off className="h-4 w-4" />
+          解除 LINE 綁定
+        </button>
+        <CopyBindInstructionButton />
+      </div>
+      {error && <span className="mt-0.5 text-xs text-red-600">{error}</span>}
+    </div>
   );
 }
 
@@ -196,6 +337,9 @@ function UserEditDialog({
                 placeholder="選填"
                 className={inputClass}
               />
+              <p className="mt-1 text-xs text-slate-500">
+                手動填入 LINE User ID 後將視為已綁定，並清除「需綁定」狀態。
+              </p>
             </div>
 
             <div>
@@ -344,28 +488,31 @@ function UserMobileCards({
               <dt className="text-xs text-slate-500">部門</dt>
               <dd className="text-slate-700">{user.department?.trim() || "—"}</dd>
             </div>
-            <div className="col-span-2 min-w-0">
-              <dt className="text-xs text-slate-500">LINE User ID</dt>
-              <dd className="truncate font-mono text-xs text-slate-700">
-                {user.line_user_id?.trim() || "—"}
+            <div className="col-span-2">
+              <dt className="text-xs text-slate-500">LINE 綁定</dt>
+              <dd className="mt-0.5">
+                <LineBindStatusBadge user={user} />
               </dd>
             </div>
           </dl>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-            <button
-              type="button"
-              onClick={() => onEdit(user)}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
-              <Pencil className="h-4 w-4" />
-              編輯
-            </button>
-            <ResetPasswordButton
-              userId={user.id}
-              disabled={user.id === currentUserId}
-              onReset={onReset}
-            />
+          <div className="mt-4 space-y-3">
+            <LineBindActionButtons user={user} />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => onEdit(user)}
+                className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <Pencil className="h-4 w-4" />
+                編輯
+              </button>
+              <ResetPasswordButton
+                userId={user.id}
+                disabled={user.id === currentUserId}
+                onReset={onReset}
+              />
+            </div>
           </div>
         </div>
       ))}
@@ -401,7 +548,7 @@ function UserDesktopTable({
             <th className="px-4 py-3 font-medium text-slate-600">Email</th>
             <th className="px-4 py-3 font-medium text-slate-600">角色</th>
             <th className="px-4 py-3 font-medium text-slate-600">部門</th>
-            <th className="px-4 py-3 font-medium text-slate-600">LINE User ID</th>
+            <th className="px-4 py-3 font-medium text-slate-600">LINE 綁定</th>
             <th className="px-4 py-3 font-medium text-slate-600">啟用狀態</th>
             <th className="px-4 py-3 font-medium text-slate-600">操作</th>
           </tr>
@@ -417,27 +564,30 @@ function UserDesktopTable({
               <td className="px-4 py-3 text-slate-700">
                 {user.department?.trim() || "—"}
               </td>
-              <td className="max-w-[180px] truncate px-4 py-3 font-mono text-xs text-slate-700">
-                {user.line_user_id?.trim() || "—"}
+              <td className="px-4 py-3">
+                <LineBindStatusBadge user={user} />
               </td>
               <td className="px-4 py-3">
                 <ActiveBadge active={user.is_active !== false} />
               </td>
               <td className="px-4 py-3">
-                <div className="flex flex-wrap items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(user)}
-                    className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
-                  >
-                    <Pencil className="h-4 w-4" />
-                    編輯
-                  </button>
-                  <ResetPasswordButton
-                    userId={user.id}
-                    disabled={user.id === currentUserId}
-                    onReset={onReset}
-                  />
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(user)}
+                      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-brand-700 hover:bg-brand-50"
+                    >
+                      <Pencil className="h-4 w-4" />
+                      編輯
+                    </button>
+                    <ResetPasswordButton
+                      userId={user.id}
+                      disabled={user.id === currentUserId}
+                      onReset={onReset}
+                    />
+                  </div>
+                  <LineBindActionButtons user={user} />
                 </div>
               </td>
             </tr>

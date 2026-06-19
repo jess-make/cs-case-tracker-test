@@ -136,6 +136,35 @@ const MSG_INVALID_TOKEN = "綁定碼無效或已過期，請回系統重新產�
 const MSG_ALREADY_BOUND = "此 LINE 已綁定其他帳號，請聯絡管理員。";
 const MSG_SUCCESS = "LINE 綁定成功";
 
+async function finalizeBindToken(
+  admin: ReturnType<typeof createAdminClient>,
+  bindTokenId: string,
+  lineId: string,
+  targetUserId: string,
+  now: string
+): Promise<void> {
+  const { error: userError } = await admin
+    .from("users")
+    .update({
+      line_user_id: lineId,
+      must_bind_line: false,
+    })
+    .eq("id", targetUserId);
+
+  if (userError) throw userError;
+
+  const { error: markError } = await admin
+    .from("line_bind_tokens")
+    .update({
+      used_at: now,
+      line_user_id: lineId,
+    })
+    .eq("id", bindTokenId)
+    .is("used_at", null);
+
+  if (markError) throw markError;
+}
+
 export async function consumeLineBindToken(
   rawToken: string,
   lineUserId: string
@@ -189,6 +218,27 @@ export async function consumeLineBindToken(
   }
 
   const targetUserId = String(bindToken.user_id);
+
+  const { data: targetUser, error: targetUserError } = await admin
+    .from("users")
+    .select("id, line_user_id, must_bind_line")
+    .eq("id", targetUserId)
+    .maybeSingle();
+
+  if (targetUserError) {
+    console.error("[LINE webhook] bind load target user error:", targetUserError);
+    throw targetUserError;
+  }
+
+  if (targetUser?.line_user_id?.trim() === lineId) {
+    console.log("[LINE webhook] bind idempotent: LINE already bound to target user", {
+      targetUserId,
+      lineId,
+    });
+    await finalizeBindToken(admin, String(bindToken.id), lineId, targetUserId, now);
+    return { ok: true };
+  }
+
   console.log("[LINE webhook] bind check duplicate line_user_id before query:", {
     targetUserId,
     lineId,
@@ -198,7 +248,6 @@ export async function consumeLineBindToken(
     .from("users")
     .select("id")
     .eq("line_user_id", lineId)
-    .neq("id", targetUserId)
     .maybeSingle();
 
   if (existingError) {
@@ -206,12 +255,21 @@ export async function consumeLineBindToken(
     throw existingError;
   }
 
+  const existingUserId = existingUser ? String(existingUser.id) : null;
+
   console.log("[LINE webhook] bind check duplicate line_user_id after query:", {
-    alreadyBoundToOtherUser: Boolean(existingUser),
-    otherUserId: existingUser?.id ?? null,
+    existingUserId,
+    targetUserId,
+    isSameUser: existingUserId === targetUserId,
+    alreadyBoundToOtherUser: Boolean(existingUserId && existingUserId !== targetUserId),
   });
 
-  if (existingUser) {
+  if (existingUserId) {
+    if (existingUserId === targetUserId) {
+      console.log("[LINE webhook] bind idempotent: same user owns this LINE id");
+      await finalizeBindToken(admin, String(bindToken.id), lineId, targetUserId, now);
+      return { ok: true };
+    }
     return { ok: false, message: MSG_ALREADY_BOUND };
   }
 
@@ -221,46 +279,14 @@ export async function consumeLineBindToken(
     fields: { line_user_id: lineId, must_bind_line: false },
   });
 
-  const { data: updatedUser, error: userError } = await admin
-    .from("users")
-    .update({
-      line_user_id: lineId,
-      must_bind_line: false,
-    })
-    .eq("id", targetUserId)
-    .select("id, line_user_id, must_bind_line")
-    .maybeSingle();
-
-  if (userError) {
-    console.error("[LINE webhook] bind update users error:", userError);
-    throw userError;
+  try {
+    await finalizeBindToken(admin, String(bindToken.id), lineId, targetUserId, now);
+  } catch (err) {
+    console.error("[LINE webhook] bind finalize error:", err);
+    throw err;
   }
 
-  console.log("[LINE webhook] bind update users after:", {
-    success: Boolean(updatedUser),
-    updatedUser,
-  });
-
-  const { data: markedToken, error: markError } = await admin
-    .from("line_bind_tokens")
-    .update({
-      used_at: now,
-      line_user_id: lineId,
-    })
-    .eq("id", bindToken.id)
-    .is("used_at", null)
-    .select("id, used_at, line_user_id")
-    .maybeSingle();
-
-  if (markError) {
-    console.error("[LINE webhook] bind mark token used error:", markError);
-    throw markError;
-  }
-
-  console.log("[LINE webhook] bind mark token used after:", {
-    success: Boolean(markedToken),
-    markedToken,
-  });
+  console.log("[LINE webhook] bind update users after:", { success: true, targetUserId });
 
   return { ok: true };
 }

@@ -12,6 +12,7 @@ import type { UrgencyLevel } from "@/types";
 import { createCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
+import { buildDepartmentOptions } from "@/lib/case-department";
 import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
 import { Loader2 } from "lucide-react";
 import {
@@ -20,7 +21,11 @@ import {
   ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
 
-export function CreateCaseForm() {
+export function CreateCaseForm({
+  activeDepartments,
+}: {
+  activeDepartments: string[];
+}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [complaintCategory, setComplaintCategory] = useState("");
@@ -173,6 +178,7 @@ export function CreateCaseForm() {
           onChange={setDepartment}
           inputClass={inputClass}
           labelClass={labelClass}
+          departments={activeDepartments}
         />
         <div>
           <label className={labelClass}>電商訂單編號</label>

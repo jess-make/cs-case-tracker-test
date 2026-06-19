@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { UserManagementTable } from "@/components/users/UserManagementTable";
 import { getUsersForManagement } from "@/lib/data/users";
+import { getActiveDepartmentNames } from "@/lib/data/departments";
 import { requireUser } from "@/lib/auth/session";
 import { canManageUsers } from "@/lib/auth/permissions";
 
@@ -10,7 +11,10 @@ export default async function UsersPage() {
     redirect("/");
   }
 
-  const users = await getUsersForManagement();
+  const [users, activeDepartments] = await Promise.all([
+    getUsersForManagement(),
+    getActiveDepartmentNames(),
+  ]);
 
   return (
     <div>
@@ -21,7 +25,11 @@ export default async function UsersPage() {
         </p>
       </div>
 
-      <UserManagementTable users={users} currentUserId={currentUser.id} />
+      <UserManagementTable
+        users={users}
+        currentUserId={currentUser.id}
+        activeDepartments={activeDepartments}
+      />
     </div>
   );
 }

@@ -130,6 +130,14 @@ export interface CreateUserInput {
   department: string | null;
 }
 
+export interface Department {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CaseFilters {
   status?: CaseStatus | "";
   assignee_id?: string | "";

@@ -38,11 +38,13 @@ export function CaseDetailPanel({
   logs = [],
   attachments = [],
   permissions,
+  activeDepartments,
 }: {
   caseData: Case;
   logs?: CaseLog[] | null;
   attachments?: CaseAttachment[];
   permissions: CasePermissions;
+  activeDepartments: string[];
 }) {
   const [reply, setReply] = useState("");
   const [replyError, setReplyError] = useState<string | null>(null);
@@ -127,6 +129,7 @@ export function CaseDetailPanel({
               caseData={caseData}
               attachments={attachments}
               canDeleteAttachment={permissions.canDeleteAttachment}
+              activeDepartments={activeDepartments}
               onCancel={() => setEditing(false)}
               onSaved={() => {
                 setEditing(false);

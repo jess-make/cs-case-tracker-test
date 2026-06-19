@@ -2,10 +2,8 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { CaseDetailPanel } from "@/components/cases/CaseDetailPanel";
 import { getCaseById, getCaseLogs } from "@/lib/data/cases";
-import {
-  getCaseAttachments,
-  legacyAttachmentsFromUrls,
-} from "@/lib/data/attachments";
+import { getCaseAttachments, legacyAttachmentsFromUrls } from "@/lib/data/attachments";
+import { getActiveDepartmentNames } from "@/lib/data/departments";
 import { requireUser } from "@/lib/auth/session";
 import { getCasePermissions } from "@/lib/auth/permissions";
 
@@ -17,10 +15,11 @@ export default async function CaseDetailPage({ params }: PageProps) {
   const { id } = await params;
   const currentUser = await requireUser();
 
-  const [caseData, logsResult, caseAttachments] = await Promise.all([
+  const [caseData, logsResult, caseAttachments, activeDepartments] = await Promise.all([
     getCaseById(id, currentUser),
     getCaseLogs(id).catch(() => [] as Awaited<ReturnType<typeof getCaseLogs>>),
     getCaseAttachments(id).catch(() => []),
+    getActiveDepartmentNames().catch(() => [] as string[]),
   ]);
 
   const logs = logsResult ?? [];
@@ -68,6 +67,7 @@ export default async function CaseDetailPage({ params }: PageProps) {
         logs={logs}
         attachments={attachments}
         permissions={permissions}
+        activeDepartments={activeDepartments}
       />
     </div>
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PlusCircle, List, Users, X, LogOut } from "lucide-react";
+import { LayoutDashboard, PlusCircle, List, Users, Building2, X, LogOut } from "lucide-react";
 import { BrandHeader } from "./BrandLogo";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
@@ -14,6 +14,7 @@ const baseNavItems = [
   { href: "/cases/new", label: "建立案件", icon: PlusCircle, requiresCreate: true },
   { href: "/cases", label: "案件列表", icon: List },
   { href: "/users", label: "使用者管理", icon: Users, requiresAdmin: true },
+  { href: "/departments", label: "部門管理", icon: Building2, requiresAdmin: true },
 ] as const;
 
 interface SidebarProps {

@@ -4,7 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { KeyRound, Loader2, Pencil, Plus, X } from "lucide-react";
 import type { User, UserRole } from "@/types";
-import { DEPARTMENTS, ROLE_LABELS, USER_ROLES } from "@/lib/constants";
+import { ROLE_LABELS, USER_ROLES } from "@/lib/constants";
+import { buildDepartmentOptions } from "@/lib/case-department";
 import { resetUserPasswordAction, updateUserAction } from "@/app/actions/users";
 import { UserCreateDialog } from "@/components/users/UserCreateDialog";
 import { TempPasswordDialog } from "@/components/users/TempPasswordDialog";
@@ -13,6 +14,7 @@ import { cn } from "@/lib/utils";
 interface UserManagementTableProps {
   users: User[];
   currentUserId: string;
+  activeDepartments: string[];
 }
 
 interface TempPasswordState {
@@ -48,11 +50,13 @@ function UserEditDialog({
   open,
   onClose,
   isSelf,
+  activeDepartments,
 }: {
   user: User;
   open: boolean;
   onClose: () => void;
   isSelf: boolean;
+  activeDepartments: string[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -65,12 +69,10 @@ function UserEditDialog({
     "w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
   const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 
-  const departmentOptions = [
-    ...DEPARTMENTS,
-    ...(user.department && !DEPARTMENTS.includes(user.department as (typeof DEPARTMENTS)[number])
-      ? [user.department]
-      : []),
-  ];
+  const departmentOptions = buildDepartmentOptions(
+    activeDepartments,
+    user.department
+  );
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -446,7 +448,11 @@ function UserDesktopTable({
   );
 }
 
-export function UserManagementTable({ users, currentUserId }: UserManagementTableProps) {
+export function UserManagementTable({
+  users,
+  currentUserId,
+  activeDepartments,
+}: UserManagementTableProps) {
   const router = useRouter();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -506,12 +512,14 @@ export function UserManagementTable({ users, currentUserId }: UserManagementTabl
           open={Boolean(editingUser)}
           onClose={() => setEditingUser(null)}
           isSelf={editingUser.id === currentUserId}
+          activeDepartments={activeDepartments}
         />
       )}
 
       <UserCreateDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        activeDepartments={activeDepartments}
         onCreated={(result) => {
           showTempPassword(result, "create");
           router.refresh();

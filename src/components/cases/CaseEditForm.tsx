@@ -12,6 +12,7 @@ import type { UrgencyLevel } from "@/types";
 import { updateCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
+import { buildDepartmentOptions } from "@/lib/case-department";
 import {
   CaseAttachmentEditFields,
   appendEditPendingAttachments,
@@ -23,6 +24,7 @@ interface CaseEditFormProps {
   caseData: Case;
   attachments?: CaseAttachment[];
   canDeleteAttachment?: boolean;
+  activeDepartments: string[];
   onCancel: () => void;
   onSaved: () => void;
 }
@@ -31,6 +33,7 @@ export function CaseEditForm({
   caseData,
   attachments = [],
   canDeleteAttachment = true,
+  activeDepartments,
   onCancel,
   onSaved,
 }: CaseEditFormProps) {
@@ -68,6 +71,11 @@ export function CaseEditForm({
       onSaved();
     });
   }
+
+  const departmentOptions = buildDepartmentOptions(
+    activeDepartments,
+    caseData.department
+  );
 
   const inputClass =
     "w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-400";
@@ -203,6 +211,7 @@ export function CaseEditForm({
           onChange={setDepartment}
           inputClass={inputClass}
           labelClass={labelClass}
+          departments={departmentOptions}
         />
       </div>
 

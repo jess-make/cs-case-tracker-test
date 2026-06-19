@@ -2,12 +2,15 @@ import { redirect } from "next/navigation";
 import { CreateCaseForm } from "@/components/cases/CreateCaseForm";
 import { requireUser } from "@/lib/auth/session";
 import { canCreateCase } from "@/lib/auth/permissions";
+import { getActiveDepartmentNames } from "@/lib/data/departments";
 
 export default async function NewCasePage() {
   const user = await requireUser();
   if (!canCreateCase(user)) {
     redirect("/cases");
   }
+
+  const activeDepartments = await getActiveDepartmentNames().catch(() => []);
   return (
     <div>
       <div className="mb-6 lg:mb-8">
@@ -16,7 +19,7 @@ export default async function NewCasePage() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <CreateCaseForm />
+        <CreateCaseForm activeDepartments={activeDepartments} />
       </div>
     </div>
   );

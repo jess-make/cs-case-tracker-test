@@ -1,13 +1,13 @@
 "use client";
 
-import { DEPARTMENTS } from "@/lib/constants";
-
 interface DepartmentSelectProps {
   id: string;
   value: string;
   onChange: (value: string) => void;
   inputClass: string;
   labelClass: string;
+  departments: string[];
+  emptyLabel?: string;
 }
 
 /** 指派部門（選填，預設「暫不指派」） */
@@ -17,6 +17,8 @@ export function DepartmentSelect({
   onChange,
   inputClass,
   labelClass,
+  departments,
+  emptyLabel = "暫不指派",
 }: DepartmentSelectProps) {
   return (
     <div>
@@ -30,8 +32,8 @@ export function DepartmentSelect({
         value={value}
         onChange={(e) => onChange(e.target.value)}
       >
-        <option value="">暫不指派</option>
-        {DEPARTMENTS.map((d) => (
+        <option value="">{emptyLabel}</option>
+        {departments.map((d) => (
           <option key={d} value={d}>
             {d}
           </option>

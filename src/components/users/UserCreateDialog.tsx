@@ -3,15 +3,21 @@
 import { useState, useTransition } from "react";
 import { Loader2, X } from "lucide-react";
 import { createUserAction } from "@/app/actions/users";
-import { DEPARTMENTS, ROLE_LABELS, USER_ROLES } from "@/lib/constants";
+import { ROLE_LABELS, USER_ROLES } from "@/lib/constants";
 
 interface UserCreateDialogProps {
   open: boolean;
   onClose: () => void;
   onCreated: (result: { email: string; temporaryPassword: string }) => void;
+  activeDepartments: string[];
 }
 
-export function UserCreateDialog({ open, onClose, onCreated }: UserCreateDialogProps) {
+export function UserCreateDialog({
+  open,
+  onClose,
+  onCreated,
+  activeDepartments,
+}: UserCreateDialogProps) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [department, setDepartment] = useState("");
@@ -126,7 +132,7 @@ export function UserCreateDialog({ open, onClose, onCreated }: UserCreateDialogP
                 onChange={(e) => setDepartment(e.target.value)}
               >
                 <option value="">未設定</option>
-                {DEPARTMENTS.map((d) => (
+                {activeDepartments.map((d) => (
                   <option key={d} value={d}>
                     {d}
                   </option>

@@ -1,4 +1,10 @@
 import { mergeTaxonomyFilterNames } from "@/lib/complaint-taxonomy";
+import {
+  applyChildTaxonomyManagementSort,
+  applySortOrderUpdates,
+  applyTaxonomySort,
+  getNextTaxonomySortOrder,
+} from "@/lib/taxonomy-sort-order";
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import type { ComplaintChannel, ComplaintSource } from "@/types";
@@ -13,6 +19,7 @@ function normalizeSource(raw: Record<string, unknown>): ComplaintSource {
     id: String(raw.id ?? ""),
     name: String(raw.name ?? ""),
     is_active: raw.is_active !== false,
+    sort_order: Number(raw.sort_order ?? 0),
     created_at: String(raw.created_at ?? new Date().toISOString()),
     updated_at: String(raw.updated_at ?? new Date().toISOString()),
   };
@@ -24,6 +31,7 @@ function normalizeChannel(raw: Record<string, unknown>): ComplaintChannel {
     source_id: String(raw.source_id ?? ""),
     name: String(raw.name ?? ""),
     is_active: raw.is_active !== false,
+    sort_order: Number(raw.sort_order ?? 0),
     created_at: String(raw.created_at ?? new Date().toISOString()),
     updated_at: String(raw.updated_at ?? new Date().toISOString()),
   };
@@ -32,10 +40,9 @@ function normalizeChannel(raw: Record<string, unknown>): ComplaintChannel {
 export async function getComplaintSourcesForManagement(): Promise<
   ComplaintSource[]
 > {
-  const { data, error } = await (await supabase())
-    .from("complaint_sources")
-    .select("*")
-    .order("name");
+  const { data, error } = await applyTaxonomySort(
+    (await supabase()).from("complaint_sources").select("*")
+  );
 
   if (error) throw error;
   return ((data as Record<string, unknown>[]) ?? []).map(normalizeSource);
@@ -44,10 +51,10 @@ export async function getComplaintSourcesForManagement(): Promise<
 export async function getComplaintChannelsForManagement(): Promise<
   ComplaintChannel[]
 > {
-  const { data, error } = await (await supabase())
-    .from("complaint_channels")
-    .select("*")
-    .order("name");
+  const { data, error } = await applyChildTaxonomyManagementSort(
+    (await supabase()).from("complaint_channels").select("*"),
+    "source_id"
+  );
 
   if (error) throw error;
   return ((data as Record<string, unknown>[]) ?? []).map(normalizeChannel);
@@ -119,9 +126,11 @@ export async function createComplaintSource(
   name: string
 ): Promise<ComplaintSource> {
   const trimmed = name.trim();
-  const { data, error } = await (await supabase())
+  const client = await supabase();
+  const sort_order = await getNextTaxonomySortOrder(client, "complaint_sources");
+  const { data, error } = await client
     .from("complaint_sources")
-    .insert({ name: trimmed, is_active: true })
+    .insert({ name: trimmed, is_active: true, sort_order })
     .select("*")
     .single();
 
@@ -131,6 +140,27 @@ export async function createComplaintSource(
   }
 
   return normalizeSource(data as Record<string, unknown>);
+}
+
+export async function reorderComplaintSources(
+  orderedIds: string[]
+): Promise<void> {
+  if (!orderedIds.length) return;
+
+  const client = await supabase();
+  const { data, error } = await client.from("complaint_sources").select("id");
+
+  if (error) throw error;
+
+  const validIds = new Set((data ?? []).map((row) => String(row.id)));
+  if (
+    orderedIds.length !== validIds.size ||
+    !orderedIds.every((id) => validIds.has(id))
+  ) {
+    throw new Error("排序資料無效");
+  }
+
+  await applySortOrderUpdates(client, "complaint_sources", orderedIds);
 }
 
 export async function setComplaintSourceActive(
@@ -225,9 +255,15 @@ export async function createComplaintChannel(
   name: string
 ): Promise<ComplaintChannel> {
   const trimmed = name.trim();
-  const { data, error } = await (await supabase())
+  const client = await supabase();
+  const sort_order = await getNextTaxonomySortOrder(
+    client,
+    "complaint_channels",
+    { column: "source_id", value: sourceId }
+  );
+  const { data, error } = await client
     .from("complaint_channels")
-    .insert({ source_id: sourceId, name: trimmed, is_active: true })
+    .insert({ source_id: sourceId, name: trimmed, is_active: true, sort_order })
     .select("*")
     .single();
 
@@ -239,6 +275,32 @@ export async function createComplaintChannel(
   }
 
   return normalizeChannel(data as Record<string, unknown>);
+}
+
+export async function reorderComplaintChannels(
+  sourceId: string,
+  orderedIds: string[]
+): Promise<void> {
+  if (!sourceId?.trim()) throw new Error("無效的客訴來源");
+  if (!orderedIds.length) return;
+
+  const client = await supabase();
+  const { data, error } = await client
+    .from("complaint_channels")
+    .select("id")
+    .eq("source_id", sourceId);
+
+  if (error) throw error;
+
+  const validIds = new Set((data ?? []).map((row) => String(row.id)));
+  if (
+    orderedIds.length !== validIds.size ||
+    !orderedIds.every((id) => validIds.has(id))
+  ) {
+    throw new Error("排序資料無效");
+  }
+
+  await applySortOrderUpdates(client, "complaint_channels", orderedIds);
 }
 
 export async function setComplaintChannelActive(
@@ -330,10 +392,11 @@ export async function deleteComplaintChannel(id: string): Promise<void> {
 export async function getComplaintSourceNamesForCaseFilter(
   selected?: string
 ): Promise<string[]> {
-  const { data, error } = await (await supabase())
-    .from("complaint_sources")
-    .select("name, is_active")
-    .order("name");
+  const { data, error } = await applyTaxonomySort(
+    (await supabase())
+      .from("complaint_sources")
+      .select("name, is_active, sort_order")
+  );
 
   if (error) throw error;
   const items = (data ?? []).map((row) => ({
@@ -347,10 +410,11 @@ export async function getComplaintSourceNamesForCaseFilter(
 export async function getComplaintChannelNamesForCaseFilter(
   selected?: string
 ): Promise<string[]> {
-  const { data, error } = await (await supabase())
-    .from("complaint_channels")
-    .select("name, is_active")
-    .order("name");
+  const { data, error } = await applyTaxonomySort(
+    (await supabase())
+      .from("complaint_channels")
+      .select("name, is_active, sort_order")
+  );
 
   if (error) throw error;
   const items = (data ?? []).map((row) => ({

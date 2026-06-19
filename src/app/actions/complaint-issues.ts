@@ -6,6 +6,7 @@ import {
   createComplaintIssue,
   deleteComplaintIssue,
   renameComplaintIssue,
+  reorderComplaintIssues,
   setComplaintIssueActive,
 } from "@/lib/data/complaint-issues";
 
@@ -82,6 +83,26 @@ export async function deleteComplaintIssueAction(issueId: string) {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "刪除客訴問題失敗，請稍後再試";
+    return { error: message };
+  }
+}
+
+export async function reorderComplaintIssuesAction(
+  categoryId: string,
+  orderedIds: string[]
+) {
+  try {
+    await requireManageUsersPermission();
+    if (!categoryId?.trim()) return { error: "無效的客訴類別" };
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return { error: "無效的排序資料" };
+    }
+    await reorderComplaintIssues(categoryId, orderedIds);
+    revalidate();
+    return { success: true as const };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "更新客訴問題排序失敗，請稍後再試";
     return { error: message };
   }
 }

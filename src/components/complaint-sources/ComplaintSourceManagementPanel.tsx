@@ -11,9 +11,12 @@ import {
   deleteComplaintSourceAction,
   renameComplaintChannelAction,
   renameComplaintSourceAction,
+  reorderComplaintChannelsAction,
+  reorderComplaintSourcesAction,
   setComplaintChannelActiveAction,
   setComplaintSourceActiveAction,
 } from "@/app/actions/complaint-sources";
+import { DragSortableList } from "@/components/ui/DragSortableList";
 import { cn } from "@/lib/utils";
 
 interface ComplaintSourceManagementPanelProps {
@@ -312,57 +315,70 @@ export function ComplaintSourceManagementPanel({
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">客訴來源</h2>
+              <p className="mt-0.5 text-xs text-slate-500">拖曳左側圖示可調整順序</p>
             </div>
             {sources.length === 0 ? (
               <p className="p-6 text-center text-sm text-slate-500">目前沒有客訴來源</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
-                {sources.map((source) => {
+              <DragSortableList
+                items={sources}
+                disabled={pending}
+                onReorder={async (orderedIds) => {
+                  const result = await reorderComplaintSourcesAction(orderedIds);
+                  if (!result?.error) router.refresh();
+                  return result;
+                }}
+                renderItem={(source, { dragHandle }) => {
                   const isSelected = source.id === selectedSourceId;
                   const channelCount = channelsBySourceId[source.id]?.length ?? 0;
                   return (
-                    <li
-                      key={source.id}
-                      className={cn("px-4 py-3", isSelected && "bg-brand-50/60")}
+                    <div
+                      className={cn(
+                        "flex gap-2 px-4 py-3",
+                        isSelected && "bg-brand-50/60"
+                      )}
                     >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedSourceId(source.id)}
-                        className="mb-2 w-full text-left"
-                      >
-                        <p className="text-sm font-medium text-slate-900">{source.name}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <ActiveBadge active={source.is_active} />
-                          <span className="text-xs text-slate-500">{channelCount} 個管道</span>
-                        </div>
-                      </button>
-                      <RowActions
-                        isActive={source.is_active}
-                        pending={pending}
-                        isBusy={pending && actionPendingId === source.id}
-                        onEdit={() => setEditingSource(source)}
-                        onToggle={() =>
-                          runAction(source.id, () =>
-                            setComplaintSourceActiveAction(source.id, !source.is_active)
-                          )
-                        }
-                        onDelete={() => {
-                          if (
-                            !confirm(
-                              `確定要刪除客訴來源「${source.name}」嗎？此操作無法復原。`
+                      {dragHandle}
+                      <div className="min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedSourceId(source.id)}
+                          className="mb-2 w-full text-left"
+                        >
+                          <p className="text-sm font-medium text-slate-900">{source.name}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <ActiveBadge active={source.is_active} />
+                            <span className="text-xs text-slate-500">{channelCount} 個管道</span>
+                          </div>
+                        </button>
+                        <RowActions
+                          isActive={source.is_active}
+                          pending={pending}
+                          isBusy={pending && actionPendingId === source.id}
+                          onEdit={() => setEditingSource(source)}
+                          onToggle={() =>
+                            runAction(source.id, () =>
+                              setComplaintSourceActiveAction(source.id, !source.is_active)
                             )
-                          ) {
-                            return;
                           }
-                          runAction(source.id, () =>
-                            deleteComplaintSourceAction(source.id)
-                          );
-                        }}
-                      />
-                    </li>
+                          onDelete={() => {
+                            if (
+                              !confirm(
+                                `確定要刪除客訴來源「${source.name}」嗎？此操作無法復原。`
+                              )
+                            ) {
+                              return;
+                            }
+                            runAction(source.id, () =>
+                              deleteComplaintSourceAction(source.id)
+                            );
+                          }}
+                        />
+                      </div>
+                    </div>
                   );
-                })}
-              </ul>
+                }}
+              />
             )}
           </div>
         </div>
@@ -411,43 +427,59 @@ export function ComplaintSourceManagementPanel({
                 客訴管道
                 {selectedSource ? ` · ${selectedSource.name}` : ""}
               </h2>
+              {selectedSourceId && selectedChannels.length > 0 && (
+                <p className="mt-0.5 text-xs text-slate-500">拖曳左側圖示可調整順序</p>
+              )}
             </div>
             {!selectedSourceId ? (
               <p className="p-6 text-center text-sm text-slate-500">請先選擇客訴來源</p>
             ) : selectedChannels.length === 0 ? (
               <p className="p-6 text-center text-sm text-slate-500">此來源尚無客訴管道</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
-                {selectedChannels.map((channel) => (
-                  <li key={channel.id} className="px-4 py-3">
-                    <div className="mb-2">
-                      <p className="text-sm font-medium text-slate-900">{channel.name}</p>
-                      <div className="mt-1">
-                        <ActiveBadge active={channel.is_active} />
+              <DragSortableList
+                items={selectedChannels}
+                disabled={pending}
+                onReorder={async (orderedIds) => {
+                  const result = await reorderComplaintChannelsAction(
+                    selectedSourceId,
+                    orderedIds
+                  );
+                  if (!result?.error) router.refresh();
+                  return result;
+                }}
+                renderItem={(channel, { dragHandle }) => (
+                  <div className="flex gap-2 px-4 py-3">
+                    {dragHandle}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2">
+                        <p className="text-sm font-medium text-slate-900">{channel.name}</p>
+                        <div className="mt-1">
+                          <ActiveBadge active={channel.is_active} />
+                        </div>
                       </div>
-                    </div>
-                    <RowActions
-                      isActive={channel.is_active}
-                      pending={pending}
-                      isBusy={pending && actionPendingId === channel.id}
-                      onEdit={() => setEditingChannel(channel)}
-                      onToggle={() =>
-                        runAction(channel.id, () =>
-                          setComplaintChannelActiveAction(channel.id, !channel.is_active)
-                        )
-                      }
-                      onDelete={() => {
-                        if (
-                          !confirm(`確定要刪除客訴管道「${channel.name}」嗎？此操作無法復原。`)
-                        ) {
-                          return;
+                      <RowActions
+                        isActive={channel.is_active}
+                        pending={pending}
+                        isBusy={pending && actionPendingId === channel.id}
+                        onEdit={() => setEditingChannel(channel)}
+                        onToggle={() =>
+                          runAction(channel.id, () =>
+                            setComplaintChannelActiveAction(channel.id, !channel.is_active)
+                          )
                         }
-                        runAction(channel.id, () => deleteComplaintChannelAction(channel.id));
-                      }}
-                    />
-                  </li>
-                ))}
-              </ul>
+                        onDelete={() => {
+                          if (
+                            !confirm(`確定要刪除客訴管道「${channel.name}」嗎？此操作無法復原。`)
+                          ) {
+                            return;
+                          }
+                          runAction(channel.id, () => deleteComplaintChannelAction(channel.id));
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              />
             )}
           </div>
         </div>

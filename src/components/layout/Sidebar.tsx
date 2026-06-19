@@ -13,10 +13,10 @@ const baseNavItems = [
   { href: "/", label: "案件總覽", icon: LayoutDashboard },
   { href: "/cases/new", label: "建立案件", icon: PlusCircle, requiresCreate: true },
   { href: "/cases", label: "案件列表", icon: List },
-  { href: "/users", label: "使用者管理", icon: Users, requiresAdmin: true },
-  { href: "/departments", label: "部門管理", icon: Building2, requiresAdmin: true },
-  { href: "/complaint-categories", label: "客訴類別管理", icon: Tags, requiresAdmin: true },
   { href: "/complaint-sources", label: "客訴來源管理", icon: Radio, requiresAdmin: true },
+  { href: "/complaint-categories", label: "客訴類別管理", icon: Tags, requiresAdmin: true },
+  { href: "/departments", label: "部門管理", icon: Building2, requiresAdmin: true },
+  { href: "/users", label: "使用者管理", icon: Users, requiresAdmin: true },
 ] as const;
 
 interface SidebarProps {

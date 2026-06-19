@@ -8,14 +8,17 @@ import {
   createComplaintCategoryAction,
   deleteComplaintCategoryAction,
   renameComplaintCategoryAction,
+  reorderComplaintCategoriesAction,
   setComplaintCategoryActiveAction,
 } from "@/app/actions/complaint-categories";
 import {
   createComplaintIssueAction,
   deleteComplaintIssueAction,
   renameComplaintIssueAction,
+  reorderComplaintIssuesAction,
   setComplaintIssueActiveAction,
 } from "@/app/actions/complaint-issues";
+import { DragSortableList } from "@/components/ui/DragSortableList";
 import { cn } from "@/lib/utils";
 
 interface ComplaintCategoryManagementTableProps {
@@ -318,60 +321,70 @@ export function ComplaintCategoryManagementTable({
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">客訴類別</h2>
+              <p className="mt-0.5 text-xs text-slate-500">拖曳左側圖示可調整順序</p>
             </div>
             {categories.length === 0 ? (
               <p className="p-6 text-center text-sm text-slate-500">目前沒有客訴類別</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
-                {categories.map((category) => {
+              <DragSortableList
+                items={categories}
+                disabled={pending}
+                onReorder={async (orderedIds) => {
+                  const result = await reorderComplaintCategoriesAction(orderedIds);
+                  if (!result?.error) router.refresh();
+                  return result;
+                }}
+                renderItem={(category, { dragHandle }) => {
                   const isSelected = category.id === selectedCategoryId;
                   const issueCount = issuesByCategoryId[category.id]?.length ?? 0;
                   return (
-                    <li
-                      key={category.id}
+                    <div
                       className={cn(
-                        "px-4 py-3",
+                        "flex gap-2 px-4 py-3",
                         isSelected && "bg-brand-50/60"
                       )}
                     >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCategoryId(category.id)}
-                        className="mb-2 w-full text-left"
-                      >
-                        <p className="text-sm font-medium text-slate-900">{category.name}</p>
-                        <div className="mt-1 flex flex-wrap items-center gap-2">
-                          <ActiveBadge active={category.is_active} />
-                          <span className="text-xs text-slate-500">{issueCount} 個問題</span>
-                        </div>
-                      </button>
-                      <RowActions
-                        isActive={category.is_active}
-                        pending={pending}
-                        isBusy={pending && actionPendingId === category.id}
-                        onEdit={() => setEditingCategory(category)}
-                        onToggle={() =>
-                          runAction(category.id, () =>
-                            setComplaintCategoryActiveAction(category.id, !category.is_active)
-                          )
-                        }
-                        onDelete={() => {
-                          if (
-                            !confirm(
-                              `確定要刪除客訴類別「${category.name}」嗎？此操作無法復原。`
+                      {dragHandle}
+                      <div className="min-w-0 flex-1">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCategoryId(category.id)}
+                          className="mb-2 w-full text-left"
+                        >
+                          <p className="text-sm font-medium text-slate-900">{category.name}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-2">
+                            <ActiveBadge active={category.is_active} />
+                            <span className="text-xs text-slate-500">{issueCount} 個問題</span>
+                          </div>
+                        </button>
+                        <RowActions
+                          isActive={category.is_active}
+                          pending={pending}
+                          isBusy={pending && actionPendingId === category.id}
+                          onEdit={() => setEditingCategory(category)}
+                          onToggle={() =>
+                            runAction(category.id, () =>
+                              setComplaintCategoryActiveAction(category.id, !category.is_active)
                             )
-                          ) {
-                            return;
                           }
-                          runAction(category.id, () =>
-                            deleteComplaintCategoryAction(category.id)
-                          );
-                        }}
-                      />
-                    </li>
+                          onDelete={() => {
+                            if (
+                              !confirm(
+                                `確定要刪除客訴類別「${category.name}」嗎？此操作無法復原。`
+                              )
+                            ) {
+                              return;
+                            }
+                            runAction(category.id, () =>
+                              deleteComplaintCategoryAction(category.id)
+                            );
+                          }}
+                        />
+                      </div>
+                    </div>
                   );
-                })}
-              </ul>
+                }}
+              />
             )}
           </div>
         </div>
@@ -420,43 +433,59 @@ export function ComplaintCategoryManagementTable({
                 客訴問題
                 {selectedCategory ? ` · ${selectedCategory.name}` : ""}
               </h2>
+              {selectedCategoryId && selectedIssues.length > 0 && (
+                <p className="mt-0.5 text-xs text-slate-500">拖曳左側圖示可調整順序</p>
+              )}
             </div>
             {!selectedCategoryId ? (
               <p className="p-6 text-center text-sm text-slate-500">請先選擇客訴類別</p>
             ) : selectedIssues.length === 0 ? (
               <p className="p-6 text-center text-sm text-slate-500">此類別尚無客訴問題</p>
             ) : (
-              <ul className="divide-y divide-slate-100">
-                {selectedIssues.map((issue) => (
-                  <li key={issue.id} className="px-4 py-3">
-                    <div className="mb-2">
-                      <p className="text-sm font-medium text-slate-900">{issue.name}</p>
-                      <div className="mt-1">
-                        <ActiveBadge active={issue.is_active} />
+              <DragSortableList
+                items={selectedIssues}
+                disabled={pending}
+                onReorder={async (orderedIds) => {
+                  const result = await reorderComplaintIssuesAction(
+                    selectedCategoryId,
+                    orderedIds
+                  );
+                  if (!result?.error) router.refresh();
+                  return result;
+                }}
+                renderItem={(issue, { dragHandle }) => (
+                  <div className="flex gap-2 px-4 py-3">
+                    {dragHandle}
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2">
+                        <p className="text-sm font-medium text-slate-900">{issue.name}</p>
+                        <div className="mt-1">
+                          <ActiveBadge active={issue.is_active} />
+                        </div>
                       </div>
-                    </div>
-                    <RowActions
-                      isActive={issue.is_active}
-                      pending={pending}
-                      isBusy={pending && actionPendingId === issue.id}
-                      onEdit={() => setEditingIssue(issue)}
-                      onToggle={() =>
-                        runAction(issue.id, () =>
-                          setComplaintIssueActiveAction(issue.id, !issue.is_active)
-                        )
-                      }
-                      onDelete={() => {
-                        if (
-                          !confirm(`確定要刪除客訴問題「${issue.name}」嗎？此操作無法復原。`)
-                        ) {
-                          return;
+                      <RowActions
+                        isActive={issue.is_active}
+                        pending={pending}
+                        isBusy={pending && actionPendingId === issue.id}
+                        onEdit={() => setEditingIssue(issue)}
+                        onToggle={() =>
+                          runAction(issue.id, () =>
+                            setComplaintIssueActiveAction(issue.id, !issue.is_active)
+                          )
                         }
-                        runAction(issue.id, () => deleteComplaintIssueAction(issue.id));
-                      }}
-                    />
-                  </li>
-                ))}
-              </ul>
+                        onDelete={() => {
+                          if (
+                            !confirm(`確定要刪除客訴問題「${issue.name}」嗎？此操作無法復原。`)
+                          ) {
+                            return;
+                          }
+                          runAction(issue.id, () => deleteComplaintIssueAction(issue.id));
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              />
             )}
           </div>
         </div>

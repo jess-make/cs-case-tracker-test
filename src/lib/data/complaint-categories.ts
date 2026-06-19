@@ -1,4 +1,9 @@
 import { mergeTaxonomyFilterNames } from "@/lib/complaint-taxonomy";
+import {
+  applySortOrderUpdates,
+  applyTaxonomySort,
+  getNextTaxonomySortOrder,
+} from "@/lib/taxonomy-sort-order";
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { countIssuesByCategoryId } from "@/lib/data/complaint-issues";
@@ -16,6 +21,7 @@ function normalizeComplaintCategory(
     id: String(raw.id ?? ""),
     name: String(raw.name ?? ""),
     is_active: raw.is_active !== false,
+    sort_order: Number(raw.sort_order ?? 0),
     created_at: String(raw.created_at ?? new Date().toISOString()),
     updated_at: String(raw.updated_at ?? new Date().toISOString()),
   };
@@ -23,11 +29,12 @@ function normalizeComplaintCategory(
 
 /** 下拉選單：僅啟用中的客訴類別名稱 */
 export async function getActiveComplaintCategoryNames(): Promise<string[]> {
-  const { data, error } = await (await supabase())
-    .from("complaint_categories")
-    .select("name")
-    .eq("is_active", true)
-    .order("name");
+  const { data, error } = await applyTaxonomySort(
+    (await supabase())
+      .from("complaint_categories")
+      .select("name")
+      .eq("is_active", true)
+  );
 
   if (error) throw error;
   return (data ?? []).map((row) => String(row.name));
@@ -37,10 +44,11 @@ export async function getActiveComplaintCategoryNames(): Promise<string[]> {
 export async function getComplaintCategoryNamesForCaseFilter(
   selectedCategory?: string
 ): Promise<string[]> {
-  const { data, error } = await (await supabase())
-    .from("complaint_categories")
-    .select("name, is_active")
-    .order("name");
+  const { data, error } = await applyTaxonomySort(
+    (await supabase())
+      .from("complaint_categories")
+      .select("name, is_active, sort_order")
+  );
 
   if (error) throw error;
 
@@ -56,10 +64,9 @@ export async function getComplaintCategoryNamesForCaseFilter(
 export async function getComplaintCategoriesForManagement(): Promise<
   ComplaintCategory[]
 > {
-  const { data, error } = await (await supabase())
-    .from("complaint_categories")
-    .select("*")
-    .order("name");
+  const { data, error } = await applyTaxonomySort(
+    (await supabase()).from("complaint_categories").select("*")
+  );
 
   if (error) throw error;
   return ((data as Record<string, unknown>[]) ?? []).map(
@@ -97,9 +104,14 @@ export async function createComplaintCategory(
   name: string
 ): Promise<ComplaintCategory> {
   const trimmed = name.trim();
-  const { data, error } = await (await supabase())
+  const client = await supabase();
+  const sort_order = await getNextTaxonomySortOrder(
+    client,
+    "complaint_categories"
+  );
+  const { data, error } = await client
     .from("complaint_categories")
-    .insert({ name: trimmed, is_active: true })
+    .insert({ name: trimmed, is_active: true, sort_order })
     .select("*")
     .single();
 
@@ -111,6 +123,29 @@ export async function createComplaintCategory(
   }
 
   return normalizeComplaintCategory(data as Record<string, unknown>);
+}
+
+export async function reorderComplaintCategories(
+  orderedIds: string[]
+): Promise<void> {
+  if (!orderedIds.length) return;
+
+  const client = await supabase();
+  const { data, error } = await client
+    .from("complaint_categories")
+    .select("id");
+
+  if (error) throw error;
+
+  const validIds = new Set((data ?? []).map((row) => String(row.id)));
+  if (
+    orderedIds.length !== validIds.size ||
+    !orderedIds.every((id) => validIds.has(id))
+  ) {
+    throw new Error("排序資料無效");
+  }
+
+  await applySortOrderUpdates(client, "complaint_categories", orderedIds);
 }
 
 export async function setComplaintCategoryActive(

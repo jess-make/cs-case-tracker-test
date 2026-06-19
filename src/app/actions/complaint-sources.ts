@@ -9,6 +9,8 @@ import {
   deleteComplaintSource,
   renameComplaintChannel,
   renameComplaintSource,
+  reorderComplaintChannels,
+  reorderComplaintSources,
   setComplaintChannelActive,
   setComplaintSourceActive,
 } from "@/lib/data/complaint-sources";
@@ -157,6 +159,44 @@ export async function deleteComplaintChannelAction(channelId: string) {
     return {
       error:
         err instanceof Error ? err.message : "刪除客訴管道失敗，請稍後再試",
+    };
+  }
+}
+
+export async function reorderComplaintSourcesAction(orderedIds: string[]) {
+  try {
+    await requireManageUsersPermission();
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return { error: "無效的排序資料" };
+    }
+    await reorderComplaintSources(orderedIds);
+    revalidate();
+    return { success: true as const };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "更新客訴來源排序失敗，請稍後再試",
+    };
+  }
+}
+
+export async function reorderComplaintChannelsAction(
+  sourceId: string,
+  orderedIds: string[]
+) {
+  try {
+    await requireManageUsersPermission();
+    if (!sourceId?.trim()) return { error: "無效的客訴來源" };
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return { error: "無效的排序資料" };
+    }
+    await reorderComplaintChannels(sourceId, orderedIds);
+    revalidate();
+    return { success: true as const };
+  } catch (err) {
+    return {
+      error:
+        err instanceof Error ? err.message : "更新客訴管道排序失敗，請稍後再試",
     };
   }
 }

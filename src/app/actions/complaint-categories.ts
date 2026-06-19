@@ -6,6 +6,7 @@ import {
   createComplaintCategory,
   deleteComplaintCategory,
   renameComplaintCategory,
+  reorderComplaintCategories,
   setComplaintCategoryActive,
 } from "@/lib/data/complaint-categories";
 
@@ -103,6 +104,22 @@ export async function deleteComplaintCategoryAction(categoryId: string) {
     const message =
       err instanceof Error ? err.message : "刪除客訴類別失敗，請稍後再試";
     console.error("[deleteComplaintCategoryAction]", message);
+    return { error: message };
+  }
+}
+
+export async function reorderComplaintCategoriesAction(orderedIds: string[]) {
+  try {
+    await requireManageUsersPermission();
+    if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
+      return { error: "無效的排序資料" };
+    }
+    await reorderComplaintCategories(orderedIds);
+    revalidateComplaintCategoryPaths();
+    return { success: true as const };
+  } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "更新客訴類別排序失敗，請稍後再試";
     return { error: message };
   }
 }

@@ -1,4 +1,10 @@
 import { mergeTaxonomyFilterNames } from "@/lib/complaint-taxonomy";
+import {
+  applyChildTaxonomyManagementSort,
+  applySortOrderUpdates,
+  applyTaxonomySort,
+  getNextTaxonomySortOrder,
+} from "@/lib/taxonomy-sort-order";
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import type { ComplaintIssue } from "@/types";
@@ -14,16 +20,17 @@ function normalizeIssue(raw: Record<string, unknown>): ComplaintIssue {
     category_id: String(raw.category_id ?? ""),
     name: String(raw.name ?? ""),
     is_active: raw.is_active !== false,
+    sort_order: Number(raw.sort_order ?? 0),
     created_at: String(raw.created_at ?? new Date().toISOString()),
     updated_at: String(raw.updated_at ?? new Date().toISOString()),
   };
 }
 
 export async function getComplaintIssuesForManagement(): Promise<ComplaintIssue[]> {
-  const { data, error } = await (await supabase())
-    .from("complaint_issues")
-    .select("*")
-    .order("name");
+  const { data, error } = await applyChildTaxonomyManagementSort(
+    (await supabase()).from("complaint_issues").select("*"),
+    "category_id"
+  );
 
   if (error) throw error;
   return ((data as Record<string, unknown>[]) ?? []).map(normalizeIssue);
@@ -72,9 +79,20 @@ export async function createComplaintIssue(
   name: string
 ): Promise<ComplaintIssue> {
   const trimmed = name.trim();
-  const { data, error } = await (await supabase())
+  const client = await supabase();
+  const sort_order = await getNextTaxonomySortOrder(
+    client,
+    "complaint_issues",
+    { column: "category_id", value: categoryId }
+  );
+  const { data, error } = await client
     .from("complaint_issues")
-    .insert({ category_id: categoryId, name: trimmed, is_active: true })
+    .insert({
+      category_id: categoryId,
+      name: trimmed,
+      is_active: true,
+      sort_order,
+    })
     .select("*")
     .single();
 
@@ -86,6 +104,32 @@ export async function createComplaintIssue(
   }
 
   return normalizeIssue(data as Record<string, unknown>);
+}
+
+export async function reorderComplaintIssues(
+  categoryId: string,
+  orderedIds: string[]
+): Promise<void> {
+  if (!categoryId?.trim()) throw new Error("無效的客訴類別");
+  if (!orderedIds.length) return;
+
+  const client = await supabase();
+  const { data, error } = await client
+    .from("complaint_issues")
+    .select("id")
+    .eq("category_id", categoryId);
+
+  if (error) throw error;
+
+  const validIds = new Set((data ?? []).map((row) => String(row.id)));
+  if (
+    orderedIds.length !== validIds.size ||
+    !orderedIds.every((id) => validIds.has(id))
+  ) {
+    throw new Error("排序資料無效");
+  }
+
+  await applySortOrderUpdates(client, "complaint_issues", orderedIds);
 }
 
 export async function setComplaintIssueActive(
@@ -178,10 +222,11 @@ export async function deleteComplaintIssue(id: string): Promise<void> {
 export async function getComplaintIssueNamesForCaseFilter(
   selected?: string
 ): Promise<string[]> {
-  const { data, error } = await (await supabase())
-    .from("complaint_issues")
-    .select("name, is_active")
-    .order("name");
+  const { data, error } = await applyTaxonomySort(
+    (await supabase())
+      .from("complaint_issues")
+      .select("name, is_active, sort_order")
+  );
 
   if (error) throw error;
 

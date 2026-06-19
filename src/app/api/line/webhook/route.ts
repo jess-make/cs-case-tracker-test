@@ -37,18 +37,52 @@ async function logWebhookEvent(event: LineWebhookEvent): Promise<void> {
 }
 
 async function handleMessageEvent(event: LineWebhookEvent): Promise<void> {
-  if (event.message?.type !== "text") return;
+  const messageText = event.message?.text ?? "";
+  const sourceUserId = event.source?.userId;
+  const replyToken = event.replyToken;
 
-  const text = event.message.text?.trim() ?? "";
-  const match = text.match(BIND_MESSAGE_PATTERN);
-  if (!match) return;
+  console.log("[LINE webhook] bind message event:", {
+    messageType: event.message?.type ?? null,
+    messageText,
+    hasSourceUserId: Boolean(sourceUserId?.trim()),
+    sourceUserId: sourceUserId ?? null,
+    hasReplyToken: Boolean(replyToken?.trim()),
+  });
 
-  console.log("[LINE webhook] bind attempt, token:", match[1]);
-  await handleLineBindMessage(
-    match[1],
-    event.source?.userId,
-    event.replyToken
-  );
+  if (event.message?.type !== "text") {
+    console.log("[LINE webhook] bind skip: message is not text type");
+    return;
+  }
+
+  const trimmedText = messageText.trim();
+  const match = trimmedText.match(BIND_MESSAGE_PATTERN);
+
+  console.log("[LINE webhook] bind parse:", {
+    trimmedText,
+    pattern: BIND_MESSAGE_PATTERN.toString(),
+    matched: Boolean(match),
+    parsedToken: match?.[1] ? match[1].toUpperCase() : null,
+  });
+
+  if (!match) {
+    console.log("[LINE webhook] bind skip: text does not match bind format");
+    return;
+  }
+
+  const parsedToken = match[1].toUpperCase();
+  console.log("[LINE webhook] bind attempt start:", {
+    parsedToken,
+    sourceUserId: sourceUserId ?? null,
+    hasReplyToken: Boolean(replyToken?.trim()),
+  });
+
+  try {
+    await handleLineBindMessage(parsedToken, sourceUserId, replyToken);
+    console.log("[LINE webhook] bind attempt finished:", { parsedToken });
+  } catch (err) {
+    console.error("[LINE webhook] bind attempt error:", err);
+    throw err;
+  }
 }
 
 /**
@@ -57,39 +91,49 @@ async function handleMessageEvent(event: LineWebhookEvent): Promise<void> {
  * LINE Messaging API Webhook（除錯 log + 綁定碼處理）
  */
 export async function POST(request: NextRequest) {
-  const channelSecret = process.env.LINE_CHANNEL_SECRET;
+  try {
+    const channelSecret = process.env.LINE_CHANNEL_SECRET;
 
-  if (!channelSecret) {
-    return NextResponse.json(
-      { message: "LINE webhook not configured" },
-      { status: 503 }
-    );
-  }
-
-  const signature = request.headers.get("x-line-signature");
-  const body = await request.text();
-
-  if (signature) {
-    const hash = crypto
-      .createHmac("SHA256", channelSecret)
-      .update(body)
-      .digest("base64");
-
-    if (hash !== signature) {
-      return NextResponse.json({ message: "Invalid signature" }, { status: 401 });
+    if (!channelSecret) {
+      return NextResponse.json(
+        { message: "LINE webhook not configured" },
+        { status: 503 }
+      );
     }
-  }
 
-  const events: LineWebhookEvent[] = JSON.parse(body).events ?? [];
+    const signature = request.headers.get("x-line-signature");
+    const body = await request.text();
 
-  for (const event of events) {
-    await logWebhookEvent(event);
-    if (event.type === "message") {
-      await handleMessageEvent(event);
+    if (signature) {
+      const hash = crypto
+        .createHmac("SHA256", channelSecret)
+        .update(body)
+        .digest("base64");
+
+      if (hash !== signature) {
+        return NextResponse.json({ message: "Invalid signature" }, { status: 401 });
+      }
     }
-  }
 
-  return NextResponse.json({ ok: true });
+    const events: LineWebhookEvent[] = JSON.parse(body).events ?? [];
+    console.log("[LINE webhook] received events count:", events.length);
+
+    for (const event of events) {
+      try {
+        await logWebhookEvent(event);
+        if (event.type === "message") {
+          await handleMessageEvent(event);
+        }
+      } catch (err) {
+        console.error("[LINE webhook] event processing error:", err);
+      }
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[LINE webhook] POST handler error:", err);
+    return NextResponse.json({ message: "Internal error" }, { status: 500 });
+  }
 }
 
 /** LINE Verify / 健康檢查 */

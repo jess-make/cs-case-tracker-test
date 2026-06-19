@@ -144,11 +144,17 @@ export async function consumeLineBindToken(
   const lineId = lineUserId.trim();
 
   if (!token || !lineId) {
+    console.log("[LINE webhook] bind consume: missing token or lineUserId", {
+      token,
+      lineId,
+    });
     return { ok: false, message: MSG_INVALID_TOKEN };
   }
 
   const admin = createAdminClient();
   const now = new Date().toISOString();
+
+  console.log("[LINE webhook] bind lookup token before query:", { token, now });
 
   const { data: bindToken, error: tokenError } = await admin
     .from("line_bind_tokens")
@@ -156,47 +162,105 @@ export async function consumeLineBindToken(
     .eq("token", token)
     .maybeSingle();
 
-  if (tokenError) throw tokenError;
-  if (
-    !bindToken ||
-    bindToken.used_at ||
-    String(bindToken.expires_at) <= now
-  ) {
+  if (tokenError) {
+    console.error("[LINE webhook] bind lookup token error:", tokenError);
+    throw tokenError;
+  }
+
+  const tokenFound = Boolean(bindToken);
+  const isUsed = Boolean(bindToken?.used_at);
+  const isExpired = bindToken ? String(bindToken.expires_at) <= now : false;
+
+  console.log("[LINE webhook] bind lookup token after query:", {
+    tokenFound,
+    tokenId: bindToken?.id ?? null,
+    userId: bindToken?.user_id ?? null,
+    expiresAt: bindToken?.expires_at ?? null,
+    usedAt: bindToken?.used_at ?? null,
+    isExpired,
+    isUsed,
+  });
+
+  if (!bindToken || isUsed || isExpired) {
+    console.log("[LINE webhook] bind reject: token invalid", {
+      reason: !bindToken ? "not_found" : isUsed ? "used" : "expired",
+    });
     return { ok: false, message: MSG_INVALID_TOKEN };
   }
+
+  const targetUserId = String(bindToken.user_id);
+  console.log("[LINE webhook] bind check duplicate line_user_id before query:", {
+    targetUserId,
+    lineId,
+  });
 
   const { data: existingUser, error: existingError } = await admin
     .from("users")
     .select("id")
     .eq("line_user_id", lineId)
-    .neq("id", bindToken.user_id)
+    .neq("id", targetUserId)
     .maybeSingle();
 
-  if (existingError) throw existingError;
+  if (existingError) {
+    console.error("[LINE webhook] bind duplicate check error:", existingError);
+    throw existingError;
+  }
+
+  console.log("[LINE webhook] bind check duplicate line_user_id after query:", {
+    alreadyBoundToOtherUser: Boolean(existingUser),
+    otherUserId: existingUser?.id ?? null,
+  });
+
   if (existingUser) {
     return { ok: false, message: MSG_ALREADY_BOUND };
   }
 
-  const { error: userError } = await admin
+  console.log("[LINE webhook] bind update users before:", {
+    targetUserId,
+    lineId,
+    fields: { line_user_id: lineId, must_bind_line: false },
+  });
+
+  const { data: updatedUser, error: userError } = await admin
     .from("users")
     .update({
       line_user_id: lineId,
       must_bind_line: false,
     })
-    .eq("id", bindToken.user_id);
+    .eq("id", targetUserId)
+    .select("id, line_user_id, must_bind_line")
+    .maybeSingle();
 
-  if (userError) throw userError;
+  if (userError) {
+    console.error("[LINE webhook] bind update users error:", userError);
+    throw userError;
+  }
 
-  const { error: markError } = await admin
+  console.log("[LINE webhook] bind update users after:", {
+    success: Boolean(updatedUser),
+    updatedUser,
+  });
+
+  const { data: markedToken, error: markError } = await admin
     .from("line_bind_tokens")
     .update({
       used_at: now,
       line_user_id: lineId,
     })
     .eq("id", bindToken.id)
-    .is("used_at", null);
+    .is("used_at", null)
+    .select("id, used_at, line_user_id")
+    .maybeSingle();
 
-  if (markError) throw markError;
+  if (markError) {
+    console.error("[LINE webhook] bind mark token used error:", markError);
+    throw markError;
+  }
+
+  console.log("[LINE webhook] bind mark token used after:", {
+    success: Boolean(markedToken),
+    markedToken,
+  });
 
   return { ok: true };
 }
@@ -207,12 +271,43 @@ export async function handleLineBindMessage(
   replyToken: string | undefined
 ): Promise<void> {
   const userId = lineUserId?.trim();
-  if (!userId || !replyToken?.trim()) {
-    console.log("[LINE webhook] bind message missing userId or replyToken");
+  const token = replyToken?.trim();
+
+  console.log("[LINE webhook] bind handleLineBindMessage:", {
+    rawToken,
+    hasLineUserId: Boolean(userId),
+    lineUserId: userId ?? null,
+    hasReplyToken: Boolean(token),
+  });
+
+  if (!userId || !token) {
+    console.log("[LINE webhook] bind abort: missing userId or replyToken", {
+      hasLineUserId: Boolean(userId),
+      hasReplyToken: Boolean(token),
+    });
     return;
   }
 
-  const result = await consumeLineBindToken(rawToken, userId);
-  const message = result.ok ? MSG_SUCCESS : result.message;
-  await sendLineReply(replyToken, message);
+  let replyMessage: string;
+
+  try {
+    const result = await consumeLineBindToken(rawToken, userId);
+    replyMessage = result.ok ? MSG_SUCCESS : result.message;
+    console.log("[LINE webhook] bind consume result:", result);
+  } catch (err) {
+    console.error("[LINE webhook] bind consumeLineBindToken error:", err);
+    replyMessage = MSG_INVALID_TOKEN;
+  }
+
+  console.log("[LINE webhook] bind reply before:", {
+    hasReplyToken: Boolean(token),
+    replyMessage,
+  });
+
+  try {
+    const replyResult = await sendLineReply(token, replyMessage);
+    console.log("[LINE webhook] bind reply after:", replyResult);
+  } catch (err) {
+    console.error("[LINE webhook] bind sendLineReply error:", err);
+  }
 }

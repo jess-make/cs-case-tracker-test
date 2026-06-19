@@ -6,7 +6,11 @@ import { createClient } from "@/lib/supabase/server";
 import { DEACTIVATED_ACCOUNT_MESSAGE } from "@/lib/auth/messages";
 import { fetchUserIsActive } from "@/lib/auth/inactive-account";
 import { validatePassword } from "@/lib/auth/password";
-import { clearMustChangePassword, getUserProfileFlags } from "@/lib/data/users";
+import {
+  clearMustChangePassword,
+  getUserProfileFlags,
+  isOnboardingIncomplete,
+} from "@/lib/data/users";
 
 export async function signInAction(
   _prev: { error?: string } | null,
@@ -35,7 +39,7 @@ export async function signInAction(
 
     const flags = await getUserProfileFlags(data.user.id);
     revalidatePath("/", "layout");
-    if (flags?.must_change_password) {
+    if (flags && isOnboardingIncomplete(flags)) {
       redirect("/change-password");
     }
   }
@@ -54,7 +58,7 @@ export async function signOutAction() {
 export async function changePasswordAction(
   _prev: { error?: string } | null,
   formData: FormData
-): Promise<{ error?: string } | null> {
+): Promise<{ error?: string; passwordUpdated?: boolean } | null> {
   const password = formData.get("password") as string;
   const confirmPassword = formData.get("confirm_password") as string;
 
@@ -80,7 +84,13 @@ export async function changePasswordAction(
   }
 
   const flags = await getUserProfileFlags(user.id);
-  if (!flags?.must_change_password) {
+  if (!flags) {
+    return { error: "找不到使用者資料" };
+  }
+  if (!flags.must_change_password) {
+    if (isOnboardingIncomplete(flags)) {
+      return { passwordUpdated: true };
+    }
     redirect("/");
   }
 
@@ -91,5 +101,11 @@ export async function changePasswordAction(
 
   await clearMustChangePassword(user.id);
   revalidatePath("/", "layout");
+
+  const updatedFlags = await getUserProfileFlags(user.id);
+  if (updatedFlags && isOnboardingIncomplete(updatedFlags)) {
+    return { passwordUpdated: true };
+  }
+
   redirect("/");
 }

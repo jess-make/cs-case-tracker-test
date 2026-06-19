@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { handleLineBindMessage } from "@/lib/data/line-bind-tokens";
 import { fetchLineUserProfile } from "@/lib/line/profile";
 
 /** 避免 trailing slash 造成 308 redirect（與 next.config trailingSlash: false 一致） */
@@ -8,11 +9,18 @@ export const runtime = "nodejs";
 
 interface LineWebhookEvent {
   type: string;
+  replyToken?: string;
   source?: {
     userId?: string;
     type?: string;
   };
+  message?: {
+    type?: string;
+    text?: string;
+  };
 }
+
+const BIND_MESSAGE_PATTERN = /^綁定\s+([A-Za-z0-9]{6})$/i;
 
 async function logWebhookEvent(event: LineWebhookEvent): Promise<void> {
   console.log("[LINE webhook] type:", event.type);
@@ -28,10 +36,25 @@ async function logWebhookEvent(event: LineWebhookEvent): Promise<void> {
   }
 }
 
+async function handleMessageEvent(event: LineWebhookEvent): Promise<void> {
+  if (event.message?.type !== "text") return;
+
+  const text = event.message.text?.trim() ?? "";
+  const match = text.match(BIND_MESSAGE_PATTERN);
+  if (!match) return;
+
+  console.log("[LINE webhook] bind attempt, token:", match[1]);
+  await handleLineBindMessage(
+    match[1],
+    event.source?.userId,
+    event.replyToken
+  );
+}
+
 /**
  * POST /api/line/webhook
  *
- * LINE Messaging API Webhook（除錯：log userId 供手動填入 users.line_user_id）
+ * LINE Messaging API Webhook（除錯 log + 綁定碼處理）
  */
 export async function POST(request: NextRequest) {
   const channelSecret = process.env.LINE_CHANNEL_SECRET;
@@ -61,6 +84,9 @@ export async function POST(request: NextRequest) {
 
   for (const event of events) {
     await logWebhookEvent(event);
+    if (event.type === "message") {
+      await handleMessageEvent(event);
+    }
   }
 
   return NextResponse.json({ ok: true });

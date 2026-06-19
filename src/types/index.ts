@@ -18,6 +18,7 @@ export interface User {
   line_user_id: string | null;
   is_active?: boolean;
   must_change_password?: boolean;
+  must_bind_line?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -121,6 +122,7 @@ export interface UpdateUserInput {
   line_user_id: string | null;
   is_active: boolean;
   must_change_password?: boolean;
+  must_bind_line?: boolean;
 }
 
 export interface CreateUserInput {

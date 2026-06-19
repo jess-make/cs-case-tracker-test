@@ -22,6 +22,7 @@ export function normalizeUser(raw: Record<string, unknown>): User {
     line_user_id: (raw.line_user_id as string | null) ?? null,
     is_active: raw.is_active !== false,
     must_change_password: raw.must_change_password === true,
+    must_bind_line: raw.must_bind_line === true,
     created_at: String(raw.created_at ?? ""),
     updated_at: String(raw.updated_at ?? ""),
   };

@@ -1,9 +1,10 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { ChangePasswordForm } from "@/components/auth/ChangePasswordForm";
+import { ChangePasswordOnboarding } from "@/components/auth/ChangePasswordOnboarding";
 import { APP_NAME, APP_SUBTITLE } from "@/lib/constants";
+import { getActiveLineBindTokenForUser } from "@/lib/data/line-bind-tokens";
 import { createClient } from "@/lib/supabase/server";
-import { getUserProfileFlags } from "@/lib/data/users";
+import { getUserProfileFlags, isOnboardingIncomplete } from "@/lib/data/users";
 
 export default async function ChangePasswordPage() {
   const supabase = await createClient();
@@ -19,13 +20,19 @@ export default async function ChangePasswordPage() {
   if (flags?.is_active === false) {
     redirect("/login?reason=deactivated");
   }
-  if (!flags?.must_change_password) {
+  if (!flags || !isOnboardingIncomplete(flags)) {
     redirect("/");
   }
 
+  const lineBound = Boolean(flags.line_user_id?.trim());
+  const initialToken =
+    flags.must_bind_line && !lineBound
+      ? await getActiveLineBindTokenForUser(user.id).catch(() => null)
+      : null;
+
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-lg">
         <div className="mb-8 flex flex-col items-center text-center">
           <Image
             src="/grevia-logo-full.png"
@@ -42,11 +49,13 @@ export default async function ChangePasswordPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm sm:p-8">
-          <h2 className="mb-1 text-lg font-semibold text-slate-900">設定新密碼</h2>
-          <p className="mb-6 text-sm text-slate-600">
-            首次登入須先修改密碼。密碼至少 8 碼，需包含英文與數字。
-          </p>
-          <ChangePasswordForm />
+          <h2 className="mb-6 text-lg font-semibold text-slate-900">首次登入設定</h2>
+          <ChangePasswordOnboarding
+            mustChangePassword={flags.must_change_password}
+            mustBindLine={flags.must_bind_line}
+            lineBound={lineBound}
+            initialToken={initialToken}
+          />
         </div>
       </div>
     </div>

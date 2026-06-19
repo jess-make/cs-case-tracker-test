@@ -32,6 +32,11 @@ export async function updateUser(
   if (input.must_change_password !== undefined) {
     payload.must_change_password = input.must_change_password;
   }
+  if (input.line_user_id?.trim()) {
+    payload.must_bind_line = false;
+  } else if (input.must_bind_line !== undefined) {
+    payload.must_bind_line = input.must_bind_line;
+  }
 
   const { data, error } = await (await supabase())
     .from("users")
@@ -57,10 +62,12 @@ export async function clearMustChangePassword(userId: string): Promise<void> {
 export async function getUserProfileFlags(userId: string): Promise<{
   is_active: boolean;
   must_change_password: boolean;
+  must_bind_line: boolean;
+  line_user_id: string | null;
 } | null> {
   const { data, error } = await (await supabase())
     .from("users")
-    .select("is_active, must_change_password")
+    .select("is_active, must_change_password, must_bind_line, line_user_id")
     .eq("id", userId)
     .maybeSingle();
 
@@ -68,5 +75,14 @@ export async function getUserProfileFlags(userId: string): Promise<{
   return {
     is_active: data.is_active !== false,
     must_change_password: data.must_change_password === true,
+    must_bind_line: data.must_bind_line === true,
+    line_user_id: (data.line_user_id as string | null) ?? null,
   };
+}
+
+export function isOnboardingIncomplete(flags: {
+  must_change_password: boolean;
+  must_bind_line: boolean;
+}): boolean {
+  return flags.must_change_password || flags.must_bind_line;
 }

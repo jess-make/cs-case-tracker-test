@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
   if (user) {
     const { data: profile } = await supabase
       .from("users")
-      .select("is_active, must_change_password")
+      .select("is_active, must_change_password, must_bind_line")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -77,8 +77,10 @@ export async function middleware(request: NextRequest) {
     }
 
     const mustChangePassword = profile?.must_change_password === true;
+    const mustBindLine = profile?.must_bind_line === true;
+    const onboardingIncomplete = mustChangePassword || mustBindLine;
 
-    if (mustChangePassword && !isChangePassword) {
+    if (onboardingIncomplete && !isChangePassword) {
       const url = request.nextUrl.clone();
       url.pathname = "/change-password";
       const redirect = NextResponse.redirect(url);
@@ -86,7 +88,7 @@ export async function middleware(request: NextRequest) {
       return redirect;
     }
 
-    if (!mustChangePassword && isChangePassword) {
+    if (!onboardingIncomplete && isChangePassword) {
       const url = request.nextUrl.clone();
       url.pathname = "/";
       return NextResponse.redirect(url);
@@ -103,11 +105,12 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     const { data: profile } = await supabase
       .from("users")
-      .select("must_change_password")
+      .select("must_change_password, must_bind_line")
       .eq("id", user.id)
       .maybeSingle();
-    url.pathname =
-      profile?.must_change_password === true ? "/change-password" : "/";
+    const onboardingIncomplete =
+      profile?.must_change_password === true || profile?.must_bind_line === true;
+    url.pathname = onboardingIncomplete ? "/change-password" : "/";
     const redirect = NextResponse.redirect(url);
     copyCookies(supabaseResponse, redirect);
     return redirect;

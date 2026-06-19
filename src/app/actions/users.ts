@@ -97,6 +97,7 @@ export async function createUserAction(formData: FormData) {
         line_user_id: null,
         is_active: true,
         must_change_password: true,
+        must_bind_line: true,
       });
     } catch (inner) {
       if (userId) {

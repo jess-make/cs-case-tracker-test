@@ -122,6 +122,12 @@ export async function updateUserAsAdmin(
   if (input.must_change_password !== undefined) {
     payload.must_change_password = input.must_change_password;
   }
+  if (input.must_bind_line !== undefined) {
+    payload.must_bind_line = input.must_bind_line;
+  }
+  if (input.line_user_id?.trim()) {
+    payload.must_bind_line = false;
+  }
 
   const { error } = await admin.from("users").update(payload).eq("id", id);
 

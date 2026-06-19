@@ -1,11 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { changePasswordAction } from "@/app/actions/auth";
 
 export function ChangePasswordForm() {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(changePasswordAction, null);
+
+  useEffect(() => {
+    if (state?.passwordUpdated) {
+      router.refresh();
+    }
+  }, [state?.passwordUpdated, router]);
 
   return (
     <form action={formAction} className="space-y-5">

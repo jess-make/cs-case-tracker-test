@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { KeyRound, Link2, Link2Off, Loader2, Pencil, Plus, Copy, X } from "lucide-react";
+import { KeyRound, Link2, Link2Off, Loader2, Pencil, Plus, X } from "lucide-react";
 import type { User, UserRole } from "@/types";
 import { ROLE_LABELS, USER_ROLES } from "@/lib/constants";
 import { buildDepartmentOptions } from "@/lib/case-department";
@@ -14,7 +14,6 @@ import {
 } from "@/app/actions/users";
 import {
   getLineBindStatus,
-  LINE_BIND_INSTRUCTION_TEXT,
   LINE_BIND_STATUS_LABELS,
   type LineBindStatus,
 } from "@/lib/user-line-bind";
@@ -74,31 +73,6 @@ function LineBindStatusBadge({ user }: { user: User }) {
     >
       {label}
     </span>
-  );
-}
-
-function CopyBindInstructionButton() {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(LINE_BIND_INSTRUCTION_TEXT);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      window.prompt("請複製以下綁定說明：", LINE_BIND_INSTRUCTION_TEXT);
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
-    >
-      <Copy className="h-4 w-4" />
-      {copied ? "已複製" : "複製綁定說明"}
-    </button>
   );
 }
 
@@ -179,7 +153,6 @@ function LineBindActionButtons({ user }: { user: User }) {
           <Link2Off className="h-4 w-4" />
           解除 LINE 綁定
         </button>
-        <CopyBindInstructionButton />
       </div>
       {error && <span className="mt-0.5 text-xs text-red-600">{error}</span>}
     </div>

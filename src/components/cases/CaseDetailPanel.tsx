@@ -24,6 +24,10 @@ import { CaseEditForm } from "@/components/cases/CaseEditForm";
 import { CaseAttachmentsSection } from "@/components/cases/CaseAttachmentsSection";
 import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
 import type { CasePermissions } from "@/lib/auth/permissions";
+import type {
+  CategoryIssueTaxonomy,
+  SourceChannelTaxonomy,
+} from "@/lib/data/complaint-taxonomy-form";
 
 const REPLY_REQUIRED_MESSAGE = "請輸入處理說明後再送出。";
 import {
@@ -39,12 +43,16 @@ export function CaseDetailPanel({
   attachments = [],
   permissions,
   activeDepartments,
+  categoryIssueTaxonomy,
+  sourceChannelTaxonomy,
 }: {
   caseData: Case;
   logs?: CaseLog[] | null;
   attachments?: CaseAttachment[];
   permissions: CasePermissions;
   activeDepartments: string[];
+  categoryIssueTaxonomy: CategoryIssueTaxonomy;
+  sourceChannelTaxonomy: SourceChannelTaxonomy;
 }) {
   const [reply, setReply] = useState("");
   const [replyError, setReplyError] = useState<string | null>(null);
@@ -130,6 +138,8 @@ export function CaseDetailPanel({
               attachments={attachments}
               canDeleteAttachment={permissions.canDeleteAttachment}
               activeDepartments={activeDepartments}
+              categoryIssueTaxonomy={categoryIssueTaxonomy}
+              sourceChannelTaxonomy={sourceChannelTaxonomy}
               onCancel={() => setEditing(false)}
               onSaved={() => {
                 setEditing(false);

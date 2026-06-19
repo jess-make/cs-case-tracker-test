@@ -138,6 +138,40 @@ export interface Department {
   updated_at: string;
 }
 
+export interface ComplaintCategory {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplaintIssue {
+  id: string;
+  category_id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplaintSource {
+  id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ComplaintChannel {
+  id: string;
+  source_id: string;
+  name: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface CaseFilters {
   status?: CaseStatus | "";
   assignee_id?: string | "";

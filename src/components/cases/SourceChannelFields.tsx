@@ -1,9 +1,10 @@
 "use client";
 
 import {
-  COMPLAINT_SOURCE_TYPES,
-  COMPLAINT_SOURCE_CHANNELS,
-} from "@/lib/constants";
+  buildChildNameOptions,
+  buildParentNameOptions,
+  type TaxonomyItem,
+} from "@/lib/complaint-taxonomy";
 
 interface SourceChannelFieldsProps {
   source: string;
@@ -12,7 +13,10 @@ interface SourceChannelFieldsProps {
   onDetailChange: (value: string) => void;
   inputClass: string;
   labelClass: string;
+  sourceItems: TaxonomyItem[];
+  channelsBySourceName: Record<string, TaxonomyItem[]>;
   legacySource?: string;
+  legacyChannel?: string;
 }
 
 export function SourceChannelFields({
@@ -22,14 +26,20 @@ export function SourceChannelFields({
   onDetailChange,
   inputClass,
   labelClass,
+  sourceItems,
+  channelsBySourceName,
   legacySource,
+  legacyChannel,
 }: SourceChannelFieldsProps) {
-  const channelOptions = source ? COMPLAINT_SOURCE_CHANNELS[source] ?? [] : [];
-  const showLegacy =
-    legacySource &&
-    !COMPLAINT_SOURCE_TYPES.includes(
-      legacySource as (typeof COMPLAINT_SOURCE_TYPES)[number]
-    );
+  const sourceOptions = buildParentNameOptions(
+    sourceItems,
+    legacySource ?? source
+  );
+  const channelOptions = buildChildNameOptions(
+    source,
+    channelsBySourceName,
+    legacyChannel ?? sourceDetail
+  );
 
   function handleSourceChange(value: string) {
     onSourceChange(value);
@@ -50,10 +60,7 @@ export function SourceChannelFields({
           <option value="" disabled>
             請選擇
           </option>
-          {showLegacy && source === legacySource && (
-            <option value={legacySource}>{legacySource}（舊資料）</option>
-          )}
-          {COMPLAINT_SOURCE_TYPES.map((s) => (
+          {sourceOptions.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>

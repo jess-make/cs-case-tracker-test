@@ -148,6 +148,9 @@ export async function getCases(
   assignee_id?: string;
   department?: string;
   complaint_type?: string;
+  complaint_subtype?: string;
+  source?: string;
+  source_detail?: string;
   urgency?: string;
   q?: string;
   date_preset?: string;
@@ -197,6 +200,11 @@ export async function getCases(
   }
   if (filters?.complaint_type)
     query = query.eq("complaint_type", filters.complaint_type);
+  if (filters?.complaint_subtype)
+    query = query.eq("complaint_subtype", filters.complaint_subtype);
+  if (filters?.source) query = query.eq("source", filters.source);
+  if (filters?.source_detail)
+    query = query.eq("source_detail", filters.source_detail);
   if (filters?.urgency) query = query.eq("urgency", filters.urgency);
 
   if (filters?.filterByDate) {

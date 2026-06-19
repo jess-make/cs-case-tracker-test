@@ -10,7 +10,10 @@ export const CASE_LIST_FILTER_PARAM_KEYS = [
   "assignee_id",
   "department",
   "urgency",
+  "source",
+  "source_detail",
   "complaint_type",
+  "complaint_subtype",
   "q",
 ] as const;
 

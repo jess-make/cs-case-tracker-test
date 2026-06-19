@@ -141,6 +141,7 @@ export interface Department {
 export interface CaseFilters {
   status?: CaseStatus | "";
   assignee_id?: string | "";
+  department?: string | "";
   complaint_type?: string | "";
   urgency?: UrgencyLevel | "";
   q?: string;

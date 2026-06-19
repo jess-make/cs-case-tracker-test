@@ -12,7 +12,6 @@ import type { UrgencyLevel } from "@/types";
 import { createCaseAction } from "@/app/actions/cases";
 import { SourceChannelFields } from "@/components/cases/SourceChannelFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
-import { buildDepartmentOptions } from "@/lib/case-department";
 import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
 import { Loader2 } from "lucide-react";
 import {

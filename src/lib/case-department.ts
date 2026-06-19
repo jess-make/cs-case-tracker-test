@@ -5,6 +5,9 @@ export function hasAssignedDepartment(
   return Boolean(department?.trim());
 }
 
+/** 案件列表篩選：暫未指派部門的 query 值 */
+export const DEPARTMENT_FILTER_UNASSIGNED = "__unassigned__";
+
 /** 選單選項：啟用部門 + 保留目前值（停用部門仍顯示於編輯畫面） */
 export function buildDepartmentOptions(
   activeDepartments: string[],

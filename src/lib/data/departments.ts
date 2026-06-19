@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
+import { DEPARTMENT_FILTER_UNASSIGNED } from "@/lib/case-department";
 import type { Department } from "@/types";
 
 function supabase() {
@@ -71,4 +72,40 @@ export async function setDepartmentActive(
 
   if (error) throw error;
   return normalizeDepartment(data as Record<string, unknown>);
+}
+
+/** 案件列表篩選：啟用部門 + 停用部門 + 目前選取（含舊資料孤兒名稱） */
+export async function getDepartmentNamesForCaseFilter(
+  selectedDepartment?: string
+): Promise<string[]> {
+  const { data, error } = await (await supabase())
+    .from("departments")
+    .select("name, is_active")
+    .order("name");
+
+  if (error) throw error;
+
+  const active: string[] = [];
+  const inactive: string[] = [];
+  for (const row of data ?? []) {
+    const name = String(row.name);
+    if (row.is_active !== false) active.push(name);
+    else inactive.push(name);
+  }
+
+  const merged = [...active];
+  for (const name of inactive) {
+    if (!merged.includes(name)) merged.push(name);
+  }
+
+  const selected = selectedDepartment?.trim();
+  if (
+    selected &&
+    selected !== DEPARTMENT_FILTER_UNASSIGNED &&
+    !merged.includes(selected)
+  ) {
+    merged.push(selected);
+  }
+
+  return merged;
 }

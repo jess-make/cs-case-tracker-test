@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { CaseTable } from "@/components/cases/CaseTable";
 import { CaseFilters } from "@/components/cases/CaseFilters";
 import { getCases, getAssigneeFilterUsers } from "@/lib/data/cases";
+import { getDepartmentNamesForCaseFilter } from "@/lib/data/departments";
 import { requireUser } from "@/lib/auth/session";
 import { canCreateCase } from "@/lib/auth/permissions";
 import { Suspense } from "react";
@@ -11,6 +12,7 @@ interface PageProps {
   searchParams: Promise<{
     status?: string;
     assignee_id?: string;
+    department?: string;
     complaint_type?: string;
     urgency?: string;
     q?: string;
@@ -25,10 +27,11 @@ export default async function CasesPage({ searchParams }: PageProps) {
   const currentUser = await requireUser();
   const showCreate = canCreateCase(currentUser);
 
-  const [cases, handlers] = await Promise.all([
+  const [cases, handlers, departmentOptions] = await Promise.all([
     getCases(currentUser, {
       status: params.status,
       assignee_id: params.assignee_id,
+      department: params.department,
       complaint_type: params.complaint_type,
       urgency: params.urgency,
       q: params.q,
@@ -38,6 +41,7 @@ export default async function CasesPage({ searchParams }: PageProps) {
       filterByDate: true,
     }),
     getAssigneeFilterUsers(),
+    getDepartmentNamesForCaseFilter(params.department).catch(() => [] as string[]),
   ]);
 
   return (
@@ -60,7 +64,7 @@ export default async function CasesPage({ searchParams }: PageProps) {
 
       <Suspense fallback={<div className="mb-6 h-16 animate-pulse rounded-xl bg-slate-100" />}>
         <div className="mb-6">
-          <CaseFilters handlers={handlers} />
+          <CaseFilters handlers={handlers} departmentOptions={departmentOptions} />
         </div>
       </Suspense>
 

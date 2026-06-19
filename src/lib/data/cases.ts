@@ -7,6 +7,7 @@ import {
   getCaseVisibilityFilter,
   NO_ACCESS_CASE_ID,
 } from "@/lib/auth/case-access";
+import { DEPARTMENT_FILTER_UNASSIGNED } from "@/lib/case-department";
 import type { SessionUser } from "@/lib/auth/session";
 import type {
   Case,
@@ -145,6 +146,7 @@ export async function getCases(
   filters?: {
   status?: string;
   assignee_id?: string;
+  department?: string;
   complaint_type?: string;
   urgency?: string;
   q?: string;
@@ -186,6 +188,13 @@ export async function getCases(
     query = query.eq("status", status);
   }
   if (filters?.assignee_id) query = query.eq("assignee_id", filters.assignee_id);
+  if (filters?.department) {
+    if (filters.department === DEPARTMENT_FILTER_UNASSIGNED) {
+      query = query.or("department.is.null,department.eq.");
+    } else {
+      query = query.eq("department", filters.department);
+    }
+  }
   if (filters?.complaint_type)
     query = query.eq("complaint_type", filters.complaint_type);
   if (filters?.urgency) query = query.eq("urgency", filters.urgency);

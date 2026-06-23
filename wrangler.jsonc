@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "cs-case-tracker",
   "main": ".open-next/worker.js",
+  "account_id": "8f369d04e0a98fd11d69f14f5228539f",
   "compatibility_date": "2025-04-01",
   "compatibility_flags": [
     "nodejs_compat"
@@ -9,5 +10,11 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
-  }
+  },
+  "routes": [
+    {
+      "pattern": "cs.grevia.com.tw",
+      "custom_domain": true
+    }
+  ]
 }

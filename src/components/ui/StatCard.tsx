@@ -6,6 +6,8 @@ interface StatCardProps {
   value: number;
   icon: LucideIcon;
   color?: "green" | "slate" | "amber" | "cyan" | "emerald" | "red";
+  detail?: string;
+  active?: boolean;
 }
 
 const colorMap = {
@@ -17,15 +19,32 @@ const colorMap = {
   red: "bg-red-50 text-red-600",
 };
 
-export function StatCard({ title, value, icon: Icon, color = "green" }: StatCardProps) {
+export function StatCard({
+  title,
+  value,
+  icon: Icon,
+  color = "green",
+  detail,
+  active = false,
+}: StatCardProps) {
   return (
-    <div className="flex h-full min-h-[112px] flex-col rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:min-h-[120px] lg:min-h-[120px] lg:p-3.5 xl:p-4">
+    <div
+      className={cn(
+        "flex h-full min-h-[112px] flex-col rounded-xl border bg-white p-3 shadow-sm transition-colors sm:min-h-[120px] lg:min-h-[120px] lg:p-3.5 xl:p-4",
+        active ? "border-brand-500 ring-2 ring-brand-500/15" : "border-slate-200"
+      )}
+    >
       <div className="flex flex-1 items-start justify-between gap-1.5 lg:gap-2">
         <div className="min-w-0 flex-1 overflow-hidden">
           <p className="truncate whitespace-nowrap text-xs font-semibold text-slate-700 sm:text-sm">
             {title}
           </p>
           <p className="mt-1 text-2xl font-bold text-slate-900 sm:mt-2 sm:text-3xl">{value}</p>
+          {detail && (
+            <p className="mt-2 whitespace-pre text-sm font-semibold leading-snug text-slate-600">
+              {detail}
+            </p>
+          )}
         </div>
         <div className={cn("shrink-0 rounded-lg p-1.5 sm:p-2 lg:p-2", colorMap[color])}>
           <Icon className="h-5 w-5 sm:h-6 sm:w-6" />

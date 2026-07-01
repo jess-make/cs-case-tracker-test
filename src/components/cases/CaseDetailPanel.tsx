@@ -196,10 +196,9 @@ export function CaseDetailPanel({
           )}
         </section>
 
-        {permissions.canReplyCase && (
         <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-          <h3 className="mb-4 text-base font-semibold text-slate-900">處理回覆</h3>
-          {displayStatus !== "closed" && (
+          <h3 className="mb-4 text-base font-semibold text-slate-900">案件回覆</h3>
+          {permissions.canReplyCase && displayStatus !== "closed" && (
             <form onSubmit={handleReply} className="mb-6">
               {replyError && (
                 <p
@@ -226,12 +225,12 @@ export function CaseDetailPanel({
                 rows={3}
                 required
                 className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                placeholder="請輸入處理回覆或改善說明（必填）"
+                placeholder="請輸入處理回覆內容"
               />
               {permissions.canManageAttachments && (
                 <div className="mt-3">
                   <LocalAttachmentPicker
-                    label="附加檔案"
+                    label="附件"
                     labelClass="mb-1 block text-sm font-medium text-slate-700"
                     hint={ATTACHMENT_HINT}
                     files={replyAttachments}
@@ -285,7 +284,6 @@ export function CaseDetailPanel({
             )}
           </div>
         </section>
-        )}
       </div>
 
       <div className="min-w-0 space-y-4">

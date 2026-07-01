@@ -11,6 +11,10 @@ import {
 } from "date-fns";
 import { format } from "date-fns";
 import { zhTW } from "date-fns/locale";
+import {
+  getTaipeiCalendarDate,
+  toTaipeiDayBoundsIso,
+} from "@/lib/taipei-time";
 
 export type DatePreset =
   | "today"
@@ -74,21 +78,23 @@ export function getPresetRange(
   preset: DatePreset,
   baseDate = new Date()
 ): { from: Date; to: Date } {
+  const taipeiBaseDate = getTaipeiCalendarDate(baseDate);
+
   switch (preset) {
     case "today":
-      return { from: startOfDay(baseDate), to: endOfDay(baseDate) };
+      return { from: startOfDay(taipeiBaseDate), to: endOfDay(taipeiBaseDate) };
     case "week":
       return {
-        from: startOfWeek(baseDate, { weekStartsOn: 1 }),
-        to: endOfWeek(baseDate, { weekStartsOn: 1 }),
+        from: startOfWeek(taipeiBaseDate, { weekStartsOn: 1 }),
+        to: endOfWeek(taipeiBaseDate, { weekStartsOn: 1 }),
       };
     case "month":
       return {
-        from: startOfMonth(baseDate),
-        to: endOfMonth(baseDate),
+        from: startOfMonth(taipeiBaseDate),
+        to: endOfMonth(taipeiBaseDate),
       };
     case "last_month": {
-      const prev = subMonths(baseDate, 1);
+      const prev = subMonths(taipeiBaseDate, 1);
       return {
         from: startOfMonth(prev),
         to: endOfMonth(prev),
@@ -96,13 +102,13 @@ export function getPresetRange(
     }
     case "quarter":
       return {
-        from: startOfQuarter(baseDate),
-        to: endOfQuarter(baseDate),
+        from: startOfQuarter(taipeiBaseDate),
+        to: endOfQuarter(taipeiBaseDate),
       };
     case "custom":
       return {
-        from: startOfMonth(baseDate),
-        to: endOfMonth(baseDate),
+        from: startOfMonth(taipeiBaseDate),
+        to: endOfMonth(taipeiBaseDate),
       };
   }
 }
@@ -131,9 +137,12 @@ export function resolveDateRange(params: {
 }
 
 export function toCreatedAtBounds(from: Date, to: Date) {
+  const fromBounds = toTaipeiDayBoundsIso(from);
+  const toBounds = toTaipeiDayBoundsIso(to);
+
   return {
-    from: startOfDay(from).toISOString(),
-    to: endOfDay(to).toISOString(),
+    from: fromBounds.from,
+    to: toBounds.to,
   };
 }
 

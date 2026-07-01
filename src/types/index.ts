@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "manager" | "user";
+export type UserRole = "admin" | "boss" | "manager" | "user";
 
 export type CaseStatus =
   | "new"
@@ -80,10 +80,12 @@ export interface CaseLog {
 }
 
 export interface DashboardStats {
-  total: number;
-  newCases: number;
+  currentMonth: number;
+  previousMonth: number;
+  monthDelta: number;
+  unassigned: number;
   inProgress: number;
-  pendingConfirm: number;
+  pendingClose: number;
   closed: number;
 }
 

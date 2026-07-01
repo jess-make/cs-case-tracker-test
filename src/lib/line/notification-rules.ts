@@ -14,7 +14,11 @@ export type NotificationActor = Pick<
 >;
 
 function isCsOrAdmin(actor: NotificationActor): boolean {
-  return actor.role === "admin" || actor.department?.trim() === CS_DEPARTMENT;
+  const department = actor.department?.trim() ?? "";
+  return (
+    actor.role === "admin" ||
+    department === CS_DEPARTMENT
+  );
 }
 
 /**

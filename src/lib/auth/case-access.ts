@@ -1,17 +1,24 @@
 import type { SessionUser } from "@/lib/auth/session";
-import { CS_DEPARTMENT } from "@/lib/constants";
+import { BUSINESS_HEAD_DEPARTMENT, CS_DEPARTMENT } from "@/lib/constants";
 import type { Case } from "@/types";
 
 const NO_ACCESS_CASE_ID = "00000000-0000-0000-0000-000000000000";
 
 /** admin 或客服部：可查看全部案件 */
 export function hasUnrestrictedCaseAccess(user: SessionUser): boolean {
-  return user.role === "admin" || user.department?.trim() === CS_DEPARTMENT;
+  return hasFullCaseControl(user) || user.role === "boss" || isBusinessHeadViewer(user);
 }
 
 /** 可建立案件：admin、業務部-客服 */
 export function canCreateCase(user: SessionUser): boolean {
-  return user.role === "admin" || user.department?.trim() === CS_DEPARTMENT;
+  return hasFullCaseControl(user);
+}
+
+export function isBusinessHeadViewer(user: SessionUser): boolean {
+  return (
+    user.role === "manager" &&
+    user.department?.trim() === BUSINESS_HEAD_DEPARTMENT
+  );
 }
 
 /** 是否可查看單一案件 */
@@ -78,7 +85,10 @@ export interface CasePermissions {
 
 /** admin 或客服部：完整案件操作權限 */
 export function hasFullCaseControl(user: SessionUser): boolean {
-  return hasUnrestrictedCaseAccess(user);
+  return (
+    user.role === "admin" ||
+    user.department?.trim() === CS_DEPARTMENT
+  );
 }
 
 export function getCasePermissions(
@@ -96,10 +106,11 @@ export function getCasePermissions(
   }
 
   const full = hasFullCaseControl(user);
+  const readOnly = user.role === "boss" || isBusinessHeadViewer(user);
   return {
     canEditCase: full,
-    canReplyCase: true,
-    canManageAttachments: true,
+    canReplyCase: !readOnly,
+    canManageAttachments: !readOnly,
     canDeleteAttachment: full,
     canAdvanceWorkflow: full,
   };

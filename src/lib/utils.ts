@@ -1,14 +1,18 @@
-import { format, formatDistanceToNow, parseISO } from "date-fns";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { zhTW } from "date-fns/locale";
+import {
+  formatTaipeiDateOnly,
+  formatTaipeiDateTime,
+} from "@/lib/taipei-time";
 
 export function formatDate(date: string | null | undefined): string {
   if (!date) return "—";
-  return format(parseISO(date), "yyyy/MM/dd HH:mm", { locale: zhTW });
+  return formatTaipeiDateTime(date);
 }
 
 export function formatDateOnly(date: string | null | undefined): string {
   if (!date) return "—";
-  return format(parseISO(date), "yyyy/MM/dd", { locale: zhTW });
+  return formatTaipeiDateOnly(date);
 }
 
 export function formatRelative(date: string | null | undefined): string {

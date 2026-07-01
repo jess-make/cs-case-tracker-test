@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { handleLineBindMessage } from "@/lib/data/line-bind-tokens";
 import { fetchLineUserProfile } from "@/lib/line/profile";
+import {
+  sendLineReplyMessages,
+  type LineReplyMessage,
+} from "@/lib/line/reply";
 
 /** 避免 trailing slash 造成 308 redirect（與 next.config trailingSlash: false 一致） */
 export const dynamic = "force-dynamic";
@@ -21,6 +25,41 @@ interface LineWebhookEvent {
 }
 
 const BIND_MESSAGE_PATTERN = /^綁定\s+([A-Za-z0-9]{6})$/i;
+const DEFAULT_REPLY_TEXT =
+  "感謝尼的訊息！\n\n很抱歉，我知道尼很想跟我聊天\n但目前我還無法個別回覆訊息。\n有問題請洽客服部喔！";
+
+function buildDefaultReplyMessages(): LineReplyMessage[] {
+  const text = (
+    process.env.LINE_DEFAULT_REPLY_TEXT?.trim() || DEFAULT_REPLY_TEXT
+  ).replace(/\\n/g, "\n");
+  const stickerPackageId = process.env.LINE_DEFAULT_REPLY_STICKER_PACKAGE_ID?.trim();
+  const stickerId = process.env.LINE_DEFAULT_REPLY_STICKER_ID?.trim();
+
+  const messages: LineReplyMessage[] = [{ type: "text", text }];
+  if (stickerPackageId && stickerId) {
+    messages.push({
+      type: "sticker",
+      packageId: stickerPackageId,
+      stickerId,
+    });
+  }
+  return messages;
+}
+
+async function sendDefaultReply(replyToken: string | undefined): Promise<void> {
+  const token = replyToken?.trim();
+  if (!token) {
+    console.log("[LINE webhook] default reply skip: missing replyToken");
+    return;
+  }
+
+  const result = await sendLineReplyMessages(
+    token,
+    buildDefaultReplyMessages(),
+    "LINE webhook default"
+  );
+  console.log("[LINE webhook] default reply result:", result);
+}
 
 async function logWebhookEvent(event: LineWebhookEvent): Promise<void> {
   console.log("[LINE webhook] type:", event.type);
@@ -50,7 +89,8 @@ async function handleMessageEvent(event: LineWebhookEvent): Promise<void> {
   });
 
   if (event.message?.type !== "text") {
-    console.log("[LINE webhook] bind skip: message is not text type");
+    console.log("[LINE webhook] default reply: message is not text type");
+    await sendDefaultReply(replyToken);
     return;
   }
 
@@ -65,7 +105,8 @@ async function handleMessageEvent(event: LineWebhookEvent): Promise<void> {
   });
 
   if (!match) {
-    console.log("[LINE webhook] bind skip: text does not match bind format");
+    console.log("[LINE webhook] default reply: text does not match bind format");
+    await sendDefaultReply(replyToken);
     return;
   }
 

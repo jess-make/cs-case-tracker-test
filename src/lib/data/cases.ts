@@ -8,6 +8,7 @@ import {
   NO_ACCESS_CASE_ID,
 } from "@/lib/auth/case-access";
 import { DEPARTMENT_FILTER_UNASSIGNED } from "@/lib/case-department";
+import { CS_DEPARTMENT } from "@/lib/constants";
 import type { SessionUser } from "@/lib/auth/session";
 import type {
   Case,
@@ -26,7 +27,9 @@ import {
 } from "@/lib/data/case-logs";
 import { buildCaseEditSummary } from "@/lib/case-edit-summary";
 import { hasAssignedDepartment } from "@/lib/case-department";
-import { normalizeCaseStatus } from "@/lib/case-status";
+import {
+  buildDashboardStats,
+} from "@/lib/dashboard-cases";
 
 function supabase() {
   assertSupabaseEnv();
@@ -127,12 +130,12 @@ export async function getUsers(): Promise<User[]> {
   return (data as User[]) ?? [];
 }
 
-/** 案件列表「處理人」篩選選項（全部可指派使用者） */
+/** 案件列表「處理人」篩選選項（僅客服部門人員） */
 export async function getAssigneeFilterUsers(): Promise<User[]> {
   const { data, error } = await (await supabase())
     .from("users")
     .select("*")
-    .in("role", ["admin", "manager", "user"])
+    .eq("department", CS_DEPARTMENT)
     .order("name");
   if (error) throw error;
   return (data as User[]) ?? [];
@@ -291,17 +294,7 @@ export async function getCaseLogs(caseId: string): Promise<CaseLog[]> {
 
 export async function getDashboardStats(viewer: SessionUser): Promise<DashboardStats> {
   const cases = await getCases(viewer);
-
-  return {
-    total: cases.length,
-    newCases: cases.filter((c) => normalizeCaseStatus(c.status) === "new").length,
-    inProgress: cases.filter((c) => {
-      const s = normalizeCaseStatus(c.status);
-      return ["in_progress", "replied"].includes(s);
-    }).length,
-    pendingConfirm: cases.filter((c) => c.status === "cs_confirming").length,
-    closed: cases.filter((c) => c.status === "closed").length,
-  };
+  return buildDashboardStats(cases);
 }
 
 export async function createCase(
@@ -309,8 +302,6 @@ export async function createCase(
   createdById: string | null
 ): Promise<Case> {
   const client = await supabase();
-  const datePart = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const caseNumber = `CS-${datePart}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
   const assignedDepartment = hasAssignedDepartment(input.department);
   const initialStatus = assignedDepartment ? "in_progress" : "new";
 
@@ -333,7 +324,6 @@ export async function createCase(
       status: initialStatus,
       due_date: null,
       attachment_urls: [],
-      case_number: caseNumber,
     })
     .select()
     .single();

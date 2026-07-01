@@ -4,11 +4,21 @@ import {
   DEPARTMENT_FILTER_UNASSIGNED,
   isProtectedSystemDepartment,
 } from "@/lib/case-department";
+import { BUSINESS_HEAD_DEPARTMENT } from "@/lib/constants";
 import type { Department } from "@/types";
 
 function supabase() {
   assertSupabaseEnv();
   return createClient();
+}
+
+const CASE_FILTER_EXCLUDED_DEPARTMENTS = new Set([
+  "CEO",
+  BUSINESS_HEAD_DEPARTMENT,
+]);
+
+function canShowInCaseFilter(name: string): boolean {
+  return !CASE_FILTER_EXCLUDED_DEPARTMENTS.has(name.trim());
 }
 
 function normalizeDepartment(raw: Record<string, unknown>): Department {
@@ -92,6 +102,7 @@ export async function getDepartmentNamesForCaseFilter(
   const inactive: string[] = [];
   for (const row of data ?? []) {
     const name = String(row.name);
+    if (!canShowInCaseFilter(name)) continue;
     if (row.is_active !== false) active.push(name);
     else inactive.push(name);
   }
@@ -105,6 +116,7 @@ export async function getDepartmentNamesForCaseFilter(
   if (
     selected &&
     selected !== DEPARTMENT_FILTER_UNASSIGNED &&
+    canShowInCaseFilter(selected) &&
     !merged.includes(selected)
   ) {
     merged.push(selected);

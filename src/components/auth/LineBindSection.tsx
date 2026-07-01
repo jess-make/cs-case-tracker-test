@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, RefreshCw } from "lucide-react";
+import { ExternalLink, Loader2, MessageCircle, RefreshCw, Send } from "lucide-react";
 import {
   generateLineBindTokenAction,
   getLineBindStatusAction,
@@ -21,6 +21,16 @@ function formatExpiry(expiresAt: string): string {
   const date = new Date(expiresAt);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString("zh-TW", { hour: "2-digit", minute: "2-digit" });
+}
+
+function buildLineOfficialAccountUrl(lineId: string): string {
+  return `https://line.me/R/ti/p/${encodeURIComponent(lineId)}`;
+}
+
+function buildLineBindMessageUrl(lineId: string, bindMessage: string): string {
+  return `https://line.me/R/oaMessage/${encodeURIComponent(lineId)}/?${encodeURIComponent(
+    bindMessage
+  )}`;
 }
 
 export function LineBindSection({
@@ -81,6 +91,16 @@ export function LineBindSection({
   }
 
   const botName = APP_NAME.replace(/平台$/, "").trim();
+  const lineOfficialAccountId =
+    process.env.NEXT_PUBLIC_LINE_OFFICIAL_ACCOUNT_ID?.trim() ?? "";
+  const lineOfficialAccountUrl = lineOfficialAccountId
+    ? buildLineOfficialAccountUrl(lineOfficialAccountId)
+    : "";
+  const lineBindMessage = token ? `綁定 ${token.token}` : "";
+  const lineBindMessageUrl =
+    lineOfficialAccountId && lineBindMessage
+      ? buildLineBindMessageUrl(lineOfficialAccountId, lineBindMessage)
+      : "";
 
   return (
     <section className="rounded-xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
@@ -118,6 +138,29 @@ export function LineBindSection({
           )}
 
           <div className="flex flex-col gap-2 sm:flex-row">
+            {lineOfficialAccountUrl && (
+              <a
+                href={lineOfficialAccountUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                <MessageCircle className="h-4 w-4" />
+                加入 LINE 好友
+                <ExternalLink className="h-3.5 w-3.5" />
+              </a>
+            )}
+            {lineBindMessageUrl && (
+              <a
+                href={lineBindMessageUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-brand-200 bg-white px-4 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50"
+              >
+                <Send className="h-4 w-4" />
+                開啟 LINE 傳送綁定碼
+              </a>
+            )}
             <button
               type="button"
               onClick={() => handleGenerate(Boolean(token))}

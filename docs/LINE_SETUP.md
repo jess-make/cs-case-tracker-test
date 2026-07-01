@@ -234,7 +234,7 @@ sequenceDiagram
 
 ## Vercel Environment Variables
 
-於 **Vercel** → 專案 → **Settings** → **Environment Variables** 設定（Production / Preview 依需求勾選）。
+於部署平台的環境變數設定，正式站目前使用 **Cloudflare Workers**。
 
 ### 必要（推播 + Webhook）
 
@@ -248,6 +248,7 @@ sequenceDiagram
 
 | 變數 | 用途 |
 |------|------|
+| `NEXT_PUBLIC_LINE_OFFICIAL_ACCOUNT_ID` | 綁定頁產生「加入 LINE 好友」與預填綁定訊息連結，例如 `@linedevelopers` |
 | `LINE_NOTIFY_INTERNAL_SECRET` | 保護 `POST /api/line/notify` |
 | `LINE_USER_ID` | `GET /api/line/test` 單一對象測試推播 |
 
@@ -261,7 +262,7 @@ sequenceDiagram
 
 ### 本地開發
 
-複製 `.env.example` 為 `.env.local` 並填入相同變數。修改 env 後需**重啟** `npm run dev`；Vercel 變更後需**重新 deploy**。
+複製 `.env.example` 為 `.env.local` 並填入相同變數。修改 env 後需**重啟** `npm run dev`；部署平台變更後需**重新 deploy**。
 
 ---
 

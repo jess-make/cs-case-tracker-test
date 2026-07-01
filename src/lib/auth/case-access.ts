@@ -1,24 +1,21 @@
 import type { SessionUser } from "@/lib/auth/session";
-import { BUSINESS_HEAD_DEPARTMENT, CS_DEPARTMENT } from "@/lib/constants";
+import { CS_DEPARTMENT } from "@/lib/constants";
+import {
+  getDepartmentScopeLikePattern,
+  isDepartmentInScope,
+} from "@/lib/department-scope";
 import type { Case } from "@/types";
 
 const NO_ACCESS_CASE_ID = "00000000-0000-0000-0000-000000000000";
 
-/** admin 或客服部：可查看全部案件 */
+/** admin、客服部、boss：可查看全部案件 */
 export function hasUnrestrictedCaseAccess(user: SessionUser): boolean {
-  return hasFullCaseControl(user) || user.role === "boss" || isBusinessHeadViewer(user);
+  return hasFullCaseControl(user) || user.role === "boss";
 }
 
 /** 可建立案件：admin、業務部-客服 */
 export function canCreateCase(user: SessionUser): boolean {
   return hasFullCaseControl(user);
-}
-
-export function isBusinessHeadViewer(user: SessionUser): boolean {
-  return (
-    user.role === "manager" &&
-    user.department?.trim() === BUSINESS_HEAD_DEPARTMENT
-  );
 }
 
 /** 是否可查看單一案件 */
@@ -27,6 +24,10 @@ export function canViewCase(user: SessionUser, caseData: Case): boolean {
 
   const caseDept = caseData.department?.trim() || null;
   const userDept = user.department?.trim() || null;
+
+  if (user.role === "department_head") {
+    return isDepartmentInScope(caseDept, userDept);
+  }
 
   if (user.role === "manager") {
     return Boolean(userDept && caseDept && caseDept === userDept);
@@ -49,6 +50,7 @@ export type CaseVisibilityFilter =
   | { type: "all" }
   | { type: "none" }
   | { type: "department"; department: string }
+  | { type: "department_scope"; department: string; pattern: string }
   | { type: "assignee"; userId: string }
   | { type: "assignee_or_department"; userId: string; department: string };
 
@@ -57,6 +59,15 @@ export function getCaseVisibilityFilter(user: SessionUser): CaseVisibilityFilter
   if (hasUnrestrictedCaseAccess(user)) return { type: "all" };
 
   const userDept = user.department?.trim();
+
+  if (user.role === "department_head") {
+    if (!userDept) return { type: "none" };
+    return {
+      type: "department_scope",
+      department: userDept,
+      pattern: getDepartmentScopeLikePattern(userDept),
+    };
+  }
 
   if (user.role === "manager") {
     if (!userDept) return { type: "none" };
@@ -106,7 +117,7 @@ export function getCasePermissions(
   }
 
   const full = hasFullCaseControl(user);
-  const readOnly = user.role === "boss" || isBusinessHeadViewer(user);
+  const readOnly = user.role === "boss";
   return {
     canEditCase: full,
     canReplyCase: !readOnly,

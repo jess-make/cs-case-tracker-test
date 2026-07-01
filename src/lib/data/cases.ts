@@ -176,6 +176,11 @@ export async function getCases(
     case "department":
       query = query.eq("department", visibility.department);
       break;
+    case "department_scope":
+      query = query.or(
+        `department.eq.${visibility.department},department.like.${visibility.pattern}`
+      );
+      break;
     case "assignee":
       query = query.eq("assignee_id", visibility.userId);
       break;

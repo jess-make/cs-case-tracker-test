@@ -37,11 +37,18 @@ export const URGENCY_COLORS: Record<UrgencyLevel, string> = {
 export const ROLE_LABELS: Record<UserRole, string> = {
   admin: "系統管理員",
   boss: "老闆",
+  department_head: "部門主管",
   manager: "主管",
   user: "一般使用者",
 };
 
-export const USER_ROLES: UserRole[] = ["admin", "boss", "manager", "user"];
+export const USER_ROLES: UserRole[] = [
+  "admin",
+  "boss",
+  "department_head",
+  "manager",
+  "user",
+];
 
 export const COMPLAINT_SOURCE_TYPES = ["綠途", "通路"] as const;
 

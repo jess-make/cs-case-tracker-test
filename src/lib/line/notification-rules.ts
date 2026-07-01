@@ -1,6 +1,7 @@
 import { CS_DEPARTMENT } from "@/lib/constants";
 import { hasAssignedDepartment } from "@/lib/case-department";
 import {
+  filterByDepartmentAudience,
   filterByDepartment,
   withLineUserId,
   uniqueLineUserIds,
@@ -32,7 +33,7 @@ export function resolveCaseCreatedRecipients(
 
   if (hasAssignedDepartment(caseData.department)) {
     return uniqueLineUserIds(
-      filterByDepartment(pool, caseData.department!.trim())
+      filterByDepartmentAudience(pool, caseData.department!.trim())
     );
   }
 
@@ -51,7 +52,7 @@ export function resolveDepartmentAssignedRecipients(
   }
 
   return uniqueLineUserIds(
-    filterByDepartment(withLineUserId(activeUsers), caseData.department!.trim())
+    filterByDepartmentAudience(withLineUserId(activeUsers), caseData.department!.trim())
   );
 }
 
@@ -76,7 +77,7 @@ export function resolveCaseRepliedRecipients(
   }
 
   return uniqueLineUserIds(
-    filterByDepartment(pool, caseData.department!.trim())
+    filterByDepartmentAudience(pool, caseData.department!.trim())
   );
 }
 

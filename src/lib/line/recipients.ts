@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { normalizeUser } from "@/lib/data/normalize";
+import { isDepartmentInScope } from "@/lib/department-scope";
 import type { User } from "@/types";
 
 async function supabase() {
@@ -48,6 +49,23 @@ export function withLineUserId(users: User[]): User[] {
 export function filterByDepartment(users: User[], department: string): User[] {
   const dept = department.trim();
   return users.filter((u) => u.department?.trim() === dept);
+}
+
+export function filterByDepartmentAudience(
+  users: User[],
+  department: string
+): User[] {
+  const dept = department.trim();
+
+  return users.filter((user) => {
+    const userDept = user.department?.trim();
+    if (!userDept) return false;
+    if (userDept === dept) return true;
+    return (
+      user.role === "department_head" &&
+      isDepartmentInScope(dept, userDept)
+    );
+  });
 }
 
 /** 去除重複 line_user_id，保留第一筆對應使用者 */

@@ -1,10 +1,22 @@
 import type { UserRole } from "@/types";
 
-const VALID_ROLES = new Set<UserRole>(["admin", "boss", "manager", "user"]);
+const VALID_ROLES = new Set<UserRole>([
+  "admin",
+  "boss",
+  "department_head",
+  "manager",
+  "user",
+]);
 
 /** 將 DB 角色正規化（相容舊 cs / handler） */
 export function normalizeUserRole(role: string | null | undefined): UserRole {
-  if (role === "admin" || role === "boss" || role === "manager" || role === "user") {
+  if (
+    role === "admin" ||
+    role === "boss" ||
+    role === "department_head" ||
+    role === "manager" ||
+    role === "user"
+  ) {
     return role;
   }
   if (role === "cs" || role === "handler") return "user";

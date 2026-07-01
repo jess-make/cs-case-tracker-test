@@ -171,6 +171,9 @@ export async function updateUserAction(userId: string, formData: FormData) {
     if (!isUserRole(parsed.role)) {
       return { error: "無效的角色" };
     }
+    if (admin.id === userId && parsed.role !== "admin") {
+      return { error: "無法移除自己的系統管理員權限" };
+    }
     if (admin.id === userId && !parsed.is_active) {
       return { error: "無法停用自己的帳號" };
     }

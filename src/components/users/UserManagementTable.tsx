@@ -264,18 +264,35 @@ function UserEditDialog({
               <label className={labelClass} htmlFor="user-role">
                 角色
               </label>
-              <select
-                id="user-role"
-                name="role"
-                defaultValue={user.role}
-                className={inputClass}
-              >
-                {USER_ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {ROLE_LABELS[role]}
-                  </option>
-                ))}
-              </select>
+              {isSelf ? (
+                <>
+                  <input type="hidden" name="role" value={user.role} />
+                  <select
+                    id="user-role"
+                    value={user.role}
+                    disabled
+                    className={inputClass}
+                  >
+                    <option value={user.role}>{ROLE_LABELS[user.role]}</option>
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    無法變更自己的系統管理員權限。
+                  </p>
+                </>
+              ) : (
+                <select
+                  id="user-role"
+                  name="role"
+                  defaultValue={user.role}
+                  className={inputClass}
+                >
+                  {USER_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_LABELS[role]}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>

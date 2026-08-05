@@ -97,7 +97,7 @@ export async function createComplaintChannelAction(
   try {
     await requireManageUsersPermission();
     const name = (formData.get("name") as string)?.trim();
-    if (!name) return { error: "請填寫案件管道名稱" };
+    if (!name) return { error: "請填寫服務管道名稱" };
     if (!sourceId?.trim()) return { error: "無效的案件來源" };
     await createComplaintChannel(sourceId, name);
     revalidate();
@@ -105,7 +105,7 @@ export async function createComplaintChannelAction(
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "新增案件管道失敗，請稍後再試",
+        err instanceof Error ? err.message : "新增服務管道失敗，請稍後再試",
     };
   }
 }
@@ -116,14 +116,14 @@ export async function setComplaintChannelActiveAction(
 ) {
   try {
     await requireManageUsersPermission();
-    if (!channelId?.trim()) return { error: "無效的案件管道" };
+    if (!channelId?.trim()) return { error: "無效的服務管道" };
     await setComplaintChannelActive(channelId, isActive);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "更新案件管道狀態失敗，請稍後再試",
+        err instanceof Error ? err.message : "更新服務管道狀態失敗，請稍後再試",
     };
   }
 }
@@ -135,15 +135,15 @@ export async function renameComplaintChannelAction(
   try {
     await requireManageUsersPermission();
     const name = (formData.get("name") as string)?.trim();
-    if (!name) return { error: "請填寫案件管道名稱" };
-    if (!channelId?.trim()) return { error: "無效的案件管道" };
+    if (!name) return { error: "請填寫服務管道名稱" };
+    if (!channelId?.trim()) return { error: "無效的服務管道" };
     await renameComplaintChannel(channelId, name);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "修改案件管道失敗，請稍後再試",
+        err instanceof Error ? err.message : "修改服務管道失敗，請稍後再試",
     };
   }
 }
@@ -151,14 +151,14 @@ export async function renameComplaintChannelAction(
 export async function deleteComplaintChannelAction(channelId: string) {
   try {
     await requireManageUsersPermission();
-    if (!channelId?.trim()) return { error: "無效的案件管道" };
+    if (!channelId?.trim()) return { error: "無效的服務管道" };
     await deleteComplaintChannel(channelId);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "刪除案件管道失敗，請稍後再試",
+        err instanceof Error ? err.message : "刪除服務管道失敗，請稍後再試",
     };
   }
 }
@@ -196,7 +196,7 @@ export async function reorderComplaintChannelsAction(
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "更新案件管道排序失敗，請稍後再試",
+        err instanceof Error ? err.message : "更新服務管道排序失敗，請稍後再試",
     };
   }
 }

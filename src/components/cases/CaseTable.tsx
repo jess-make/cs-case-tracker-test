@@ -49,7 +49,7 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs text-slate-500">案件管道</dt>
+              <dt className="text-xs text-slate-500">服務管道</dt>
               <dd className="truncate text-slate-700">{c.source_detail?.trim() || "—"}</dd>
             </div>
             <div>
@@ -79,7 +79,7 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
             <th className="px-4 py-3 font-medium text-slate-600">案件編號</th>
             <th className="px-4 py-3 font-medium text-slate-600">客戶</th>
             <th className="px-4 py-3 font-medium text-slate-600">案件類型</th>
-            <th className="px-4 py-3 font-medium text-slate-600">案件管道</th>
+            <th className="px-4 py-3 font-medium text-slate-600">服務管道</th>
             <th className="px-4 py-3 font-medium text-slate-600">緊急程度</th>
             <th className="px-4 py-3 font-medium text-slate-600">案件狀態</th>
             <th className="px-4 py-3 font-medium text-slate-600">處理人</th>

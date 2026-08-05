@@ -19,7 +19,7 @@ export default async function ComplaintCategoriesPage() {
           案件類別管理
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          共 {categories.length} 個類別 · 僅系統管理員可編輯 · 停用後不會出現在新案件選單，既有案件仍保留原類別與問題名稱
+          共 {categories.length} 個類別 · 僅系統管理員可編輯 · 停用後不會出現在新案件選單，既有案件仍保留原類別與子分類名稱
         </p>
       </div>
 

@@ -239,7 +239,7 @@ export async function deleteComplaintCategory(id: string): Promise<void> {
 
   const issueCount = await countIssuesByCategoryId(id);
   if (issueCount > 0) {
-    throw new Error("無法刪除案件類別，請先刪除底下的案件問題。");
+    throw new Error("無法刪除案件類別，請先刪除底下的子分類。");
   }
 
   const { error } = await (await supabase())

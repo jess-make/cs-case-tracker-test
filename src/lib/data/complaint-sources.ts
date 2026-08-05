@@ -239,7 +239,7 @@ export async function deleteComplaintSource(id: string): Promise<void> {
 
   const channels = await countChannelsBySourceId(id);
   if (channels > 0) {
-    throw new Error("無法刪除案件來源，請先刪除底下的案件管道。");
+    throw new Error("無法刪除案件來源，請先刪除底下的服務管道。");
   }
 
   const { error } = await (await supabase())
@@ -269,7 +269,7 @@ export async function createComplaintChannel(
 
   if (error) {
     if (error.code === "23505") {
-      throw new Error("此來源下已有相同管道名稱");
+      throw new Error("此來源下已有相同服務管道名稱");
     }
     throw error;
   }
@@ -323,11 +323,11 @@ export async function renameComplaintChannel(
   newName: string
 ): Promise<ComplaintChannel> {
   const trimmed = newName.trim();
-  if (!trimmed) throw new Error("案件管道名稱不可為空");
+  if (!trimmed) throw new Error("服務管道名稱不可為空");
 
   const client = await supabase();
   const existing = await getComplaintChannelById(id);
-  if (!existing) throw new Error("找不到案件管道");
+  if (!existing) throw new Error("找不到服務管道");
 
   const oldName = existing.name;
   if (oldName === trimmed) return existing;
@@ -340,7 +340,7 @@ export async function renameComplaintChannel(
     .neq("id", id)
     .maybeSingle();
 
-  if (duplicate) throw new Error("此來源下已有相同管道名稱");
+  if (duplicate) throw new Error("此來源下已有相同服務管道名稱");
 
   const { error: casesError } = await client
     .from("cases")
@@ -348,7 +348,7 @@ export async function renameComplaintChannel(
     .eq("source_detail", oldName);
 
   if (casesError) {
-    throw new Error(`更新案件管道失敗：${casesError.message}`);
+    throw new Error(`更新服務管道失敗：${casesError.message}`);
   }
 
   const { data, error } = await client
@@ -363,8 +363,8 @@ export async function renameComplaintChannel(
       .from("cases")
       .update({ source_detail: oldName })
       .eq("source_detail", trimmed);
-    if (error.code === "23505") throw new Error("此來源下已有相同管道名稱");
-    throw new Error(`更新案件管道失敗：${error.message}`);
+    if (error.code === "23505") throw new Error("此來源下已有相同服務管道名稱");
+    throw new Error(`更新服務管道失敗：${error.message}`);
   }
 
   return normalizeChannel(data as Record<string, unknown>);
@@ -372,12 +372,12 @@ export async function renameComplaintChannel(
 
 export async function deleteComplaintChannel(id: string): Promise<void> {
   const existing = await getComplaintChannelById(id);
-  if (!existing) throw new Error("找不到案件管道");
+  if (!existing) throw new Error("找不到服務管道");
 
   const cases = await getComplaintChannelUsageCount(existing.name);
   if (cases > 0) {
     throw new Error(
-      `無法刪除案件管道，目前仍有 ${cases} 筆案件使用此管道。`
+      `無法刪除服務管道，目前仍有 ${cases} 筆案件使用此服務管道。`
     );
   }
 

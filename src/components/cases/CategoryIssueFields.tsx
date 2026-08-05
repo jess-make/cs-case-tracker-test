@@ -68,7 +68,7 @@ export function CategoryIssueFields({
         </select>
       </div>
       <div>
-        <label className={labelClass}>案件問題 *</label>
+        <label className={labelClass}>子分類 *</label>
         <select
           name="complaint_subtype"
           required={Boolean(category)}

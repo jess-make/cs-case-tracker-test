@@ -68,7 +68,7 @@ export function SourceChannelFields({
         </select>
       </div>
       <div>
-        <label className={labelClass}>案件管道 *</label>
+        <label className={labelClass}>服務管道 *</label>
         <select
           name="source_detail"
           required

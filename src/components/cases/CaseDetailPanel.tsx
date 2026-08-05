@@ -164,13 +164,13 @@ export function CaseDetailPanel({
             <InfoRow icon={Building2} label="案件來源" value={caseData.source} />
             <InfoRow
               icon={Building2}
-              label="案件管道"
+              label="服務管道"
               value={caseData.source_detail?.trim() || "—"}
             />
             <InfoRow icon={Building2} label="案件類別" value={caseData.complaint_type} />
             <InfoRow
               icon={Building2}
-              label="案件問題"
+              label="子分類"
               value={caseData.complaint_subtype ?? "—"}
             />
             <InfoRow icon={Building2} label="指派部門" value={caseData.department?.trim() || "—"} />

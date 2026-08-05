@@ -98,7 +98,7 @@ export async function createComplaintIssue(
 
   if (error) {
     if (error.code === "23505") {
-      throw new Error("此類別下已有相同問題名稱");
+      throw new Error("此類別下已有相同子分類名稱");
     }
     throw error;
   }
@@ -152,11 +152,11 @@ export async function renameComplaintIssue(
   newName: string
 ): Promise<ComplaintIssue> {
   const trimmed = newName.trim();
-  if (!trimmed) throw new Error("案件問題名稱不可為空");
+  if (!trimmed) throw new Error("子分類名稱不可為空");
 
   const client = await supabase();
   const existing = await getComplaintIssueById(id);
-  if (!existing) throw new Error("找不到案件問題");
+  if (!existing) throw new Error("找不到子分類");
 
   const oldName = existing.name;
   if (oldName === trimmed) return existing;
@@ -169,7 +169,7 @@ export async function renameComplaintIssue(
     .neq("id", id)
     .maybeSingle();
 
-  if (duplicate) throw new Error("此類別下已有相同問題名稱");
+  if (duplicate) throw new Error("此類別下已有相同子分類名稱");
 
   const { error: casesError } = await client
     .from("cases")
@@ -177,7 +177,7 @@ export async function renameComplaintIssue(
     .eq("complaint_subtype", oldName);
 
   if (casesError) {
-    throw new Error(`更新案件問題失敗：${casesError.message}`);
+    throw new Error(`更新子分類失敗：${casesError.message}`);
   }
 
   const { data, error } = await client
@@ -192,8 +192,8 @@ export async function renameComplaintIssue(
       .from("cases")
       .update({ complaint_subtype: oldName })
       .eq("complaint_subtype", trimmed);
-    if (error.code === "23505") throw new Error("此類別下已有相同問題名稱");
-    throw new Error(`更新案件問題失敗：${error.message}`);
+    if (error.code === "23505") throw new Error("此類別下已有相同子分類名稱");
+    throw new Error(`更新子分類失敗：${error.message}`);
   }
 
   return normalizeIssue(data as Record<string, unknown>);
@@ -201,12 +201,12 @@ export async function renameComplaintIssue(
 
 export async function deleteComplaintIssue(id: string): Promise<void> {
   const existing = await getComplaintIssueById(id);
-  if (!existing) throw new Error("找不到案件問題");
+  if (!existing) throw new Error("找不到子分類");
 
   const cases = await getComplaintIssueUsageCount(existing.name);
   if (cases > 0) {
     throw new Error(
-      `無法刪除案件問題，目前仍有 ${cases} 筆案件使用此問題。`
+      `無法刪除子分類，目前仍有 ${cases} 筆案件使用此子分類。`
     );
   }
 
@@ -218,7 +218,7 @@ export async function deleteComplaintIssue(id: string): Promise<void> {
   if (error) throw error;
 }
 
-/** 篩選用：全部問題名稱 */
+/** 篩選用：全部子分類名稱 */
 export async function getComplaintIssueNamesForCaseFilter(
   selected?: string
 ): Promise<string[]> {

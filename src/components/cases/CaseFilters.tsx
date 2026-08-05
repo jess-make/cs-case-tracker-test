@@ -198,7 +198,7 @@ export function CaseFilters({
         </div>
 
         <div className="min-w-0 sm:max-w-xs">
-          <label className="mb-1 block text-xs font-medium text-slate-500">案件管道</label>
+          <label className="mb-1 block text-xs font-medium text-slate-500">服務管道</label>
           <select
             className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             value={selectedChannel}
@@ -230,7 +230,7 @@ export function CaseFilters({
         </div>
 
         <div className="min-w-0 sm:max-w-xs">
-          <label className="mb-1 block text-xs font-medium text-slate-500">案件問題</label>
+          <label className="mb-1 block text-xs font-medium text-slate-500">子分類</label>
           <select
             className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             value={selectedIssue}

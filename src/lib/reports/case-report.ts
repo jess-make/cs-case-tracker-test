@@ -203,31 +203,31 @@ export function buildCaseReportCsv(cases: Case[], filters: ReportFilters): strin
 
   appendGroupSection(
     lines,
-    "各部門客訴量與結案率",
+    "各部門案件量與結案率",
     cases,
     groupBy(cases, (caseData) => caseData.department?.trim() || "暫未指派")
   );
   appendGroupSection(
     lines,
-    "客訴類別佔比",
+    "案件類別佔比",
     cases,
     groupBy(cases, (caseData) => caseData.complaint_type)
   );
   appendGroupSection(
     lines,
-    "客訴問題佔比",
+    "案件問題佔比",
     cases,
     groupBy(cases, (caseData) => formatComplaintLabel(caseData.complaint_type, caseData.complaint_subtype))
   );
   appendGroupSection(
     lines,
-    "客訴來源佔比",
+    "案件來源佔比",
     cases,
     groupBy(cases, (caseData) => caseData.source)
   );
   appendGroupSection(
     lines,
-    "客訴管道佔比",
+    "案件管道佔比",
     cases,
     groupBy(cases, (caseData) => caseData.source_detail?.trim() || "未填寫")
   );
@@ -246,10 +246,10 @@ export function buildCaseReportCsv(cases: Case[], filters: ReportFilters): strin
       "建檔日",
       "案件編號",
       "客戶",
-      "客訴來源",
-      "客訴管道",
-      "客訴類別",
-      "客訴問題",
+      "案件來源",
+      "案件管道",
+      "案件類別",
+      "案件問題",
       "指派部門",
       "處理人",
       "緊急程度",

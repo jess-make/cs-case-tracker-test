@@ -282,11 +282,11 @@ export function ComplaintSourceManagementPanel({
             onSubmit={handleCreateSource}
             className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
           >
-            <h2 className="mb-3 text-sm font-semibold text-slate-900">新增客訴來源</h2>
+            <h2 className="mb-3 text-sm font-semibold text-slate-900">新增案件來源</h2>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-1">
                 <label className={labelClass} htmlFor="complaint-source-name">
-                  客訴來源名稱
+                  案件來源名稱
                 </label>
                 <input
                   id="complaint-source-name"
@@ -314,11 +314,11 @@ export function ComplaintSourceManagementPanel({
 
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">客訴來源</h2>
+              <h2 className="text-sm font-semibold text-slate-900">案件來源</h2>
               <p className="mt-0.5 text-xs text-slate-500">拖曳左側圖示可調整順序</p>
             </div>
             {sources.length === 0 ? (
-              <p className="p-6 text-center text-sm text-slate-500">目前沒有客訴來源</p>
+              <p className="p-6 text-center text-sm text-slate-500">目前沒有案件來源</p>
             ) : (
               <DragSortableList
                 items={sources}
@@ -364,7 +364,7 @@ export function ComplaintSourceManagementPanel({
                           onDelete={() => {
                             if (
                               !confirm(
-                                `確定要刪除客訴來源「${source.name}」嗎？此操作無法復原。`
+                                `確定要刪除案件來源「${source.name}」嗎？此操作無法復原。`
                               )
                             ) {
                               return;
@@ -389,13 +389,13 @@ export function ComplaintSourceManagementPanel({
             className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
           >
             <h2 className="mb-3 text-sm font-semibold text-slate-900">
-              新增客訴管道
+              新增案件管道
               {selectedSource ? `（${selectedSource.name}）` : ""}
             </h2>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-1">
                 <label className={labelClass} htmlFor="complaint-channel-name">
-                  客訴管道名稱
+                  案件管道名稱
                 </label>
                 <input
                   id="complaint-channel-name"
@@ -424,7 +424,7 @@ export function ComplaintSourceManagementPanel({
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">
-                客訴管道
+                案件管道
                 {selectedSource ? ` · ${selectedSource.name}` : ""}
               </h2>
               {selectedSourceId && selectedChannels.length > 0 && (
@@ -432,9 +432,9 @@ export function ComplaintSourceManagementPanel({
               )}
             </div>
             {!selectedSourceId ? (
-              <p className="p-6 text-center text-sm text-slate-500">請先選擇客訴來源</p>
+              <p className="p-6 text-center text-sm text-slate-500">請先選擇案件來源</p>
             ) : selectedChannels.length === 0 ? (
-              <p className="p-6 text-center text-sm text-slate-500">此來源尚無客訴管道</p>
+              <p className="p-6 text-center text-sm text-slate-500">此來源尚無案件管道</p>
             ) : (
               <DragSortableList
                 items={selectedChannels}
@@ -469,7 +469,7 @@ export function ComplaintSourceManagementPanel({
                         }
                         onDelete={() => {
                           if (
-                            !confirm(`確定要刪除客訴管道「${channel.name}」嗎？此操作無法復原。`)
+                            !confirm(`確定要刪除案件管道「${channel.name}」嗎？此操作無法復原。`)
                           ) {
                             return;
                           }
@@ -488,14 +488,14 @@ export function ComplaintSourceManagementPanel({
       {editingSource && (
         <EditNameDialog
           key={editingSource.id}
-          title="編輯客訴來源"
-          label="客訴來源名稱"
+          title="編輯案件來源"
+          label="案件來源名稱"
           initialName={editingSource.name}
           open
           onClose={() => setEditingSource(null)}
           confirmRename={(oldName, newName) =>
             confirm(
-              `確定要將客訴來源「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
+              `確定要將案件來源「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
             )
           }
           onSave={async (name) => {
@@ -509,14 +509,14 @@ export function ComplaintSourceManagementPanel({
       {editingChannel && (
         <EditNameDialog
           key={editingChannel.id}
-          title="編輯客訴管道"
-          label="客訴管道名稱"
+          title="編輯案件管道"
+          label="案件管道名稱"
           initialName={editingChannel.name}
           open
           onClose={() => setEditingChannel(null)}
           confirmRename={(oldName, newName) =>
             confirm(
-              `確定要將客訴管道「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
+              `確定要將案件管道「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
             )
           }
           onSave={async (name) => {

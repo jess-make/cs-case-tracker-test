@@ -49,7 +49,7 @@ export function CategoryIssueFields({
   return (
     <>
       <div>
-        <label className={labelClass}>客訴類別 *</label>
+        <label className={labelClass}>案件類別 *</label>
         <select
           name="complaint_type"
           required
@@ -68,7 +68,7 @@ export function CategoryIssueFields({
         </select>
       </div>
       <div>
-        <label className={labelClass}>客訴問題 *</label>
+        <label className={labelClass}>案件問題 *</label>
         <select
           name="complaint_subtype"
           required={Boolean(category)}
@@ -79,7 +79,7 @@ export function CategoryIssueFields({
           tabIndex={category ? 0 : -1}
         >
           <option value="" disabled>
-            {category ? "請選擇" : "請先選擇客訴類別"}
+            {category ? "請選擇" : "請先選擇案件類別"}
           </option>
           {issueOptions.map((sub) => (
             <option key={sub} value={sub}>

@@ -49,7 +49,7 @@ export function SourceChannelFields({
   return (
     <>
       <div>
-        <label className={labelClass}>客訴來源 *</label>
+        <label className={labelClass}>案件來源 *</label>
         <select
           name="source"
           required
@@ -68,7 +68,7 @@ export function SourceChannelFields({
         </select>
       </div>
       <div>
-        <label className={labelClass}>客訴管道 *</label>
+        <label className={labelClass}>案件管道 *</label>
         <select
           name="source_detail"
           required
@@ -79,7 +79,7 @@ export function SourceChannelFields({
           tabIndex={source ? 0 : -1}
         >
           <option value="" disabled>
-            {source ? "請選擇" : "請先選擇客訴來源"}
+            {source ? "請選擇" : "請先選擇案件來源"}
           </option>
           {channelOptions.map((ch) => (
             <option key={ch} value={ch}>

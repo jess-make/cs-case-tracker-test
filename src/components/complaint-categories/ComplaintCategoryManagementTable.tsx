@@ -288,11 +288,11 @@ export function ComplaintCategoryManagementTable({
             onSubmit={handleCreateCategory}
             className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
           >
-            <h2 className="mb-3 text-sm font-semibold text-slate-900">新增客訴類別</h2>
+            <h2 className="mb-3 text-sm font-semibold text-slate-900">新增案件類別</h2>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-1">
                 <label className={labelClass} htmlFor="complaint-category-name">
-                  客訴類別名稱
+                  案件類別名稱
                 </label>
                 <input
                   id="complaint-category-name"
@@ -320,11 +320,11 @@ export function ComplaintCategoryManagementTable({
 
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
-              <h2 className="text-sm font-semibold text-slate-900">客訴類別</h2>
+              <h2 className="text-sm font-semibold text-slate-900">案件類別</h2>
               <p className="mt-0.5 text-xs text-slate-500">拖曳左側圖示可調整順序</p>
             </div>
             {categories.length === 0 ? (
-              <p className="p-6 text-center text-sm text-slate-500">目前沒有客訴類別</p>
+              <p className="p-6 text-center text-sm text-slate-500">目前沒有案件類別</p>
             ) : (
               <DragSortableList
                 items={categories}
@@ -370,7 +370,7 @@ export function ComplaintCategoryManagementTable({
                           onDelete={() => {
                             if (
                               !confirm(
-                                `確定要刪除客訴類別「${category.name}」嗎？此操作無法復原。`
+                                `確定要刪除案件類別「${category.name}」嗎？此操作無法復原。`
                               )
                             ) {
                               return;
@@ -395,13 +395,13 @@ export function ComplaintCategoryManagementTable({
             className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"
           >
             <h2 className="mb-3 text-sm font-semibold text-slate-900">
-              新增客訴問題
+              新增案件問題
               {selectedCategory ? `（${selectedCategory.name}）` : ""}
             </h2>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-1">
                 <label className={labelClass} htmlFor="complaint-issue-name">
-                  客訴問題名稱
+                  案件問題名稱
                 </label>
                 <input
                   id="complaint-issue-name"
@@ -430,7 +430,7 @@ export function ComplaintCategoryManagementTable({
           <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">
-                客訴問題
+                案件問題
                 {selectedCategory ? ` · ${selectedCategory.name}` : ""}
               </h2>
               {selectedCategoryId && selectedIssues.length > 0 && (
@@ -438,9 +438,9 @@ export function ComplaintCategoryManagementTable({
               )}
             </div>
             {!selectedCategoryId ? (
-              <p className="p-6 text-center text-sm text-slate-500">請先選擇客訴類別</p>
+              <p className="p-6 text-center text-sm text-slate-500">請先選擇案件類別</p>
             ) : selectedIssues.length === 0 ? (
-              <p className="p-6 text-center text-sm text-slate-500">此類別尚無客訴問題</p>
+              <p className="p-6 text-center text-sm text-slate-500">此類別尚無案件問題</p>
             ) : (
               <DragSortableList
                 items={selectedIssues}
@@ -475,7 +475,7 @@ export function ComplaintCategoryManagementTable({
                         }
                         onDelete={() => {
                           if (
-                            !confirm(`確定要刪除客訴問題「${issue.name}」嗎？此操作無法復原。`)
+                            !confirm(`確定要刪除案件問題「${issue.name}」嗎？此操作無法復原。`)
                           ) {
                             return;
                           }
@@ -494,14 +494,14 @@ export function ComplaintCategoryManagementTable({
       {editingCategory && (
         <EditNameDialog
           key={editingCategory.id}
-          title="編輯客訴類別"
-          label="客訴類別名稱"
+          title="編輯案件類別"
+          label="案件類別名稱"
           initialName={editingCategory.name}
           open
           onClose={() => setEditingCategory(null)}
           confirmRename={(oldName, newName) =>
             confirm(
-              `確定要將客訴類別「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
+              `確定要將案件類別「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
             )
           }
           onSave={async (name) => {
@@ -515,14 +515,14 @@ export function ComplaintCategoryManagementTable({
       {editingIssue && (
         <EditNameDialog
           key={editingIssue.id}
-          title="編輯客訴問題"
-          label="客訴問題名稱"
+          title="編輯案件問題"
+          label="案件問題名稱"
           initialName={editingIssue.name}
           open
           onClose={() => setEditingIssue(null)}
           confirmRename={(oldName, newName) =>
             confirm(
-              `確定要將客訴問題「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
+              `確定要將案件問題「${oldName}」改名為「${newName}」嗎？既有案件也會同步更新。`
             )
           }
           onSave={async (name) => {

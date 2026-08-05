@@ -22,7 +22,7 @@ export async function createComplaintCategoryAction(formData: FormData) {
 
     const name = (formData.get("name") as string)?.trim();
     if (!name) {
-      return { error: "請填寫客訴類別名稱" };
+      return { error: "請填寫案件類別名稱" };
     }
 
     await createComplaintCategory(name);
@@ -31,7 +31,7 @@ export async function createComplaintCategoryAction(formData: FormData) {
     return { success: true as const };
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "新增客訴類別失敗，請稍後再試";
+      err instanceof Error ? err.message : "新增案件類別失敗，請稍後再試";
     console.error("[createComplaintCategoryAction]", message);
     return { error: message };
   }
@@ -45,7 +45,7 @@ export async function setComplaintCategoryActiveAction(
     await requireManageUsersPermission();
 
     if (!categoryId?.trim()) {
-      return { error: "無效的客訴類別" };
+      return { error: "無效的案件類別" };
     }
 
     await setComplaintCategoryActive(categoryId, isActive);
@@ -54,7 +54,7 @@ export async function setComplaintCategoryActiveAction(
     return { success: true as const };
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "更新客訴類別狀態失敗，請稍後再試";
+      err instanceof Error ? err.message : "更新案件類別狀態失敗，請稍後再試";
     console.error("[setComplaintCategoryActiveAction]", message);
     return { error: message };
   }
@@ -68,12 +68,12 @@ export async function renameComplaintCategoryAction(
     await requireManageUsersPermission();
 
     if (!categoryId?.trim()) {
-      return { error: "無效的客訴類別" };
+      return { error: "無效的案件類別" };
     }
 
     const name = (formData.get("name") as string)?.trim();
     if (!name) {
-      return { error: "請填寫客訴類別名稱" };
+      return { error: "請填寫案件類別名稱" };
     }
 
     await renameComplaintCategory(categoryId, name);
@@ -82,7 +82,7 @@ export async function renameComplaintCategoryAction(
     return { success: true as const };
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "修改客訴類別名稱失敗，請稍後再試";
+      err instanceof Error ? err.message : "修改案件類別名稱失敗，請稍後再試";
     console.error("[renameComplaintCategoryAction]", message);
     return { error: message };
   }
@@ -93,7 +93,7 @@ export async function deleteComplaintCategoryAction(categoryId: string) {
     await requireManageUsersPermission();
 
     if (!categoryId?.trim()) {
-      return { error: "無效的客訴類別" };
+      return { error: "無效的案件類別" };
     }
 
     await deleteComplaintCategory(categoryId);
@@ -102,7 +102,7 @@ export async function deleteComplaintCategoryAction(categoryId: string) {
     return { success: true as const };
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "刪除客訴類別失敗，請稍後再試";
+      err instanceof Error ? err.message : "刪除案件類別失敗，請稍後再試";
     console.error("[deleteComplaintCategoryAction]", message);
     return { error: message };
   }
@@ -119,7 +119,7 @@ export async function reorderComplaintCategoriesAction(orderedIds: string[]) {
     return { success: true as const };
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "更新客訴類別排序失敗，請稍後再試";
+      err instanceof Error ? err.message : "更新案件類別排序失敗，請稍後再試";
     return { error: message };
   }
 }

@@ -27,7 +27,7 @@ function normalizeComplaintCategory(
   };
 }
 
-/** 下拉選單：僅啟用中的客訴類別名稱 */
+/** 下拉選單：僅啟用中的案件類別名稱 */
 export async function getActiveComplaintCategoryNames(): Promise<string[]> {
   const { data, error } = await applyTaxonomySort(
     (await supabase())
@@ -60,7 +60,7 @@ export async function getComplaintCategoryNamesForCaseFilter(
   return mergeTaxonomyFilterNames(items, selectedCategory);
 }
 
-/** 客訴類別管理：全部類別 */
+/** 案件類別管理：全部類別 */
 export async function getComplaintCategoriesForManagement(): Promise<
   ComplaintCategory[]
 > {
@@ -117,7 +117,7 @@ export async function createComplaintCategory(
 
   if (error) {
     if (error.code === "23505") {
-      throw new Error("客訴類別名稱已存在");
+      throw new Error("案件類別名稱已存在");
     }
     throw error;
   }
@@ -169,13 +169,13 @@ export async function renameComplaintCategory(
 ): Promise<ComplaintCategory> {
   const trimmed = newName.trim();
   if (!trimmed) {
-    throw new Error("客訴類別名稱不可為空");
+    throw new Error("案件類別名稱不可為空");
   }
 
   const client = await supabase();
   const existing = await getComplaintCategoryById(id);
   if (!existing) {
-    throw new Error("找不到客訴類別");
+    throw new Error("找不到案件類別");
   }
 
   const oldName = existing.name;
@@ -191,7 +191,7 @@ export async function renameComplaintCategory(
     .maybeSingle();
 
   if (duplicate) {
-    throw new Error("客訴類別名稱已存在");
+    throw new Error("案件類別名稱已存在");
   }
 
   const { error: casesError } = await client
@@ -200,7 +200,7 @@ export async function renameComplaintCategory(
     .eq("complaint_type", oldName);
 
   if (casesError) {
-    throw new Error(`更新案件客訴類別失敗：${casesError.message}`);
+    throw new Error(`更新案件類別失敗：${casesError.message}`);
   }
 
   const { data, error: categoryError } = await client
@@ -216,9 +216,9 @@ export async function renameComplaintCategory(
       .update({ complaint_type: oldName })
       .eq("complaint_type", trimmed);
     if (categoryError.code === "23505") {
-      throw new Error("客訴類別名稱已存在");
+      throw new Error("案件類別名稱已存在");
     }
-    throw new Error(`更新客訴類別失敗：${categoryError.message}`);
+    throw new Error(`更新案件類別失敗：${categoryError.message}`);
   }
 
   return normalizeComplaintCategory(data as Record<string, unknown>);
@@ -227,19 +227,19 @@ export async function renameComplaintCategory(
 export async function deleteComplaintCategory(id: string): Promise<void> {
   const existing = await getComplaintCategoryById(id);
   if (!existing) {
-    throw new Error("找不到客訴類別");
+    throw new Error("找不到案件類別");
   }
 
   const cases = await getComplaintCategoryUsageCount(existing.name);
   if (cases > 0) {
     throw new Error(
-      `無法刪除客訴類別，目前仍有 ${cases} 筆案件使用此類別。`
+      `無法刪除案件類別，目前仍有 ${cases} 筆案件使用此類別。`
     );
   }
 
   const issueCount = await countIssuesByCategoryId(id);
   if (issueCount > 0) {
-    throw new Error("無法刪除客訴類別，請先刪除底下的客訴問題。");
+    throw new Error("無法刪除案件類別，請先刪除底下的案件問題。");
   }
 
   const { error } = await (await supabase())

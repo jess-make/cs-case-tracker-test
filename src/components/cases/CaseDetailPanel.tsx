@@ -161,16 +161,16 @@ export function CaseDetailPanel({
               label="電商訂單編號"
               value={caseData.ecommerce_order_no?.trim() || "—"}
             />
-            <InfoRow icon={Building2} label="客訴來源" value={caseData.source} />
+            <InfoRow icon={Building2} label="案件來源" value={caseData.source} />
             <InfoRow
               icon={Building2}
-              label="客訴管道"
+              label="案件管道"
               value={caseData.source_detail?.trim() || "—"}
             />
-            <InfoRow icon={Building2} label="客訴類別" value={caseData.complaint_type} />
+            <InfoRow icon={Building2} label="案件類別" value={caseData.complaint_type} />
             <InfoRow
               icon={Building2}
-              label="客訴問題"
+              label="案件問題"
               value={caseData.complaint_subtype ?? "—"}
             />
             <InfoRow icon={Building2} label="指派部門" value={caseData.department?.trim() || "—"} />

@@ -25,14 +25,14 @@ export async function createComplaintSourceAction(formData: FormData) {
   try {
     await requireManageUsersPermission();
     const name = (formData.get("name") as string)?.trim();
-    if (!name) return { error: "請填寫客訴來源名稱" };
+    if (!name) return { error: "請填寫案件來源名稱" };
     await createComplaintSource(name);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "新增客訴來源失敗，請稍後再試",
+        err instanceof Error ? err.message : "新增案件來源失敗，請稍後再試",
     };
   }
 }
@@ -43,14 +43,14 @@ export async function setComplaintSourceActiveAction(
 ) {
   try {
     await requireManageUsersPermission();
-    if (!sourceId?.trim()) return { error: "無效的客訴來源" };
+    if (!sourceId?.trim()) return { error: "無效的案件來源" };
     await setComplaintSourceActive(sourceId, isActive);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "更新客訴來源狀態失敗，請稍後再試",
+        err instanceof Error ? err.message : "更新案件來源狀態失敗，請稍後再試",
     };
   }
 }
@@ -62,15 +62,15 @@ export async function renameComplaintSourceAction(
   try {
     await requireManageUsersPermission();
     const name = (formData.get("name") as string)?.trim();
-    if (!name) return { error: "請填寫客訴來源名稱" };
-    if (!sourceId?.trim()) return { error: "無效的客訴來源" };
+    if (!name) return { error: "請填寫案件來源名稱" };
+    if (!sourceId?.trim()) return { error: "無效的案件來源" };
     await renameComplaintSource(sourceId, name);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "修改客訴來源失敗，請稍後再試",
+        err instanceof Error ? err.message : "修改案件來源失敗，請稍後再試",
     };
   }
 }
@@ -78,14 +78,14 @@ export async function renameComplaintSourceAction(
 export async function deleteComplaintSourceAction(sourceId: string) {
   try {
     await requireManageUsersPermission();
-    if (!sourceId?.trim()) return { error: "無效的客訴來源" };
+    if (!sourceId?.trim()) return { error: "無效的案件來源" };
     await deleteComplaintSource(sourceId);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "刪除客訴來源失敗，請稍後再試",
+        err instanceof Error ? err.message : "刪除案件來源失敗，請稍後再試",
     };
   }
 }
@@ -97,15 +97,15 @@ export async function createComplaintChannelAction(
   try {
     await requireManageUsersPermission();
     const name = (formData.get("name") as string)?.trim();
-    if (!name) return { error: "請填寫客訴管道名稱" };
-    if (!sourceId?.trim()) return { error: "無效的客訴來源" };
+    if (!name) return { error: "請填寫案件管道名稱" };
+    if (!sourceId?.trim()) return { error: "無效的案件來源" };
     await createComplaintChannel(sourceId, name);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "新增客訴管道失敗，請稍後再試",
+        err instanceof Error ? err.message : "新增案件管道失敗，請稍後再試",
     };
   }
 }
@@ -116,14 +116,14 @@ export async function setComplaintChannelActiveAction(
 ) {
   try {
     await requireManageUsersPermission();
-    if (!channelId?.trim()) return { error: "無效的客訴管道" };
+    if (!channelId?.trim()) return { error: "無效的案件管道" };
     await setComplaintChannelActive(channelId, isActive);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "更新客訴管道狀態失敗，請稍後再試",
+        err instanceof Error ? err.message : "更新案件管道狀態失敗，請稍後再試",
     };
   }
 }
@@ -135,15 +135,15 @@ export async function renameComplaintChannelAction(
   try {
     await requireManageUsersPermission();
     const name = (formData.get("name") as string)?.trim();
-    if (!name) return { error: "請填寫客訴管道名稱" };
-    if (!channelId?.trim()) return { error: "無效的客訴管道" };
+    if (!name) return { error: "請填寫案件管道名稱" };
+    if (!channelId?.trim()) return { error: "無效的案件管道" };
     await renameComplaintChannel(channelId, name);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "修改客訴管道失敗，請稍後再試",
+        err instanceof Error ? err.message : "修改案件管道失敗，請稍後再試",
     };
   }
 }
@@ -151,14 +151,14 @@ export async function renameComplaintChannelAction(
 export async function deleteComplaintChannelAction(channelId: string) {
   try {
     await requireManageUsersPermission();
-    if (!channelId?.trim()) return { error: "無效的客訴管道" };
+    if (!channelId?.trim()) return { error: "無效的案件管道" };
     await deleteComplaintChannel(channelId);
     revalidate();
     return { success: true as const };
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "刪除客訴管道失敗，請稍後再試",
+        err instanceof Error ? err.message : "刪除案件管道失敗，請稍後再試",
     };
   }
 }
@@ -175,7 +175,7 @@ export async function reorderComplaintSourcesAction(orderedIds: string[]) {
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "更新客訴來源排序失敗，請稍後再試",
+        err instanceof Error ? err.message : "更新案件來源排序失敗，請稍後再試",
     };
   }
 }
@@ -186,7 +186,7 @@ export async function reorderComplaintChannelsAction(
 ) {
   try {
     await requireManageUsersPermission();
-    if (!sourceId?.trim()) return { error: "無效的客訴來源" };
+    if (!sourceId?.trim()) return { error: "無效的案件來源" };
     if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
       return { error: "無效的排序資料" };
     }
@@ -196,7 +196,7 @@ export async function reorderComplaintChannelsAction(
   } catch (err) {
     return {
       error:
-        err instanceof Error ? err.message : "更新客訴管道排序失敗，請稍後再試",
+        err instanceof Error ? err.message : "更新案件管道排序失敗，請稍後再試",
     };
   }
 }

@@ -105,7 +105,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     <div>
       <div className="mb-6 lg:mb-8">
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">案件總覽</h1>
-        <p className="mt-1 text-sm text-slate-500">客訴案件總覽</p>
       </div>
 
       <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 lg:mb-8 lg:grid-cols-5 lg:gap-3">

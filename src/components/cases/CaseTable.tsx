@@ -43,13 +43,13 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
               <dd className="truncate font-medium text-slate-800">{c.customer_name}</dd>
             </div>
             <div className="min-w-0 sm:col-span-2">
-              <dt className="text-xs text-slate-500">客訴類型</dt>
+              <dt className="text-xs text-slate-500">案件類型</dt>
               <dd className="text-slate-700">
                 {formatComplaintLabel(c.complaint_type, c.complaint_subtype)}
               </dd>
             </div>
             <div className="min-w-0">
-              <dt className="text-xs text-slate-500">客訴管道</dt>
+              <dt className="text-xs text-slate-500">案件管道</dt>
               <dd className="truncate text-slate-700">{c.source_detail?.trim() || "—"}</dd>
             </div>
             <div>
@@ -78,8 +78,8 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
             <th className="px-4 py-3 font-medium text-slate-600">建檔日</th>
             <th className="px-4 py-3 font-medium text-slate-600">案件編號</th>
             <th className="px-4 py-3 font-medium text-slate-600">客戶</th>
-            <th className="px-4 py-3 font-medium text-slate-600">客訴類型</th>
-            <th className="px-4 py-3 font-medium text-slate-600">客訴管道</th>
+            <th className="px-4 py-3 font-medium text-slate-600">案件類型</th>
+            <th className="px-4 py-3 font-medium text-slate-600">案件管道</th>
             <th className="px-4 py-3 font-medium text-slate-600">緊急程度</th>
             <th className="px-4 py-3 font-medium text-slate-600">案件狀態</th>
             <th className="px-4 py-3 font-medium text-slate-600">處理人</th>

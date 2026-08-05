@@ -182,7 +182,7 @@ export function CaseFilters({
         </div>
 
         <div className="min-w-0 sm:max-w-xs">
-          <label className="mb-1 block text-xs font-medium text-slate-500">客訴來源</label>
+          <label className="mb-1 block text-xs font-medium text-slate-500">案件來源</label>
           <select
             className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             value={selectedSource}
@@ -198,7 +198,7 @@ export function CaseFilters({
         </div>
 
         <div className="min-w-0 sm:max-w-xs">
-          <label className="mb-1 block text-xs font-medium text-slate-500">客訴管道</label>
+          <label className="mb-1 block text-xs font-medium text-slate-500">案件管道</label>
           <select
             className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             value={selectedChannel}
@@ -214,7 +214,7 @@ export function CaseFilters({
         </div>
 
         <div className="min-w-0 sm:max-w-xs">
-          <label className="mb-1 block text-xs font-medium text-slate-500">客訴類別</label>
+          <label className="mb-1 block text-xs font-medium text-slate-500">案件類別</label>
           <select
             className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             value={selectedCategory}
@@ -230,7 +230,7 @@ export function CaseFilters({
         </div>
 
         <div className="min-w-0 sm:max-w-xs">
-          <label className="mb-1 block text-xs font-medium text-slate-500">客訴問題</label>
+          <label className="mb-1 block text-xs font-medium text-slate-500">案件問題</label>
           <select
             className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
             value={selectedIssue}

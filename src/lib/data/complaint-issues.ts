@@ -110,7 +110,7 @@ export async function reorderComplaintIssues(
   categoryId: string,
   orderedIds: string[]
 ): Promise<void> {
-  if (!categoryId?.trim()) throw new Error("無效的客訴類別");
+  if (!categoryId?.trim()) throw new Error("無效的案件類別");
   if (!orderedIds.length) return;
 
   const client = await supabase();
@@ -152,11 +152,11 @@ export async function renameComplaintIssue(
   newName: string
 ): Promise<ComplaintIssue> {
   const trimmed = newName.trim();
-  if (!trimmed) throw new Error("客訴問題名稱不可為空");
+  if (!trimmed) throw new Error("案件問題名稱不可為空");
 
   const client = await supabase();
   const existing = await getComplaintIssueById(id);
-  if (!existing) throw new Error("找不到客訴問題");
+  if (!existing) throw new Error("找不到案件問題");
 
   const oldName = existing.name;
   if (oldName === trimmed) return existing;
@@ -177,7 +177,7 @@ export async function renameComplaintIssue(
     .eq("complaint_subtype", oldName);
 
   if (casesError) {
-    throw new Error(`更新案件客訴問題失敗：${casesError.message}`);
+    throw new Error(`更新案件問題失敗：${casesError.message}`);
   }
 
   const { data, error } = await client
@@ -193,7 +193,7 @@ export async function renameComplaintIssue(
       .update({ complaint_subtype: oldName })
       .eq("complaint_subtype", trimmed);
     if (error.code === "23505") throw new Error("此類別下已有相同問題名稱");
-    throw new Error(`更新客訴問題失敗：${error.message}`);
+    throw new Error(`更新案件問題失敗：${error.message}`);
   }
 
   return normalizeIssue(data as Record<string, unknown>);
@@ -201,12 +201,12 @@ export async function renameComplaintIssue(
 
 export async function deleteComplaintIssue(id: string): Promise<void> {
   const existing = await getComplaintIssueById(id);
-  if (!existing) throw new Error("找不到客訴問題");
+  if (!existing) throw new Error("找不到案件問題");
 
   const cases = await getComplaintIssueUsageCount(existing.name);
   if (cases > 0) {
     throw new Error(
-      `無法刪除客訴問題，目前仍有 ${cases} 筆案件使用此問題。`
+      `無法刪除案件問題，目前仍有 ${cases} 筆案件使用此問題。`
     );
   }
 

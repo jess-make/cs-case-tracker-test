@@ -6,7 +6,7 @@ import {
 } from "@/lib/taxonomy-sort-order";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { assertSupabaseEnv, getServiceRoleKey } from "@/lib/supabase/env";
+import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { countIssuesByCategoryId } from "@/lib/data/complaint-issues";
 import type { ComplaintCategory } from "@/types";
 
@@ -24,7 +24,9 @@ async function taxonomyClient(options: TaxonomyClientOptions = {}) {
 }
 
 async function managementClient() {
-  return getServiceRoleKey() ? createAdminClient() : await supabase();
+  return process.env.ENABLE_TAXONOMY_SERVICE_ROLE === "true"
+    ? createAdminClient()
+    : await supabase();
 }
 
 function normalizeComplaintCategory(

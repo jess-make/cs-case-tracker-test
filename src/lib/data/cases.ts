@@ -25,6 +25,7 @@ import {
   logCaseEdited,
   logStatusChange,
   logCaseReply,
+  logWorkflowReverted,
 } from "@/lib/data/case-logs";
 import { buildCaseEditSummary } from "@/lib/case-edit-summary";
 import { hasAssignedDepartment } from "@/lib/case-department";
@@ -449,6 +450,8 @@ export async function updateCaseStatus(
   const updates: Record<string, unknown> = { status, ...extra };
   if (status === "closed") {
     updates.closed_at = new Date().toISOString();
+  } else {
+    updates.closed_at = null;
   }
 
   const client = await supabase();
@@ -462,6 +465,32 @@ export async function updateCaseStatus(
   if (error) throw error;
 
   await logStatusChange(caseId, userId, status);
+
+  const [enriched] = await enrichCases([
+    normalizeCase(data as Record<string, unknown>),
+  ]);
+  return enriched;
+}
+
+export async function revertCaseStatus(
+  caseId: string,
+  status: CaseStatus,
+  userId: string | null
+): Promise<Case | null> {
+  const existing = await getCaseById(caseId);
+  if (!existing) return null;
+
+  const client = await supabase();
+  const { data, error } = await client
+    .from("cases")
+    .update({ status, closed_at: null })
+    .eq("id", caseId)
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  await logWorkflowReverted(caseId, userId, existing.status, status);
 
   const [enriched] = await enrichCases([
     normalizeCase(data as Record<string, unknown>),

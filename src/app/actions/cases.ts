@@ -6,6 +6,7 @@ import {
   createCase,
   updateCase,
   updateCaseStatus,
+  revertCaseStatus,
   addCaseReply,
 } from "@/lib/data/cases";
 import {
@@ -25,6 +26,7 @@ import {
   requireCaseReplyPermission,
   requireCaseAttachmentUploadPermission,
   requireCaseWorkflowPermission,
+  requireCaseWorkflowRevertPermission,
 } from "@/lib/auth/actor";
 import {
   canDeleteAttachment,
@@ -35,7 +37,7 @@ import {
   notifyCaseReplied,
   notifyDepartmentAssigned,
 } from "@/lib/line/case-notifications";
-import { getNextStatus } from "@/lib/case-status";
+import { getNextStatus, getPreviousStatus } from "@/lib/case-status";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
 import { parseOptionalDepartment } from "@/lib/parse-form";
 import { getInitialAutoAssignedDepartment } from "@/lib/case-auto-assignment";
@@ -240,6 +242,23 @@ export async function advanceCaseStatusAction(caseId: string) {
   if (!next) return { error: "無法推進狀態" };
 
   await updateCaseStatus(caseId, next, actorId);
+  revalidatePath(`/cases/${caseId}`);
+  revalidatePath("/");
+  revalidatePath("/cases");
+  return { success: true };
+}
+
+export async function revertCaseStatusAction(caseId: string) {
+  const { getCaseById } = await import("@/lib/data/cases");
+  const { user: actor } = await requireCaseWorkflowRevertPermission(caseId);
+  const actorId = actor.id;
+  const current = await getCaseById(caseId, actor);
+  if (!current) return { error: "案件不存在" };
+
+  const previous = getPreviousStatus(current.status);
+  if (!previous) return { error: "無法回推狀態" };
+
+  await revertCaseStatus(caseId, previous, actorId);
   revalidatePath(`/cases/${caseId}`);
   revalidatePath("/");
   revalidatePath("/cases");

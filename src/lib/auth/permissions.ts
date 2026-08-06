@@ -23,6 +23,7 @@ export {
   canManageAttachments,
   canDeleteAttachment,
   canAdvanceWorkflow,
+  canRevertWorkflow,
   NO_ACCESS_CASE_ID,
 } from "@/lib/auth/case-access";
 

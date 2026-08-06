@@ -56,6 +56,13 @@ export function buildStatusChangeContent(status: CaseStatus | string): string {
   return `狀態變更為：${getCaseStatusLabel(String(status))}`;
 }
 
+export function buildWorkflowRevertContent(
+  fromStatus: CaseStatus | string,
+  toStatus: CaseStatus | string
+): string {
+  return `流程回推：${getCaseStatusLabel(String(fromStatus))} → ${getCaseStatusLabel(String(toStatus))}`;
+}
+
 export async function logAttachmentsAdded(
   caseId: string,
   userId: string | null,
@@ -115,6 +122,20 @@ export async function logStatusChange(
     userId,
     "狀態更新",
     buildStatusChangeContent(status)
+  );
+}
+
+export async function logWorkflowReverted(
+  caseId: string,
+  userId: string | null,
+  fromStatus: CaseStatus | string,
+  toStatus: CaseStatus | string
+): Promise<boolean> {
+  return createCaseLog(
+    caseId,
+    userId,
+    "流程回推",
+    buildWorkflowRevertContent(fromStatus, toStatus)
   );
 }
 

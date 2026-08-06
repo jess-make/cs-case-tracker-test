@@ -10,12 +10,14 @@ import {
   CASE_FLOW_STEPS,
   getCaseStatusLabel,
   getNextStatus,
+  getPreviousStatus,
   isActiveFlowStep,
   normalizeCaseStatus,
 } from "@/lib/case-status";
 import { getAssigneeDisplayName } from "@/lib/case-display";
 import {
   advanceCaseStatusAction,
+  revertCaseStatusAction,
   closeCaseAction,
   addReplyAction,
 } from "@/app/actions/cases";
@@ -63,10 +65,23 @@ export function CaseDetailPanel({
   const safeLogs = logs ?? [];
   const displayStatus = normalizeCaseStatus(caseData.status);
   const nextStatus = getNextStatus(displayStatus);
+  const previousStatus = getPreviousStatus(displayStatus);
 
   function handleAdvance() {
     startTransition(async () => {
       await advanceCaseStatusAction(caseData.id);
+      router.refresh();
+    });
+  }
+
+  function handleRevert() {
+    if (!previousStatus) return;
+    if (!confirm(`確定要回推至「${getCaseStatusLabel(previousStatus)}」嗎？`)) {
+      return;
+    }
+
+    startTransition(async () => {
+      await revertCaseStatusAction(caseData.id);
       router.refresh();
     });
   }
@@ -312,9 +327,18 @@ export function CaseDetailPanel({
             ))}
           </div>
 
-          {permissions.canAdvanceWorkflow && displayStatus !== "closed" && (
+          {(permissions.canAdvanceWorkflow || permissions.canRevertWorkflow) && (
             <div className="space-y-2">
-              {nextStatus && (
+              {permissions.canRevertWorkflow && previousStatus && (
+                <button
+                  onClick={handleRevert}
+                  disabled={pending}
+                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                >
+                  回推至：{getCaseStatusLabel(previousStatus)}
+                </button>
+              )}
+              {permissions.canAdvanceWorkflow && displayStatus !== "closed" && nextStatus && (
                 <button
                   onClick={handleAdvance}
                   disabled={pending}
@@ -323,7 +347,7 @@ export function CaseDetailPanel({
                   推進至：{getCaseStatusLabel(nextStatus)}
                 </button>
               )}
-              {(displayStatus === "cs_confirming" || displayStatus === "replied") && (
+              {permissions.canAdvanceWorkflow && (displayStatus === "cs_confirming" || displayStatus === "replied") && (
                 <button
                   onClick={handleClose}
                   disabled={pending}

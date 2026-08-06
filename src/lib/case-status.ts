@@ -41,6 +41,13 @@ export function getNextStatus(current: CaseStatus | string): CaseStatus | null {
   return CASE_FLOW_STEPS[idx + 1];
 }
 
+export function getPreviousStatus(current: CaseStatus | string): CaseStatus | null {
+  const status = normalizeCaseStatus(String(current));
+  const idx = CASE_FLOW_STEPS.indexOf(status);
+  if (idx <= 0) return null;
+  return CASE_FLOW_STEPS[idx - 1];
+}
+
 export function isActiveFlowStep(
   caseStatus: string,
   step: CaseStatus

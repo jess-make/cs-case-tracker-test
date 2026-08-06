@@ -92,6 +92,7 @@ export interface CasePermissions {
   canManageAttachments: boolean;
   canDeleteAttachment: boolean;
   canAdvanceWorkflow: boolean;
+  canRevertWorkflow: boolean;
 }
 
 /** admin 或客服部：完整案件操作權限 */
@@ -99,6 +100,18 @@ export function hasFullCaseControl(user: SessionUser): boolean {
   return (
     user.role === "admin" ||
     user.department?.trim() === CS_DEPARTMENT
+  );
+}
+
+/** 流程回推：僅 admin 或業務部-客服主管 */
+export function hasCaseWorkflowRevertControl(user: SessionUser): boolean {
+  const department = user.department?.trim();
+  return (
+    user.role === "admin" ||
+    (
+      department === CS_DEPARTMENT &&
+      (user.role === "manager" || user.role === "department_head")
+    )
   );
 }
 
@@ -113,6 +126,7 @@ export function getCasePermissions(
       canManageAttachments: false,
       canDeleteAttachment: false,
       canAdvanceWorkflow: false,
+      canRevertWorkflow: false,
     };
   }
 
@@ -124,6 +138,7 @@ export function getCasePermissions(
     canManageAttachments: !readOnly,
     canDeleteAttachment: full,
     canAdvanceWorkflow: full,
+    canRevertWorkflow: hasCaseWorkflowRevertControl(user),
   };
 }
 
@@ -145,4 +160,8 @@ export function canDeleteAttachment(user: SessionUser, caseData: Case): boolean 
 
 export function canAdvanceWorkflow(user: SessionUser, caseData: Case): boolean {
   return getCasePermissions(user, caseData).canAdvanceWorkflow;
+}
+
+export function canRevertWorkflow(user: SessionUser, caseData: Case): boolean {
+  return getCasePermissions(user, caseData).canRevertWorkflow;
 }

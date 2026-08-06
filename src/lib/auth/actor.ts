@@ -11,6 +11,7 @@ import {
   canManageAttachments,
   canDeleteAttachment,
   canAdvanceWorkflow,
+  canRevertWorkflow,
 } from "@/lib/auth/case-access";
 import { getCaseById } from "@/lib/data/cases";
 import type { SessionUser } from "@/lib/auth/session";
@@ -75,6 +76,14 @@ export async function requireCaseWorkflowPermission(caseId: string) {
   );
 }
 
+export async function requireCaseWorkflowRevertPermission(caseId: string) {
+  return requireCaseCapability(
+    caseId,
+    canRevertWorkflow,
+    "無權限回推案件流程"
+  );
+}
+
 /** @deprecated 請改用細分權限函式 */
 export async function requireCaseUpdatePermission(caseId: string) {
   return requireCaseViewPermission(caseId);
@@ -103,4 +112,5 @@ export {
   canManageAttachments,
   canDeleteAttachment,
   canAdvanceWorkflow,
+  canRevertWorkflow,
 };

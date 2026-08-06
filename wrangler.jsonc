@@ -11,6 +11,9 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "vars": {
+    "ENABLE_TAXONOMY_SERVICE_ROLE": "true"
+  },
   "routes": [
     {
       "pattern": "cs.grevia.com.tw",

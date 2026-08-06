@@ -12,13 +12,15 @@ function supabase() {
   return createClient();
 }
 
-const CASE_FILTER_EXCLUDED_DEPARTMENTS = new Set([
+const CASE_ASSIGNMENT_EXCLUDED_DEPARTMENTS = new Set([
   "CEO",
+  "管理員",
+  "後勤部",
   BUSINESS_HEAD_DEPARTMENT,
 ]);
 
-function canShowInCaseFilter(name: string): boolean {
-  return !CASE_FILTER_EXCLUDED_DEPARTMENTS.has(name.trim());
+function canShowInCaseAssignmentOptions(name: string): boolean {
+  return !CASE_ASSIGNMENT_EXCLUDED_DEPARTMENTS.has(name.trim());
 }
 
 function normalizeDepartment(raw: Record<string, unknown>): Department {
@@ -41,6 +43,13 @@ export async function getActiveDepartmentNames(): Promise<string[]> {
 
   if (error) throw error;
   return (data ?? []).map((row) => String(row.name));
+}
+
+/** 案件指派下拉：排除不會被指派案件的母部門／管理類部門 */
+export async function getCaseAssignableDepartmentNames(): Promise<string[]> {
+  return (await getActiveDepartmentNames()).filter(
+    canShowInCaseAssignmentOptions
+  );
 }
 
 /** 部門管理：全部部門 */
@@ -102,7 +111,7 @@ export async function getDepartmentNamesForCaseFilter(
   const inactive: string[] = [];
   for (const row of data ?? []) {
     const name = String(row.name);
-    if (!canShowInCaseFilter(name)) continue;
+    if (!canShowInCaseAssignmentOptions(name)) continue;
     if (row.is_active !== false) active.push(name);
     else inactive.push(name);
   }
@@ -116,7 +125,7 @@ export async function getDepartmentNamesForCaseFilter(
   if (
     selected &&
     selected !== DEPARTMENT_FILTER_UNASSIGNED &&
-    canShowInCaseFilter(selected) &&
+    canShowInCaseAssignmentOptions(selected) &&
     !merged.includes(selected)
   ) {
     merged.push(selected);

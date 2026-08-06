@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { CreateCaseForm } from "@/components/cases/CreateCaseForm";
 import { requireUser } from "@/lib/auth/session";
 import { canCreateCase } from "@/lib/auth/permissions";
-import { getActiveDepartmentNames } from "@/lib/data/departments";
+import { getCaseAssignableDepartmentNames } from "@/lib/data/departments";
 import {
   getCategoryIssueTaxonomy,
   getSourceChannelTaxonomy,
@@ -16,7 +16,7 @@ export default async function NewCasePage() {
 
   const [activeDepartments, categoryIssueTaxonomy, sourceChannelTaxonomy] =
     await Promise.all([
-      getActiveDepartmentNames().catch(() => [] as string[]),
+      getCaseAssignableDepartmentNames().catch(() => [] as string[]),
       getCategoryIssueTaxonomy().catch(() => ({
         categories: [],
         issuesByCategoryId: {},

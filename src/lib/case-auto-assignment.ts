@@ -2,7 +2,6 @@ type AssignmentPlan = readonly string[];
 
 const BUSINESS_ECOMMERCE = "業務部-電商";
 const BUSINESS_STORE = "業務部-門市";
-const BACKOFFICE_ECOMMERCE = "後勤部-電商";
 const BACKOFFICE_QA = "後勤部-品檢";
 const BACKOFFICE_WAREHOUSE = "後勤部-倉儲";
 
@@ -32,9 +31,9 @@ const ASSIGNMENT_RULES: Record<string, CategoryRule> = {
     issues: {
       配送延遲: [BUSINESS_ECOMMERCE],
       "包裹遺失/毀損": [BACKOFFICE_WAREHOUSE],
-      錯誤件: [BACKOFFICE_ECOMMERCE],
-      其他物流問題: [BACKOFFICE_ECOMMERCE],
-      其他: [BACKOFFICE_ECOMMERCE],
+      錯誤件: [BACKOFFICE_WAREHOUSE],
+      其他物流問題: [BUSINESS_ECOMMERCE],
+      其他: [BUSINESS_ECOMMERCE],
     },
   },
   退貨: { all: [BUSINESS_ECOMMERCE, BACKOFFICE_QA] },

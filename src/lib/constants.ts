@@ -87,7 +87,6 @@ export function formatComplaintLabel(
 /** 建立案件：指派部門選項 */
 export const DEPARTMENTS = [
   "後勤部-維修",
-  "後勤部-電商",
   "後勤部-品檢",
   "後勤部-倉儲",
   "業務部-電商",

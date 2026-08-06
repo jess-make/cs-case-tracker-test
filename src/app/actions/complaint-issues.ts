@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireManageUsersPermission } from "@/lib/auth/actor";
+import { requireManageCaseTaxonomyPermission } from "@/lib/auth/actor";
 import {
   createComplaintIssue,
   deleteComplaintIssue,
@@ -21,7 +21,7 @@ export async function createComplaintIssueAction(
   formData: FormData
 ) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
     const name = (formData.get("name") as string)?.trim();
     if (!name) return { error: "請填寫子分類名稱" };
     if (!categoryId?.trim()) return { error: "無效的案件類別" };
@@ -41,7 +41,7 @@ export async function setComplaintIssueActiveAction(
   isActive: boolean
 ) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
     if (!issueId?.trim()) return { error: "無效的子分類" };
     await setComplaintIssueActive(issueId, isActive);
     revalidate();
@@ -58,7 +58,7 @@ export async function renameComplaintIssueAction(
   formData: FormData
 ) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
     const name = (formData.get("name") as string)?.trim();
     if (!name) return { error: "請填寫子分類名稱" };
     if (!issueId?.trim()) return { error: "無效的子分類" };
@@ -75,7 +75,7 @@ export async function renameComplaintIssueAction(
 
 export async function deleteComplaintIssueAction(issueId: string) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
     if (!issueId?.trim()) return { error: "無效的子分類" };
     await deleteComplaintIssue(issueId);
     revalidate();
@@ -92,7 +92,7 @@ export async function reorderComplaintIssuesAction(
   orderedIds: string[]
 ) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
     if (!categoryId?.trim()) return { error: "無效的案件類別" };
     if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
       return { error: "無效的排序資料" };

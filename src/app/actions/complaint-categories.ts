@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireManageUsersPermission } from "@/lib/auth/actor";
+import { requireManageCaseTaxonomyPermission } from "@/lib/auth/actor";
 import {
   createComplaintCategory,
   deleteComplaintCategory,
@@ -18,7 +18,7 @@ function revalidateComplaintCategoryPaths() {
 
 export async function createComplaintCategoryAction(formData: FormData) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
 
     const name = (formData.get("name") as string)?.trim();
     if (!name) {
@@ -42,7 +42,7 @@ export async function setComplaintCategoryActiveAction(
   isActive: boolean
 ) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
 
     if (!categoryId?.trim()) {
       return { error: "無效的案件類別" };
@@ -65,7 +65,7 @@ export async function renameComplaintCategoryAction(
   formData: FormData
 ) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
 
     if (!categoryId?.trim()) {
       return { error: "無效的案件類別" };
@@ -90,7 +90,7 @@ export async function renameComplaintCategoryAction(
 
 export async function deleteComplaintCategoryAction(categoryId: string) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
 
     if (!categoryId?.trim()) {
       return { error: "無效的案件類別" };
@@ -110,7 +110,7 @@ export async function deleteComplaintCategoryAction(categoryId: string) {
 
 export async function reorderComplaintCategoriesAction(orderedIds: string[]) {
   try {
-    await requireManageUsersPermission();
+    await requireManageCaseTaxonomyPermission();
     if (!Array.isArray(orderedIds) || orderedIds.length === 0) {
       return { error: "無效的排序資料" };
     }

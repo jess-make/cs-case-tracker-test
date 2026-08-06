@@ -26,10 +26,16 @@ export interface SourceChannelTaxonomy {
   channelsBySourceName: Record<string, TaxonomyItem[]>;
 }
 
-export async function getCategoryIssueTaxonomy(): Promise<CategoryIssueTaxonomy> {
+interface TaxonomyQueryOptions {
+  useAdmin?: boolean;
+}
+
+export async function getCategoryIssueTaxonomy(
+  options: TaxonomyQueryOptions = {}
+): Promise<CategoryIssueTaxonomy> {
   const [categories, issues] = await Promise.all([
-    getComplaintCategoriesForManagement(),
-    getComplaintIssuesForManagement(),
+    getComplaintCategoriesForManagement(options),
+    getComplaintIssuesForManagement(options),
   ]);
 
   const issuesByCategoryId: Record<string, ComplaintIssue[]> = {};
@@ -57,10 +63,12 @@ export async function getCategoryIssueTaxonomy(): Promise<CategoryIssueTaxonomy>
   return { categories, issuesByCategoryId, issuesByCategoryName };
 }
 
-export async function getSourceChannelTaxonomy(): Promise<SourceChannelTaxonomy> {
+export async function getSourceChannelTaxonomy(
+  options: TaxonomyQueryOptions = {}
+): Promise<SourceChannelTaxonomy> {
   const [sources, channels] = await Promise.all([
-    getComplaintSourcesForManagement(),
-    getComplaintChannelsForManagement(),
+    getComplaintSourcesForManagement(options),
+    getComplaintChannelsForManagement(options),
   ]);
 
   const channelsBySourceId: Record<string, ComplaintChannel[]> = {};

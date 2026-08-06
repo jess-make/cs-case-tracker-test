@@ -6,15 +6,19 @@ import { LayoutDashboard, PlusCircle, List, Users, Building2, Tags, Radio, X, Lo
 import { BrandHeader } from "./BrandLogo";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
-import { canCreateCase, canManageUsers } from "@/lib/auth/permissions";
+import {
+  canCreateCase,
+  canManageCaseTaxonomy,
+  canManageUsers,
+} from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 
 const baseNavItems = [
   { href: "/", label: "案件總覽", icon: LayoutDashboard },
   { href: "/cases/new", label: "建立案件", icon: PlusCircle, requiresCreate: true },
   { href: "/cases", label: "案件列表", icon: List },
-  { href: "/complaint-sources", label: "案件來源管理", icon: Radio, requiresAdmin: true },
-  { href: "/complaint-categories", label: "案件類別管理", icon: Tags, requiresAdmin: true },
+  { href: "/complaint-sources", label: "案件來源管理", icon: Radio, requiresTaxonomy: true },
+  { href: "/complaint-categories", label: "案件類別管理", icon: Tags, requiresTaxonomy: true },
   { href: "/departments", label: "部門管理", icon: Building2, requiresAdmin: true },
   { href: "/users", label: "使用者管理", icon: Users, requiresAdmin: true },
 ] as const;
@@ -30,6 +34,9 @@ export function Sidebar({ open = false, onClose, user }: SidebarProps) {
   const navItems = baseNavItems.filter((item) => {
     if ("requiresCreate" in item && item.requiresCreate) {
       return canCreateCase(user);
+    }
+    if ("requiresTaxonomy" in item && item.requiresTaxonomy) {
+      return canManageCaseTaxonomy(user);
     }
     if ("requiresAdmin" in item && item.requiresAdmin) {
       return canManageUsers(user.role);

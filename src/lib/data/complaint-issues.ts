@@ -6,12 +6,21 @@ import {
   getNextTaxonomySortOrder,
 } from "@/lib/taxonomy-sort-order";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import type { ComplaintIssue } from "@/types";
 
 function supabase() {
   assertSupabaseEnv();
   return createClient();
+}
+
+interface TaxonomyClientOptions {
+  useAdmin?: boolean;
+}
+
+async function taxonomyClient(options: TaxonomyClientOptions = {}) {
+  return options.useAdmin ? createAdminClient() : await supabase();
 }
 
 function normalizeIssue(raw: Record<string, unknown>): ComplaintIssue {
@@ -26,9 +35,11 @@ function normalizeIssue(raw: Record<string, unknown>): ComplaintIssue {
   };
 }
 
-export async function getComplaintIssuesForManagement(): Promise<ComplaintIssue[]> {
+export async function getComplaintIssuesForManagement(
+  options: TaxonomyClientOptions = {}
+): Promise<ComplaintIssue[]> {
   const { data, error } = await applyChildTaxonomyManagementSort(
-    (await supabase()).from("complaint_issues").select("*"),
+    (await taxonomyClient(options)).from("complaint_issues").select("*"),
     "category_id"
   );
 
@@ -39,7 +50,7 @@ export async function getComplaintIssuesForManagement(): Promise<ComplaintIssue[
 export async function getComplaintIssueById(
   id: string
 ): Promise<ComplaintIssue | null> {
-  const { data, error } = await (await supabase())
+  const { data, error } = await createAdminClient()
     .from("complaint_issues")
     .select("*")
     .eq("id", id)
@@ -53,7 +64,7 @@ export async function getComplaintIssueById(
 export async function getComplaintIssueUsageCount(
   issueName: string
 ): Promise<number> {
-  const { count, error } = await (await supabase())
+  const { count, error } = await createAdminClient()
     .from("cases")
     .select("*", { count: "exact", head: true })
     .eq("complaint_subtype", issueName);
@@ -65,7 +76,7 @@ export async function getComplaintIssueUsageCount(
 export async function countIssuesByCategoryId(
   categoryId: string
 ): Promise<number> {
-  const { count, error } = await (await supabase())
+  const { count, error } = await createAdminClient()
     .from("complaint_issues")
     .select("*", { count: "exact", head: true })
     .eq("category_id", categoryId);
@@ -79,7 +90,7 @@ export async function createComplaintIssue(
   name: string
 ): Promise<ComplaintIssue> {
   const trimmed = name.trim();
-  const client = await supabase();
+  const client = createAdminClient();
   const sort_order = await getNextTaxonomySortOrder(
     client,
     "complaint_issues",
@@ -113,7 +124,7 @@ export async function reorderComplaintIssues(
   if (!categoryId?.trim()) throw new Error("無效的案件類別");
   if (!orderedIds.length) return;
 
-  const client = await supabase();
+  const client = createAdminClient();
   const { data, error } = await client
     .from("complaint_issues")
     .select("id")
@@ -136,7 +147,7 @@ export async function setComplaintIssueActive(
   id: string,
   isActive: boolean
 ): Promise<ComplaintIssue> {
-  const { data, error } = await (await supabase())
+  const { data, error } = await createAdminClient()
     .from("complaint_issues")
     .update({ is_active: isActive })
     .eq("id", id)
@@ -154,7 +165,7 @@ export async function renameComplaintIssue(
   const trimmed = newName.trim();
   if (!trimmed) throw new Error("子分類名稱不可為空");
 
-  const client = await supabase();
+  const client = createAdminClient();
   const existing = await getComplaintIssueById(id);
   if (!existing) throw new Error("找不到子分類");
 
@@ -210,7 +221,7 @@ export async function deleteComplaintIssue(id: string): Promise<void> {
     );
   }
 
-  const { error } = await (await supabase())
+  const { error } = await createAdminClient()
     .from("complaint_issues")
     .delete()
     .eq("id", id);

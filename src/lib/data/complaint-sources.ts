@@ -6,12 +6,21 @@ import {
   getNextTaxonomySortOrder,
 } from "@/lib/taxonomy-sort-order";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import type { ComplaintChannel, ComplaintSource } from "@/types";
 
 function supabase() {
   assertSupabaseEnv();
   return createClient();
+}
+
+interface TaxonomyClientOptions {
+  useAdmin?: boolean;
+}
+
+async function taxonomyClient(options: TaxonomyClientOptions = {}) {
+  return options.useAdmin ? createAdminClient() : await supabase();
 }
 
 function normalizeSource(raw: Record<string, unknown>): ComplaintSource {
@@ -39,9 +48,15 @@ function normalizeChannel(raw: Record<string, unknown>): ComplaintChannel {
 
 export async function getComplaintSourcesForManagement(): Promise<
   ComplaintSource[]
-> {
+>;
+export async function getComplaintSourcesForManagement(
+  options?: TaxonomyClientOptions
+): Promise<ComplaintSource[]>;
+export async function getComplaintSourcesForManagement(
+  options: TaxonomyClientOptions = {}
+): Promise<ComplaintSource[]> {
   const { data, error } = await applyTaxonomySort(
-    (await supabase()).from("complaint_sources").select("*")
+    (await taxonomyClient(options)).from("complaint_sources").select("*")
   );
 
   if (error) throw error;
@@ -50,9 +65,15 @@ export async function getComplaintSourcesForManagement(): Promise<
 
 export async function getComplaintChannelsForManagement(): Promise<
   ComplaintChannel[]
-> {
+>;
+export async function getComplaintChannelsForManagement(
+  options?: TaxonomyClientOptions
+): Promise<ComplaintChannel[]>;
+export async function getComplaintChannelsForManagement(
+  options: TaxonomyClientOptions = {}
+): Promise<ComplaintChannel[]> {
   const { data, error } = await applyChildTaxonomyManagementSort(
-    (await supabase()).from("complaint_channels").select("*"),
+    (await taxonomyClient(options)).from("complaint_channels").select("*"),
     "source_id"
   );
 
@@ -63,7 +84,7 @@ export async function getComplaintChannelsForManagement(): Promise<
 export async function getComplaintSourceById(
   id: string
 ): Promise<ComplaintSource | null> {
-  const { data, error } = await (await supabase())
+  const { data, error } = await createAdminClient()
     .from("complaint_sources")
     .select("*")
     .eq("id", id)
@@ -77,7 +98,7 @@ export async function getComplaintSourceById(
 export async function getComplaintChannelById(
   id: string
 ): Promise<ComplaintChannel | null> {
-  const { data, error } = await (await supabase())
+  const { data, error } = await createAdminClient()
     .from("complaint_channels")
     .select("*")
     .eq("id", id)
@@ -91,7 +112,7 @@ export async function getComplaintChannelById(
 export async function getComplaintSourceUsageCount(
   sourceName: string
 ): Promise<number> {
-  const { count, error } = await (await supabase())
+  const { count, error } = await createAdminClient()
     .from("cases")
     .select("*", { count: "exact", head: true })
     .eq("source", sourceName);
@@ -103,7 +124,7 @@ export async function getComplaintSourceUsageCount(
 export async function getComplaintChannelUsageCount(
   channelName: string
 ): Promise<number> {
-  const { count, error } = await (await supabase())
+  const { count, error } = await createAdminClient()
     .from("cases")
     .select("*", { count: "exact", head: true })
     .eq("source_detail", channelName);
@@ -113,7 +134,7 @@ export async function getComplaintChannelUsageCount(
 }
 
 export async function countChannelsBySourceId(sourceId: string): Promise<number> {
-  const { count, error } = await (await supabase())
+  const { count, error } = await createAdminClient()
     .from("complaint_channels")
     .select("*", { count: "exact", head: true })
     .eq("source_id", sourceId);
@@ -126,7 +147,7 @@ export async function createComplaintSource(
   name: string
 ): Promise<ComplaintSource> {
   const trimmed = name.trim();
-  const client = await supabase();
+  const client = createAdminClient();
   const sort_order = await getNextTaxonomySortOrder(client, "complaint_sources");
   const { data, error } = await client
     .from("complaint_sources")
@@ -147,7 +168,7 @@ export async function reorderComplaintSources(
 ): Promise<void> {
   if (!orderedIds.length) return;
 
-  const client = await supabase();
+  const client = createAdminClient();
   const { data, error } = await client.from("complaint_sources").select("id");
 
   if (error) throw error;
@@ -167,7 +188,7 @@ export async function setComplaintSourceActive(
   id: string,
   isActive: boolean
 ): Promise<ComplaintSource> {
-  const { data, error } = await (await supabase())
+  const { data, error } = await createAdminClient()
     .from("complaint_sources")
     .update({ is_active: isActive })
     .eq("id", id)
@@ -185,7 +206,7 @@ export async function renameComplaintSource(
   const trimmed = newName.trim();
   if (!trimmed) throw new Error("案件來源名稱不可為空");
 
-  const client = await supabase();
+  const client = createAdminClient();
   const existing = await getComplaintSourceById(id);
   if (!existing) throw new Error("找不到案件來源");
 
@@ -242,7 +263,7 @@ export async function deleteComplaintSource(id: string): Promise<void> {
     throw new Error("無法刪除案件來源，請先刪除底下的服務管道。");
   }
 
-  const { error } = await (await supabase())
+  const { error } = await createAdminClient()
     .from("complaint_sources")
     .delete()
     .eq("id", id);
@@ -255,7 +276,7 @@ export async function createComplaintChannel(
   name: string
 ): Promise<ComplaintChannel> {
   const trimmed = name.trim();
-  const client = await supabase();
+  const client = createAdminClient();
   const sort_order = await getNextTaxonomySortOrder(
     client,
     "complaint_channels",
@@ -284,7 +305,7 @@ export async function reorderComplaintChannels(
   if (!sourceId?.trim()) throw new Error("無效的案件來源");
   if (!orderedIds.length) return;
 
-  const client = await supabase();
+  const client = createAdminClient();
   const { data, error } = await client
     .from("complaint_channels")
     .select("id")
@@ -307,7 +328,7 @@ export async function setComplaintChannelActive(
   id: string,
   isActive: boolean
 ): Promise<ComplaintChannel> {
-  const { data, error } = await (await supabase())
+  const { data, error } = await createAdminClient()
     .from("complaint_channels")
     .update({ is_active: isActive })
     .eq("id", id)
@@ -325,7 +346,7 @@ export async function renameComplaintChannel(
   const trimmed = newName.trim();
   if (!trimmed) throw new Error("服務管道名稱不可為空");
 
-  const client = await supabase();
+  const client = createAdminClient();
   const existing = await getComplaintChannelById(id);
   if (!existing) throw new Error("找不到服務管道");
 
@@ -381,7 +402,7 @@ export async function deleteComplaintChannel(id: string): Promise<void> {
     );
   }
 
-  const { error } = await (await supabase())
+  const { error } = await createAdminClient()
     .from("complaint_channels")
     .delete()
     .eq("id", id);

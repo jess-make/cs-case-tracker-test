@@ -38,8 +38,12 @@ import {
 import { getNextStatus } from "@/lib/case-status";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
 import { parseOptionalDepartment } from "@/lib/parse-form";
+import { getInitialAutoAssignedDepartment } from "@/lib/case-auto-assignment";
+import { isAutoAssignDepartmentValue } from "@/lib/case-department";
 
 function parseCaseFormData(formData: FormData) {
+  const departmentValue = formData.get("department");
+
   return {
     customer_name: (formData.get("customer_name") as string)?.trim(),
     customer_contact: (formData.get("customer_contact") as string)?.trim(),
@@ -50,10 +54,19 @@ function parseCaseFormData(formData: FormData) {
     complaint_subtype: formData.get("complaint_subtype") as string,
     description: (formData.get("description") as string)?.trim(),
     urgency: formData.get("urgency") as UrgencyLevel,
-    department: parseOptionalDepartment(formData.get("department")),
+    department: parseOptionalDepartment(departmentValue),
+    autoAssignDepartment: isAutoAssignDepartmentValue(departmentValue),
     ecommerce_order_no:
       (formData.get("ecommerce_order_no") as string)?.trim() || null,
   };
+}
+
+function stripAutoAssignFlag<T extends { autoAssignDepartment: boolean }>(
+  input: T
+): Omit<T, "autoAssignDepartment"> {
+  const { autoAssignDepartment, ...caseInput } = input;
+  void autoAssignDepartment;
+  return caseInput;
 }
 
 export async function createCaseAction(
@@ -64,8 +77,16 @@ export async function createCaseAction(
     const actorId = actor.id;
     const attachmentFiles = getAttachmentFilesFromFormData(formData);
 
+    const parsed = parseCaseFormData(formData);
+    const parsedInput = stripAutoAssignFlag(parsed);
     const input: CreateCaseInput = {
-      ...parseCaseFormData(formData),
+      ...parsedInput,
+      department: parsed.autoAssignDepartment
+        ? getInitialAutoAssignedDepartment(
+            parsedInput.complaint_type,
+            parsedInput.complaint_subtype
+          )
+        : parsedInput.department,
     };
 
     const newCase = await createCase(input, actorId);
@@ -111,7 +132,7 @@ export async function updateCaseAction(caseId: string, formData: FormData) {
   try {
     const { user: actor, caseData } = await requireCaseEditPermission(caseId);
     const actorId = actor.id;
-    const input = parseCaseFormData(formData);
+    const input = stripAutoAssignFlag(parseCaseFormData(formData));
     const attachmentFiles = getAttachmentFilesFromFormData(formData);
     const removeAttachmentIds = formData.getAll(
       "remove_attachment_ids"
@@ -260,16 +281,19 @@ export async function addReplyAction(caseId: string, formData: FormData) {
       }
     }
 
-    const result = await addCaseReply(caseId, actorId, content);
+    const result = await addCaseReply(caseId, actorId, content, actor);
 
     if (!result.ok) {
       return { error: "更新案件狀態失敗，請稍後再試" };
     }
 
     const { getCaseById } = await import("@/lib/data/cases");
-    const caseData = await getCaseById(caseId, actor);
+    const caseData = result.case ?? (await getCaseById(caseId, actor));
     if (caseData) {
       await notifyCaseReplied(caseData, actor, content);
+    }
+    if (result.departmentAssigned && result.case) {
+      await notifyDepartmentAssigned(result.case);
     }
 
     revalidatePath(`/cases/${caseId}`);

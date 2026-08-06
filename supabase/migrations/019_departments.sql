@@ -96,6 +96,7 @@ GRANT SELECT, INSERT, UPDATE ON public.departments TO authenticated;
 -- 預設部門（與 src/lib/constants.ts DEPARTMENTS 一致）
 INSERT INTO public.departments (name) VALUES
   ('後勤部-維修'),
+  ('後勤部-電商'),
   ('後勤部-品檢'),
   ('後勤部-倉儲'),
   ('業務部-電商'),

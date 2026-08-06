@@ -13,6 +13,7 @@ import { CategoryIssueFields } from "@/components/cases/CategoryIssueFields";
 import { DepartmentSelect } from "@/components/cases/DepartmentSelect";
 import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker";
 import { Loader2 } from "lucide-react";
+import { AUTO_ASSIGN_DEPARTMENT_VALUE } from "@/lib/case-department";
 import {
   type PendingAttachment,
   appendAttachmentsToFormData,
@@ -38,7 +39,7 @@ export function CreateCaseForm({
   const [complaintSubtype, setComplaintSubtype] = useState("");
   const [source, setSource] = useState("");
   const [sourceDetail, setSourceDetail] = useState("");
-  const [department, setDepartment] = useState("");
+  const [department, setDepartment] = useState(AUTO_ASSIGN_DEPARTMENT_VALUE);
   const [pendingAttachments, setPendingAttachments] = useState<PendingAttachment[]>([]);
 
   const categoryItems = useMemo(
@@ -167,6 +168,7 @@ export function CreateCaseForm({
           inputClass={inputClass}
           labelClass={labelClass}
           departments={activeDepartments}
+          autoLabel="依規則自動指派"
         />
         <div>
           <label className={labelClass}>電商訂單編號</label>

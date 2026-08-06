@@ -1,11 +1,18 @@
-/** 是否已選擇指派部門（非「暫不指派」） */
+import { CS_DEPARTMENT } from "@/lib/constants";
+
+export const AUTO_ASSIGN_DEPARTMENT_VALUE = "__auto_assign__";
+
+export function isAutoAssignDepartmentValue(value: unknown): boolean {
+  return String(value ?? "").trim() === AUTO_ASSIGN_DEPARTMENT_VALUE;
+}
+
+/** 是否已選擇指派部門（非「不需指派」或自動指派佔位值） */
 export function hasAssignedDepartment(
   department: string | null | undefined
 ): boolean {
-  return Boolean(department?.trim());
+  const value = department?.trim() ?? "";
+  return Boolean(value && value !== AUTO_ASSIGN_DEPARTMENT_VALUE);
 }
-
-import { CS_DEPARTMENT } from "@/lib/constants";
 
 /** 案件列表篩選：暫未指派部門的 query 值 */
 export const DEPARTMENT_FILTER_UNASSIGNED = "__unassigned__";

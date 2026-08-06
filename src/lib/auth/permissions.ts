@@ -2,13 +2,13 @@ import type { UserRole } from "@/types";
 
 type CaseTaxonomyPermissionUser = {
   role: UserRole;
-  name?: string | null;
+  email?: string | null;
 };
 
-const CASE_TAXONOMY_MANAGER_NAMES = new Set(["曾郁茹"]);
+const CASE_TAXONOMY_MANAGER_EMAILS = new Set(["yuju.tseng@grevia.com.tw"]);
 
-function normalizePermissionName(name: string | null | undefined): string {
-  return (name ?? "").replace(/\s+/g, "");
+function normalizePermissionEmail(email: string | null | undefined): string {
+  return (email ?? "").trim().toLowerCase();
 }
 export {
   canCreateCase,
@@ -37,7 +37,7 @@ export function canManageUsers(role: UserRole): boolean {
 export function canManageCaseTaxonomy(user: CaseTaxonomyPermissionUser): boolean {
   return (
     canManageUsers(user.role) ||
-    CASE_TAXONOMY_MANAGER_NAMES.has(normalizePermissionName(user.name))
+    CASE_TAXONOMY_MANAGER_EMAILS.has(normalizePermissionEmail(user.email))
   );
 }
 

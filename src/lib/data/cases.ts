@@ -2,11 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { resolveDateRange, toCreatedAtBounds } from "@/lib/date-range";
 import { normalizeCase, normalizeCaseLog } from "@/lib/data/normalize";
-import {
-  canViewCase,
-  getCaseVisibilityFilter,
-  NO_ACCESS_CASE_ID,
-} from "@/lib/auth/case-access";
+import { canViewCase } from "@/lib/auth/case-access";
 import { DEPARTMENT_FILTER_UNASSIGNED } from "@/lib/case-department";
 import { CS_DEPARTMENT } from "@/lib/constants";
 import type { SessionUser } from "@/lib/auth/session";
@@ -29,7 +25,10 @@ import {
 } from "@/lib/data/case-logs";
 import { buildCaseEditSummary } from "@/lib/case-edit-summary";
 import { hasAssignedDepartment } from "@/lib/case-department";
-import { getNextAutoAssignedDepartment } from "@/lib/case-auto-assignment";
+import {
+  getNextAutoAssignedDepartment,
+  isAutoAssignedDepartmentStep,
+} from "@/lib/case-auto-assignment";
 import { isDepartmentInScope } from "@/lib/department-scope";
 import {
   buildDashboardStats,
@@ -44,6 +43,9 @@ type ReplyActor = {
   role: UserRole;
   department: string | null;
 };
+
+const AUTO_ASSIGNMENT_DEPARTMENT_PATTERN =
+  /^自動指派部門：「(.+?)」→「(.+?)」/;
 
 /** 查詢案件並 join 負責人／建立者姓名（保留 assignee_id 供篩選與轉派） */
 const CASE_SELECT_WITH_USERS = `
@@ -84,7 +86,7 @@ async function enrichCases(cases: Case[]): Promise<Case[]> {
   }
   const userMap = await fetchUsersByIds(ids);
 
-  return cases.map((c) =>
+  const enriched = cases.map((c) =>
     normalizeCase({
       ...c,
       assignee: c.assignee_id
@@ -95,6 +97,8 @@ async function enrichCases(cases: Case[]): Promise<Case[]> {
         : null,
     } as Record<string, unknown>)
   );
+
+  return attachParticipantDepartments(enriched);
 }
 
 async function enrichLogs(logs: CaseLog[]): Promise<CaseLog[]> {
@@ -108,6 +112,65 @@ async function enrichLogs(logs: CaseLog[]): Promise<CaseLog[]> {
       user: l.user_id ? userMap.get(l.user_id) ?? null : null,
     } as Record<string, unknown>)
   );
+}
+
+function normalizeDepartmentName(value: string | null | undefined): string {
+  return (value ?? "").trim();
+}
+
+function addUniqueDepartment(target: string[], department: string): void {
+  const normalized = normalizeDepartmentName(department);
+  if (normalized && !target.includes(normalized)) {
+    target.push(normalized);
+  }
+}
+
+function parseAutoAssignmentFromDepartment(content: string | null): string | null {
+  const match = content?.trim().match(AUTO_ASSIGNMENT_DEPARTMENT_PATTERN);
+  return match?.[1]?.trim() || null;
+}
+
+async function fetchParticipantDepartmentsByCaseId(
+  caseIds: string[]
+): Promise<Map<string, string[]>> {
+  const uniqueIds = [...new Set(caseIds.filter(Boolean))];
+  const byCaseId = new Map<string, string[]>();
+  if (uniqueIds.length === 0) return byCaseId;
+
+  const { data, error } = await (await supabase())
+    .from("case_logs")
+    .select("case_id, content")
+    .in("case_id", uniqueIds)
+    .eq("action", "編輯案件");
+
+  if (error) {
+    console.error("[fetchParticipantDepartmentsByCaseId]", error.message);
+    return byCaseId;
+  }
+
+  for (const row of data ?? []) {
+    const caseId = String(row.case_id ?? "");
+    const department = parseAutoAssignmentFromDepartment(
+      (row.content as string | null) ?? null
+    );
+    if (!caseId || !department || department === CS_DEPARTMENT) continue;
+    const departments = byCaseId.get(caseId) ?? [];
+    addUniqueDepartment(departments, department);
+    byCaseId.set(caseId, departments);
+  }
+
+  return byCaseId;
+}
+
+async function attachParticipantDepartments(cases: Case[]): Promise<Case[]> {
+  const participantsByCaseId = await fetchParticipantDepartmentsByCaseId(
+    cases.map((caseData) => caseData.id)
+  );
+
+  return cases.map((caseData) => ({
+    ...caseData,
+    participant_departments: participantsByCaseId.get(caseData.id) ?? [],
+  }));
 }
 
 /** 取得預設操作者（第一筆一般使用者，否則第一筆使用者） */
@@ -163,6 +226,24 @@ function canAutoAdvanceDepartmentStep(
   return actor.role === "department_head" && isDepartmentInScope(caseDept, actorDept);
 }
 
+function isCsReplyActor(actor: ReplyActor | null | undefined): boolean {
+  return (
+    actor?.role === "admin" ||
+    actor?.department?.trim() === CS_DEPARTMENT
+  );
+}
+
+function shouldConfirmByCsReply(
+  caseData: Case,
+  actor: ReplyActor | null | undefined
+): boolean {
+  return (
+    isCsReplyActor(actor) &&
+    normalizeDepartmentName(caseData.department) === CS_DEPARTMENT &&
+    caseData.status === "replied"
+  );
+}
+
 /** @deprecated 請改用 getAssigneeFilterUsers */
 export const getHandlers = getAssigneeFilterUsers;
 
@@ -189,31 +270,6 @@ export async function getCases(
     .from("cases")
     .select(CASE_SELECT_WITH_USERS)
     .order("created_at", { ascending: false });
-
-  const visibility = getCaseVisibilityFilter(viewer);
-  switch (visibility.type) {
-    case "none":
-      query = query.eq("id", NO_ACCESS_CASE_ID);
-      break;
-    case "department":
-      query = query.eq("department", visibility.department);
-      break;
-    case "department_scope":
-      query = query.or(
-        `department.eq.${visibility.department},department.like.${visibility.pattern}`
-      );
-      break;
-    case "assignee":
-      query = query.eq("assignee_id", visibility.userId);
-      break;
-    case "assignee_or_department":
-      query = query.or(
-        `assignee_id.eq.${visibility.userId},department.eq.${visibility.department}`
-      );
-      break;
-    case "all":
-      break;
-  }
 
   if (filters?.status) {
     const status =
@@ -261,7 +317,8 @@ export async function getCases(
   const rows = (data ?? []).map((row) =>
     normalizeCase(row as Record<string, unknown>)
   );
-  return enrichCases(rows);
+  const enriched = await enrichCases(rows);
+  return enriched.filter((caseData) => canViewCase(viewer, caseData));
 }
 
 export async function getCaseById(
@@ -515,28 +572,57 @@ export async function addCaseReply(
   }
 
   const replyLogSaved = await logCaseReply(caseId, userId, content);
-  const nextDepartment = canAutoAdvanceDepartmentStep(existing, actor)
+  const departmentStepCompleted = canAutoAdvanceDepartmentStep(existing, actor);
+  const currentDepartmentIsAutoStep = isAutoAssignedDepartmentStep(
+    existing.complaint_type,
+    existing.complaint_subtype,
+    existing.department
+  );
+  const nextDepartment = departmentStepCompleted
     ? getNextAutoAssignedDepartment(
         existing.complaint_type,
         existing.complaint_subtype,
         existing.department
       )
     : null;
-  const nextStatus: CaseStatus = nextDepartment ? "in_progress" : "replied";
+  const shouldReturnToCs =
+    departmentStepCompleted &&
+    !nextDepartment &&
+    hasAssignedDepartment(existing.department) &&
+    normalizeDepartmentName(existing.department) !== CS_DEPARTMENT &&
+    (currentDepartmentIsAutoStep || existing.status === "in_progress");
+  const nextStatus: CaseStatus = nextDepartment
+    ? "in_progress"
+    : shouldReturnToCs
+      ? "replied"
+      : shouldConfirmByCsReply(existing, actor)
+        ? "cs_confirming"
+        : existing.status;
 
-  const updates: Record<string, unknown> = { status: nextStatus };
+  const updates: Record<string, unknown> = {};
+  if (nextStatus !== existing.status) {
+    updates.status = nextStatus;
+  }
   if (nextDepartment) {
     updates.department = nextDepartment;
   }
+  if (shouldReturnToCs) {
+    updates.department = CS_DEPARTMENT;
+  }
 
-  const { data, error } = await (await supabase())
-    .from("cases")
-    .update(updates)
-    .eq("id", caseId)
-    .select()
-    .single();
+  let updatedCase = existing;
+  let normalizedUpdatedCase: Case | null = null;
+  if (Object.keys(updates).length > 0) {
+    const { data, error } = await (await supabase())
+      .from("cases")
+      .update(updates)
+      .eq("id", caseId)
+      .select()
+      .single();
 
-  if (error) throw error;
+    if (error) throw error;
+    normalizedUpdatedCase = normalizeCase(data as Record<string, unknown>);
+  }
 
   let statusLogSaved = true;
   if (existing.status !== nextStatus) {
@@ -544,22 +630,26 @@ export async function addCaseReply(
   }
 
   let assignmentLogSaved = true;
-  if (nextDepartment) {
+  const assignedDepartment =
+    nextDepartment ?? (shouldReturnToCs ? CS_DEPARTMENT : null);
+  if (assignedDepartment) {
     assignmentLogSaved = await logCaseEdited(
       caseId,
       userId,
-      `自動指派部門：「${existing.department?.trim() || "—"}」→「${nextDepartment}」`
+      `自動指派部門：「${existing.department?.trim() || "—"}」→「${assignedDepartment}」`
     );
   }
 
-  const [enriched] = await enrichCases([
-    normalizeCase(data as Record<string, unknown>),
-  ]);
+  if (normalizedUpdatedCase) {
+    [updatedCase] = await enrichCases([
+      normalizedUpdatedCase,
+    ]);
+  }
 
   return {
     ok: true,
     logSaved: replyLogSaved && statusLogSaved && assignmentLogSaved,
-    case: enriched,
+    case: updatedCase,
     departmentAssigned: Boolean(nextDepartment),
   };
 }

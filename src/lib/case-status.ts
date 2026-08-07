@@ -4,7 +4,7 @@ import { CASE_STATUS_COLORS, CASE_STATUS_LABELS } from "@/lib/constants";
 /** DB 舊狀態（不再顯示於流程，視同處理中） */
 export const LEGACY_ASSIGNED_STATUS = "assigned";
 
-/** 案件操作區／流程推進順序 */
+/** 案件操作區／流程推進順序：新案件 → 處理中 → 已回覆 → 客服已確認 → 已結案 */
 export const CASE_FLOW_STEPS: CaseStatus[] = [
   "new",
   "in_progress",

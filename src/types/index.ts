@@ -52,6 +52,7 @@ export interface Case {
   closed_at: string | null;
   created_at: string;
   updated_at: string;
+  participant_departments?: string[];
   assignee?: User | null;
   created_by?: User | null;
   attachments?: CaseAttachment[];

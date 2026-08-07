@@ -21,7 +21,15 @@ export function canCreateCase(user: SessionUser): boolean {
 /** 是否可查看單一案件 */
 export function canViewCase(user: SessionUser, caseData: Case): boolean {
   if (hasUnrestrictedCaseAccess(user)) return true;
+  if (canActOnCurrentCaseAssignment(user, caseData)) return true;
 
+  return canViewParticipatingDepartment(user, caseData);
+}
+
+function canActOnCurrentCaseAssignment(
+  user: SessionUser,
+  caseData: Case
+): boolean {
   const caseDept = caseData.department?.trim() || null;
   const userDept = user.department?.trim() || null;
 
@@ -41,9 +49,32 @@ export function canViewCase(user: SessionUser, caseData: Case): boolean {
   return false;
 }
 
+function canViewParticipatingDepartment(
+  user: SessionUser,
+  caseData: Case
+): boolean {
+  const userDept = user.department?.trim() || null;
+  if (!userDept) return false;
+
+  const departments = caseData.participant_departments ?? [];
+  if (departments.length === 0) return false;
+
+  if (user.role === "department_head") {
+    return departments.some((department) =>
+      isDepartmentInScope(department, userDept)
+    );
+  }
+
+  if (user.role === "manager" || user.role === "user") {
+    return departments.some((department) => department.trim() === userDept);
+  }
+
+  return false;
+}
+
 /** 可更新／處理案件：與可查看範圍相同 */
 export function canUpdateCase(user: SessionUser, caseData: Case): boolean {
-  return canViewCase(user, caseData);
+  return hasFullCaseControl(user) || canActOnCurrentCaseAssignment(user, caseData);
 }
 
 export type CaseVisibilityFilter =
@@ -132,10 +163,11 @@ export function getCasePermissions(
 
   const full = hasFullCaseControl(user);
   const readOnly = user.role === "boss";
+  const canAct = full || canActOnCurrentCaseAssignment(user, caseData);
   return {
     canEditCase: full,
-    canReplyCase: !readOnly,
-    canManageAttachments: !readOnly,
+    canReplyCase: !readOnly && canAct,
+    canManageAttachments: !readOnly && canAct,
     canDeleteAttachment: full,
     canAdvanceWorkflow: full,
     canRevertWorkflow: hasCaseWorkflowRevertControl(user),

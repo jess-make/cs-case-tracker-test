@@ -65,6 +65,11 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     closed_at: (raw.closed_at as string | null) ?? null,
     created_at: String(raw.created_at ?? new Date().toISOString()),
     updated_at: String(raw.updated_at ?? new Date().toISOString()),
+    participant_departments: Array.isArray(raw.participant_departments)
+      ? (raw.participant_departments as string[])
+          .map((department) => department.trim())
+          .filter(Boolean)
+      : [],
     assignee: coerceEmbeddedUser(raw.assignee),
     created_by: coerceEmbeddedUser(raw.created_by),
   };

@@ -81,3 +81,13 @@ export function getNextAutoAssignedDepartment(
 
   return plan[index + 1] ?? null;
 }
+
+export function isAutoAssignedDepartmentStep(
+  category: string,
+  issue: string | null | undefined,
+  currentDepartment: string | null | undefined
+): boolean {
+  const current = (currentDepartment ?? "").trim();
+  if (!current) return false;
+  return getAssignmentPlan(category, issue).includes(current);
+}

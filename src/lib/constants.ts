@@ -8,7 +8,7 @@ export const CASE_STATUS_LABELS: Record<CaseStatus, string> = {
   new: "新案件",
   in_progress: "處理中",
   replied: "已回覆",
-  cs_confirming: "客服確認中",
+  cs_confirming: "客服已確認",
   closed: "已結案",
 };
 
@@ -100,7 +100,7 @@ export const DEPARTMENTS = [
 export const CS_DEPARTMENT = "業務部-客服";
 export const BUSINESS_HEAD_DEPARTMENT = "業務部";
 
-/** 狀態流轉順序（新案件 → 處理中 → 已回覆 → 客服確認中 → 已結案） */
+/** 狀態流轉順序（新案件 → 處理中 → 已回覆 → 客服已確認 → 已結案） */
 export {
   CASE_FLOW_STEPS as STATUS_FLOW,
   getNextStatus,

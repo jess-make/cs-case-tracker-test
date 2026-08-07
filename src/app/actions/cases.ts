@@ -42,6 +42,11 @@ import type { CreateCaseInput, UrgencyLevel } from "@/types";
 import { parseOptionalDepartment } from "@/lib/parse-form";
 import { getInitialAutoAssignedDepartment } from "@/lib/case-auto-assignment";
 import { isAutoAssignDepartmentValue } from "@/lib/case-department";
+import {
+  buildQualityInspectionReplyContent,
+  isQualityInspectionReplyOption,
+  isQualityInspectionReplyStep,
+} from "@/lib/quality-inspection-reply";
 
 function parseCaseFormData(formData: FormData) {
   const departmentValue = formData.get("department");
@@ -69,6 +74,27 @@ function stripAutoAssignFlag<T extends { autoAssignDepartment: boolean }>(
   const { autoAssignDepartment, ...caseInput } = input;
   void autoAssignDepartment;
   return caseInput;
+}
+
+function parseReplyFormData(
+  formData: FormData,
+  caseData: { complaint_type: string; department: string | null }
+): { content: string; error?: never } | { content?: never; error: string } {
+  const note = ((formData.get("content") as string) ?? "").trim();
+  if (!note) return { error: "請輸入處理說明後再送出。" };
+
+  if (!isQualityInspectionReplyStep(caseData)) {
+    return { content: note };
+  }
+
+  const result = ((formData.get("quality_inspection_result") as string) ?? "")
+    .trim();
+  if (!result) return { error: "請選擇品檢結果後再送出。" };
+  if (!isQualityInspectionReplyOption(result)) {
+    return { error: "品檢結果選項不正確，請重新選擇。" };
+  }
+
+  return { content: buildQualityInspectionReplyContent(result, note) };
 }
 
 export async function createCaseAction(
@@ -279,11 +305,13 @@ export async function closeCaseAction(caseId: string) {
 }
 
 export async function addReplyAction(caseId: string, formData: FormData) {
-  const content = (formData.get("content") as string)?.trim() ?? "";
-  if (!content) return { error: "請輸入處理說明後再送出。" };
-
   try {
-    const { user: actor } = await requireCaseReplyPermission(caseId);
+    const { user: actor, caseData: currentCase } =
+      await requireCaseReplyPermission(caseId);
+    const parsedReply = parseReplyFormData(formData, currentCase);
+    if ("error" in parsedReply) return { error: parsedReply.error };
+
+    const content = parsedReply.content;
     const actorId = actor.id;
     const attachmentFiles = getAttachmentFilesFromFormData(formData);
 
@@ -307,9 +335,9 @@ export async function addReplyAction(caseId: string, formData: FormData) {
     }
 
     const { getCaseById } = await import("@/lib/data/cases");
-    const caseData = result.case ?? (await getCaseById(caseId, actor));
-    if (caseData) {
-      await notifyCaseReplied(caseData, actor, content);
+    const latestCase = result.case ?? (await getCaseById(caseId, actor));
+    if (latestCase) {
+      await notifyCaseReplied(latestCase, actor, content);
     }
     if (result.departmentAssigned && result.case) {
       await notifyDepartmentAssigned(result.case);

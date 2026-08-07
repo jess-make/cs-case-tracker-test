@@ -30,14 +30,19 @@ import type {
   CategoryIssueTaxonomy,
   SourceChannelTaxonomy,
 } from "@/lib/data/complaint-taxonomy-form";
-
-const REPLY_REQUIRED_MESSAGE = "請輸入處理說明後再送出。";
+import {
+  QUALITY_INSPECTION_REPLY_OPTIONS,
+  isQualityInspectionReplyStep,
+} from "@/lib/quality-inspection-reply";
 import {
   type PendingAttachment,
   appendAttachmentsToFormData,
   revokeAllPendingAttachments,
   ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
+
+const REPLY_REQUIRED_MESSAGE = "請輸入處理說明後再送出。";
+const QUALITY_RESULT_REQUIRED_MESSAGE = "請選擇品檢結果後再送出。";
 
 export function CaseDetailPanel({
   caseData,
@@ -57,6 +62,7 @@ export function CaseDetailPanel({
   sourceChannelTaxonomy: SourceChannelTaxonomy;
 }) {
   const [reply, setReply] = useState("");
+  const [qualityInspectionResult, setQualityInspectionResult] = useState("");
   const [replyError, setReplyError] = useState<string | null>(null);
   const [replyAttachments, setReplyAttachments] = useState<PendingAttachment[]>([]);
   const [editing, setEditing] = useState(false);
@@ -66,6 +72,7 @@ export function CaseDetailPanel({
   const displayStatus = normalizeCaseStatus(caseData.status);
   const nextStatus = getNextStatus(displayStatus);
   const previousStatus = getPreviousStatus(displayStatus);
+  const showQualityInspectionReply = isQualityInspectionReplyStep(caseData);
 
   function handleAdvance() {
     startTransition(async () => {
@@ -96,6 +103,11 @@ export function CaseDetailPanel({
 
   function handleReply(e: React.FormEvent) {
     e.preventDefault();
+    if (showQualityInspectionReply && !qualityInspectionResult) {
+      setReplyError(QUALITY_RESULT_REQUIRED_MESSAGE);
+      return;
+    }
+
     if (!reply.trim()) {
       setReplyError(REPLY_REQUIRED_MESSAGE);
       return;
@@ -104,6 +116,9 @@ export function CaseDetailPanel({
     setReplyError(null);
     const formData = new FormData();
     formData.set("content", reply);
+    if (showQualityInspectionReply) {
+      formData.set("quality_inspection_result", qualityInspectionResult);
+    }
     appendAttachmentsToFormData(
       formData,
       replyAttachments.map((item) => item.file)
@@ -116,6 +131,7 @@ export function CaseDetailPanel({
         return;
       }
       setReply("");
+      setQualityInspectionResult("");
       revokeAllPendingAttachments(replyAttachments);
       setReplyAttachments([]);
       router.refresh();
@@ -223,25 +239,81 @@ export function CaseDetailPanel({
                   {replyError}
                 </p>
               )}
-              <label
-                htmlFor={`reply-content-${caseData.id}`}
-                className="mb-1 block text-sm font-medium text-slate-700"
-              >
-                處理回覆 *
-              </label>
-              <textarea
-                id={`reply-content-${caseData.id}`}
-                name="content"
-                value={reply}
-                onChange={(e) => {
-                  setReply(e.target.value);
-                  if (replyError) setReplyError(null);
-                }}
-                rows={3}
-                required
-                className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                placeholder="請輸入處理回覆內容"
-              />
+              {showQualityInspectionReply ? (
+                <div className="border-l-4 border-emerald-500 bg-emerald-50/70 py-3 pl-4 pr-3">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(180px,240px)_1fr]">
+                    <div>
+                      <label
+                        htmlFor={`quality-inspection-result-${caseData.id}`}
+                        className="mb-1 block text-sm font-medium text-emerald-950"
+                      >
+                        品檢結果 *
+                      </label>
+                      <select
+                        id={`quality-inspection-result-${caseData.id}`}
+                        name="quality_inspection_result"
+                        value={qualityInspectionResult}
+                        onChange={(e) => {
+                          setQualityInspectionResult(e.target.value);
+                          if (replyError) setReplyError(null);
+                        }}
+                        required
+                        className="h-11 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                      >
+                        <option value="">請選擇</option>
+                        {QUALITY_INSPECTION_REPLY_OPTIONS.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor={`reply-content-${caseData.id}`}
+                        className="mb-1 block text-sm font-medium text-emerald-950"
+                      >
+                        簡述 *
+                      </label>
+                      <textarea
+                        id={`reply-content-${caseData.id}`}
+                        name="content"
+                        value={reply}
+                        onChange={(e) => {
+                          setReply(e.target.value);
+                          if (replyError) setReplyError(null);
+                        }}
+                        rows={3}
+                        required
+                        className="w-full min-h-11 rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        placeholder="請補充檢查結果、原因或處理方式"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <label
+                    htmlFor={`reply-content-${caseData.id}`}
+                    className="mb-1 block text-sm font-medium text-slate-700"
+                  >
+                    處理回覆 *
+                  </label>
+                  <textarea
+                    id={`reply-content-${caseData.id}`}
+                    name="content"
+                    value={reply}
+                    onChange={(e) => {
+                      setReply(e.target.value);
+                      if (replyError) setReplyError(null);
+                    }}
+                    rows={3}
+                    required
+                    className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    placeholder="請輸入處理回覆內容"
+                  />
+                </>
+              )}
               {permissions.canManageAttachments && (
                 <div className="mt-3">
                   <LocalAttachmentPicker

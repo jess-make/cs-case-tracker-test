@@ -81,9 +81,10 @@ function parseReplyFormData(
   caseData: { complaint_type: string; department: string | null }
 ): { content: string; error?: never } | { content?: never; error: string } {
   const note = ((formData.get("content") as string) ?? "").trim();
-  if (!note) return { error: "請輸入處理說明後再送出。" };
+  const isQualityInspectionStep = isQualityInspectionReplyStep(caseData);
 
-  if (!isQualityInspectionReplyStep(caseData)) {
+  if (!isQualityInspectionStep) {
+    if (!note) return { error: "請輸入處理說明後再送出。" };
     return { content: note };
   }
 
@@ -93,7 +94,6 @@ function parseReplyFormData(
   if (!isQualityInspectionReplyOption(result)) {
     return { error: "品檢結果選項不正確，請重新選擇。" };
   }
-
   return { content: buildQualityInspectionReplyContent(result, note) };
 }
 

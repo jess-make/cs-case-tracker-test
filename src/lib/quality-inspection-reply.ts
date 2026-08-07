@@ -39,5 +39,7 @@ export function buildQualityInspectionReplyContent(
   result: QualityInspectionReplyOption,
   note: string
 ): string {
-  return `品檢結果：${result}\n簡述：${note.trim()}`;
+  const trimmedNote = note.trim();
+  if (!trimmedNote) return `品檢結果：${result}`;
+  return `品檢結果：${result}\n簡述：${trimmedNote}`;
 }

@@ -108,7 +108,7 @@ export function CaseDetailPanel({
       return;
     }
 
-    if (!reply.trim()) {
+    if (!showQualityInspectionReply && !reply.trim()) {
       setReplyError(REPLY_REQUIRED_MESSAGE);
       return;
     }
@@ -240,12 +240,12 @@ export function CaseDetailPanel({
                 </p>
               )}
               {showQualityInspectionReply ? (
-                <div className="border-l-4 border-emerald-500 bg-emerald-50/70 py-3 pl-4 pr-3">
+                <div className="border-l-4 border-[#ECB6B] bg-[#F2D39D]/40 py-3 pl-4 pr-3">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(180px,240px)_1fr]">
                     <div>
                       <label
                         htmlFor={`quality-inspection-result-${caseData.id}`}
-                        className="mb-1 block text-sm font-medium text-emerald-950"
+                        className="mb-1 block text-sm font-medium text-[#563B0C]"
                       >
                         品檢結果 *
                       </label>
@@ -258,7 +258,7 @@ export function CaseDetailPanel({
                           if (replyError) setReplyError(null);
                         }}
                         required
-                        className="h-11 w-full rounded-lg border border-emerald-200 bg-white px-3 text-sm text-slate-800 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        className="h-11 w-full rounded-lg border border-[#ECB6B] bg-white px-3 text-sm text-slate-800 focus:border-[#ECB6B] focus:outline-none focus:ring-2 focus:ring-[#ECB6B]/30"
                       >
                         <option value="">請選擇</option>
                         {QUALITY_INSPECTION_REPLY_OPTIONS.map((option) => (
@@ -271,9 +271,9 @@ export function CaseDetailPanel({
                     <div>
                       <label
                         htmlFor={`reply-content-${caseData.id}`}
-                        className="mb-1 block text-sm font-medium text-emerald-950"
+                        className="mb-1 block text-sm font-medium text-[#563B0C]"
                       >
-                        簡述 *
+                        簡述
                       </label>
                       <textarea
                         id={`reply-content-${caseData.id}`}
@@ -284,8 +284,7 @@ export function CaseDetailPanel({
                           if (replyError) setReplyError(null);
                         }}
                         rows={3}
-                        required
-                        className="w-full min-h-11 rounded-lg border border-emerald-200 bg-white px-3 py-2.5 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                        className="w-full min-h-11 rounded-lg border border-[#ECB6B] bg-white px-3 py-2.5 text-sm focus:border-[#ECB6B] focus:outline-none focus:ring-2 focus:ring-[#ECB6B]/30"
                         placeholder="請補充檢查結果、原因或處理方式"
                       />
                     </div>

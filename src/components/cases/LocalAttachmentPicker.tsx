@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FileText, FileSpreadsheet, X } from "lucide-react";
+import { FileText, FileSpreadsheet, Upload, X } from "lucide-react";
 import {
   type PendingAttachment,
   createPendingAttachment,
@@ -14,9 +14,6 @@ import {
   ATTACHMENT_ACCEPT,
   ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
-
-const fileInputClass =
-  "block w-full min-h-11 text-sm text-slate-600 file:mr-4 file:min-h-11 file:rounded-lg file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100";
 
 interface LocalAttachmentPickerProps {
   labelClass?: string;
@@ -152,6 +149,7 @@ export function LocalAttachmentPicker({
   inputId = "attachment-picker",
 }: LocalAttachmentPickerProps) {
   const filesRef = useRef(files);
+  const inputRef = useRef<HTMLInputElement>(null);
   filesRef.current = files;
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
 
@@ -184,17 +182,26 @@ export function LocalAttachmentPicker({
 
   return (
     <div>
-      <label htmlFor={inputId} className={labelClass}>
+      <p className={labelClass}>
         {label}
-      </label>
+      </p>
       <input
+        ref={inputRef}
         id={inputId}
         type="file"
         multiple
         accept={ATTACHMENT_ACCEPT}
         onChange={handleFileSelect}
-        className={fileInputClass}
+        className="hidden"
       />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        className="inline-flex min-h-11 items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+      >
+        <Upload className="h-4 w-4" />
+        選擇檔案
+      </button>
       <p className="mt-1 text-xs text-slate-500">{hint}</p>
 
       {validationErrors.length > 0 && (

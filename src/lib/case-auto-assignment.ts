@@ -31,7 +31,7 @@ const ASSIGNMENT_RULES: Record<string, CategoryRule> = {
     issues: {
       配送延遲: [BUSINESS_ECOMMERCE],
       "包裹遺失/毀損": [BACKOFFICE_WAREHOUSE],
-      錯誤件: [BACKOFFICE_WAREHOUSE],
+      錯誤件: [BUSINESS_ECOMMERCE],
       其他物流問題: [BUSINESS_ECOMMERCE],
       其他: [BUSINESS_ECOMMERCE],
     },

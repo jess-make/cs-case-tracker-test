@@ -10,7 +10,6 @@ import {
   CASE_FLOW_STEPS,
   getCaseStatusLabel,
   getNextStatus,
-  getPreviousStatus,
   isActiveFlowStep,
   normalizeCaseStatus,
 } from "@/lib/case-status";
@@ -40,6 +39,10 @@ import {
   revokeAllPendingAttachments,
   ATTACHMENT_HINT,
 } from "@/lib/attachment-preview";
+import {
+  getCaseWorkflowRevertTarget,
+  getCaseWorkflowRevertTargetLabel,
+} from "@/lib/case-workflow-revert";
 
 const REPLY_REQUIRED_MESSAGE = "請輸入處理說明後再送出。";
 const QUALITY_RESULT_REQUIRED_MESSAGE = "請選擇品檢結果後再送出。";
@@ -71,7 +74,10 @@ export function CaseDetailPanel({
   const safeLogs = logs ?? [];
   const displayStatus = normalizeCaseStatus(caseData.status);
   const nextStatus = getNextStatus(displayStatus);
-  const previousStatus = getPreviousStatus(displayStatus);
+  const revertTarget = getCaseWorkflowRevertTarget(caseData);
+  const revertTargetLabel = revertTarget
+    ? getCaseWorkflowRevertTargetLabel(revertTarget)
+    : null;
   const showQualityInspectionReply = isQualityInspectionReplyStep(caseData);
 
   function handleAdvance() {
@@ -82,8 +88,8 @@ export function CaseDetailPanel({
   }
 
   function handleRevert() {
-    if (!previousStatus) return;
-    if (!confirm(`確定要回推至「${getCaseStatusLabel(previousStatus)}」嗎？`)) {
+    if (!revertTargetLabel) return;
+    if (!confirm(`確定要回推至「${revertTargetLabel}」嗎？`)) {
       return;
     }
 
@@ -400,13 +406,13 @@ export function CaseDetailPanel({
 
           {(permissions.canAdvanceWorkflow || permissions.canRevertWorkflow) && (
             <div className="space-y-2">
-              {permissions.canRevertWorkflow && previousStatus && (
+              {permissions.canRevertWorkflow && revertTargetLabel && (
                 <button
                   onClick={handleRevert}
                   disabled={pending}
                   className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                 >
-                  回推至：{getCaseStatusLabel(previousStatus)}
+                  回推至：{revertTargetLabel}
                 </button>
               )}
               {permissions.canAdvanceWorkflow && displayStatus !== "closed" && nextStatus && (

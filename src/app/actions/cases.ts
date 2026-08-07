@@ -37,11 +37,15 @@ import {
   notifyCaseReplied,
   notifyDepartmentAssigned,
 } from "@/lib/line/case-notifications";
-import { getNextStatus, getPreviousStatus } from "@/lib/case-status";
+import { getNextStatus } from "@/lib/case-status";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
 import { parseOptionalDepartment } from "@/lib/parse-form";
 import { getInitialAutoAssignedDepartment } from "@/lib/case-auto-assignment";
-import { isAutoAssignDepartmentValue } from "@/lib/case-department";
+import {
+  hasAssignedDepartment,
+  isAutoAssignDepartmentValue,
+} from "@/lib/case-department";
+import { getCaseWorkflowRevertTarget } from "@/lib/case-workflow-revert";
 import {
   buildQualityInspectionReplyContent,
   isQualityInspectionReplyOption,
@@ -281,10 +285,19 @@ export async function revertCaseStatusAction(caseId: string) {
   const current = await getCaseById(caseId, actor);
   if (!current) return { error: "案件不存在" };
 
-  const previous = getPreviousStatus(current.status);
-  if (!previous) return { error: "無法回推狀態" };
+  const target = getCaseWorkflowRevertTarget(current);
+  if (!target) return { error: "無法回推狀態" };
 
-  await revertCaseStatus(caseId, previous, actorId);
+  const revertedCase = await revertCaseStatus(caseId, target.status, actorId, {
+    department: target.department,
+  });
+  if (
+    revertedCase &&
+    target.departmentChanged &&
+    hasAssignedDepartment(target.department)
+  ) {
+    await notifyDepartmentAssigned(revertedCase);
+  }
   revalidatePath(`/cases/${caseId}`);
   revalidatePath("/");
   revalidatePath("/cases");

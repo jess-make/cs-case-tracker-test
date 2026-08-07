@@ -376,6 +376,39 @@ export async function getCaseLogs(caseId: string): Promise<CaseLog[]> {
   }
 }
 
+export async function getCaseLogsByCaseIds(
+  caseIds: string[]
+): Promise<Map<string, CaseLog[]>> {
+  const uniqueIds = [...new Set(caseIds.filter(Boolean))];
+  const byCaseId = new Map<string, CaseLog[]>();
+  if (uniqueIds.length === 0) return byCaseId;
+
+  try {
+    const { data, error } = await (await supabase())
+      .from("case_logs")
+      .select("*")
+      .in("case_id", uniqueIds)
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("[getCaseLogsByCaseIds]", error.message);
+      return byCaseId;
+    }
+
+    for (const row of data ?? []) {
+      const log = normalizeCaseLog(row as Record<string, unknown>);
+      const logs = byCaseId.get(log.case_id) ?? [];
+      logs.push(log);
+      byCaseId.set(log.case_id, logs);
+    }
+
+    return byCaseId;
+  } catch (err) {
+    console.error("[getCaseLogsByCaseIds]", err);
+    return byCaseId;
+  }
+}
+
 export async function getDashboardStats(viewer: SessionUser): Promise<DashboardStats> {
   const cases = await getCases(viewer);
   return buildDashboardStats(cases);
@@ -532,22 +565,35 @@ export async function updateCaseStatus(
 export async function revertCaseStatus(
   caseId: string,
   status: CaseStatus,
-  userId: string | null
+  userId: string | null,
+  options?: { department?: string | null }
 ): Promise<Case | null> {
   const existing = await getCaseById(caseId);
   if (!existing) return null;
 
+  const targetDepartment =
+    options && "department" in options
+      ? options.department ?? null
+      : existing.department;
+  const updates: Record<string, unknown> = { status, closed_at: null };
+  if (options && "department" in options) {
+    updates.department = targetDepartment;
+  }
+
   const client = await supabase();
   const { data, error } = await client
     .from("cases")
-    .update({ status, closed_at: null })
+    .update(updates)
     .eq("id", caseId)
     .select()
     .single();
 
   if (error) throw error;
 
-  await logWorkflowReverted(caseId, userId, existing.status, status);
+  await logWorkflowReverted(caseId, userId, existing.status, status, {
+    fromDepartment: existing.department,
+    toDepartment: targetDepartment,
+  });
 
   const [enriched] = await enrichCases([
     normalizeCase(data as Record<string, unknown>),

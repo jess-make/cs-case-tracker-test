@@ -58,9 +58,25 @@ export function buildStatusChangeContent(status: CaseStatus | string): string {
 
 export function buildWorkflowRevertContent(
   fromStatus: CaseStatus | string,
-  toStatus: CaseStatus | string
+  toStatus: CaseStatus | string,
+  departmentChange?: {
+    fromDepartment: string | null | undefined;
+    toDepartment: string | null | undefined;
+  }
 ): string {
-  return `流程回推：${getCaseStatusLabel(String(fromStatus))} → ${getCaseStatusLabel(String(toStatus))}`;
+  const fromStatusLabel = getCaseStatusLabel(String(fromStatus));
+  const toStatusLabel = getCaseStatusLabel(String(toStatus));
+  const lines = [
+    fromStatusLabel === toStatusLabel
+      ? `流程回推：維持${toStatusLabel}`
+      : `流程回推：${fromStatusLabel} → ${toStatusLabel}`,
+  ];
+  const fromDepartment = departmentChange?.fromDepartment?.trim() || "不需指派";
+  const toDepartment = departmentChange?.toDepartment?.trim() || "不需指派";
+  if (departmentChange && fromDepartment !== toDepartment) {
+    lines.push(`指派部門回推：${fromDepartment} → ${toDepartment}`);
+  }
+  return lines.join("\n");
 }
 
 export async function logAttachmentsAdded(
@@ -129,13 +145,17 @@ export async function logWorkflowReverted(
   caseId: string,
   userId: string | null,
   fromStatus: CaseStatus | string,
-  toStatus: CaseStatus | string
+  toStatus: CaseStatus | string,
+  departmentChange?: {
+    fromDepartment: string | null | undefined;
+    toDepartment: string | null | undefined;
+  }
 ): Promise<boolean> {
   return createCaseLog(
     caseId,
     userId,
     "流程回推",
-    buildWorkflowRevertContent(fromStatus, toStatus)
+    buildWorkflowRevertContent(fromStatus, toStatus, departmentChange)
   );
 }
 

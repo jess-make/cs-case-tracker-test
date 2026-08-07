@@ -60,6 +60,13 @@ function getAssignmentPlan(
   return rule.all ?? [];
 }
 
+export function getAutoAssignmentPlan(
+  category: string,
+  issue: string | null | undefined
+): string[] {
+  return [...getAssignmentPlan(category, issue)];
+}
+
 export function getInitialAutoAssignedDepartment(
   category: string,
   issue: string | null | undefined

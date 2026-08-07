@@ -11,7 +11,7 @@ import {
   formatTaipeiFilenameTimestamp,
   formatTaipeiMonthKey,
 } from "@/lib/taipei-time";
-import type { Case, CaseStatus } from "@/types";
+import type { Case, CaseLog, CaseStatus } from "@/types";
 
 type ReportFilters = {
   status?: string;
@@ -38,6 +38,13 @@ type GroupStats = {
   closedWithDuration: number;
 };
 
+export type CaseReportDetails = {
+  qualityInspectionResults: string[];
+  qualityInspectionNotes: string[];
+};
+
+type CaseReportDetailsByCaseId = Map<string, CaseReportDetails>;
+
 const STATUS_ORDER: CaseStatus[] = [
   "new",
   "in_progress",
@@ -46,6 +53,9 @@ const STATUS_ORDER: CaseStatus[] = [
   "closed",
 ];
 
+const QUALITY_INSPECTION_RESULT_PATTERN = /^品檢結果：(.+)$/m;
+const QUALITY_INSPECTION_NOTE_PREFIX = "簡述：";
+
 function csvCell(value: string | number | null | undefined): string {
   const text = value == null ? "" : String(value);
   return `"${text.replace(/"/g, '""')}"`;
@@ -53,6 +63,62 @@ function csvCell(value: string | number | null | undefined): string {
 
 function row(values: Array<string | number | null | undefined>): string {
   return values.map(csvCell).join(",");
+}
+
+function joinReportItems(items: string[]): string {
+  return items.map((item) => item.trim()).filter(Boolean).join("\n");
+}
+
+function parseQualityInspectionReply(
+  content: string | null | undefined
+): { result: string; note: string } | null {
+  const text = content?.trim();
+  if (!text) return null;
+
+  const result = text.match(QUALITY_INSPECTION_RESULT_PATTERN)?.[1]?.trim();
+  if (!result) return null;
+
+  const noteIndex = text.indexOf(QUALITY_INSPECTION_NOTE_PREFIX);
+  const note =
+    noteIndex >= 0
+      ? text.slice(noteIndex + QUALITY_INSPECTION_NOTE_PREFIX.length).trim()
+      : "";
+
+  return { result, note };
+}
+
+export function buildCaseReportDetailsByCaseId(
+  logsByCaseId: Map<string, CaseLog[]>
+): CaseReportDetailsByCaseId {
+  const detailsByCaseId = new Map<string, CaseReportDetails>();
+
+  for (const [caseId, logs] of logsByCaseId.entries()) {
+    const details: CaseReportDetails = {
+      qualityInspectionResults: [],
+      qualityInspectionNotes: [],
+    };
+
+    for (const log of logs) {
+      if (log.action !== "處理回覆") continue;
+      const parsed = parseQualityInspectionReply(log.content);
+      if (!parsed) continue;
+
+      const loggedAt = formatDate(log.created_at);
+      details.qualityInspectionResults.push(`${loggedAt}：${parsed.result}`);
+      if (parsed.note) {
+        details.qualityInspectionNotes.push(`${loggedAt}：${parsed.note}`);
+      }
+    }
+
+    if (
+      details.qualityInspectionResults.length > 0 ||
+      details.qualityInspectionNotes.length > 0
+    ) {
+      detailsByCaseId.set(caseId, details);
+    }
+  }
+
+  return detailsByCaseId;
 }
 
 function percent(part: number, total: number): string {
@@ -162,7 +228,11 @@ function filterSummary(filters: ReportFilters): string {
   return active.length ? active.join("；") : "全部";
 }
 
-export function buildCaseReportCsv(cases: Case[], filters: ReportFilters): string {
+export function buildCaseReportCsv(
+  cases: Case[],
+  filters: ReportFilters,
+  detailsByCaseId: CaseReportDetailsByCaseId = new Map()
+): string {
   const now = new Date();
   const { from, to } = resolveDateRange(filters);
   const total = cases.length;
@@ -257,11 +327,14 @@ export function buildCaseReportCsv(cases: Case[], filters: ReportFilters): strin
       "逾期",
       "結案日",
       "結案天數",
+      "品檢結果",
+      "品檢簡述",
     ])
   );
 
   for (const caseData of cases) {
     const days = closeDays(caseData);
+    const reportDetails = detailsByCaseId.get(caseData.id);
     lines.push(
       row([
         formatDateOnly(caseData.created_at),
@@ -278,6 +351,8 @@ export function buildCaseReportCsv(cases: Case[], filters: ReportFilters): strin
         caseData.is_overdue ? "是" : "否",
         formatDate(caseData.closed_at),
         days == null ? "" : days.toFixed(1),
+        joinReportItems(reportDetails?.qualityInspectionResults ?? []),
+        joinReportItems(reportDetails?.qualityInspectionNotes ?? []),
       ])
     );
   }

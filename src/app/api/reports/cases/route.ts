@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/session";
-import { getCases } from "@/lib/data/cases";
+import { getCaseLogsByCaseIds, getCases } from "@/lib/data/cases";
 import {
   buildCaseReportCsv,
+  buildCaseReportDetailsByCaseId,
   buildCaseReportFilename,
 } from "@/lib/reports/case-report";
 
@@ -49,7 +50,11 @@ export async function GET(request: NextRequest) {
     ...filters,
     filterByDate: true,
   });
-  const csv = buildCaseReportCsv(cases, filters);
+  const logsByCaseId = await getCaseLogsByCaseIds(
+    cases.map((caseData) => caseData.id)
+  );
+  const reportDetails = buildCaseReportDetailsByCaseId(logsByCaseId);
+  const csv = buildCaseReportCsv(cases, filters, reportDetails);
   const filename = buildCaseReportFilename();
 
   return new NextResponse(csv, {

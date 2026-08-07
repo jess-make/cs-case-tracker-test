@@ -240,12 +240,12 @@ export function CaseDetailPanel({
                 </p>
               )}
               {showQualityInspectionReply ? (
-                <div className="border-l-4 border-[#ECB6B] bg-[#F2D39D]/40 py-3 pl-4 pr-3">
+                <div className="border-l-4 border-[#ECB6B] py-3 pl-4 pr-3">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(180px,240px)_1fr]">
                     <div>
                       <label
                         htmlFor={`quality-inspection-result-${caseData.id}`}
-                        className="mb-1 block text-sm font-medium text-[#563B0C]"
+                        className="mb-1 block text-sm font-medium text-slate-700"
                       >
                         品檢結果 *
                       </label>
@@ -271,7 +271,7 @@ export function CaseDetailPanel({
                     <div>
                       <label
                         htmlFor={`reply-content-${caseData.id}`}
-                        className="mb-1 block text-sm font-medium text-[#563B0C]"
+                        className="mb-1 block text-sm font-medium text-slate-700"
                       >
                         簡述
                       </label>

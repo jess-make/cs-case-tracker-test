@@ -1,36 +1,39 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Download, FileUp, Loader2 } from "lucide-react";
+import { useMemo, useState, useTransition } from "react";
+import {
+  CheckCircle2,
+  Download,
+  FileUp,
+  Loader2,
+  UploadCloud,
+} from "lucide-react";
+import {
+  importReturnExchangeCasesAction,
+  type ImportReturnExchangeCasesResult,
+} from "@/app/actions/return-exchange-upload";
+import {
+  RETURN_EXCHANGE_UPLOAD_FIELD_KEYS,
+  RETURN_EXCHANGE_UPLOAD_HEADERS,
+  type ReturnExchangeUploadRow,
+} from "@/lib/return-exchange-upload";
 
 type PreviewState = {
   fileName: string;
-  headers: string[];
-  rows: string[][];
+  rows: ReturnExchangeUploadRow[];
 };
 
-const SAMPLE_HEADERS = [
-  "批號",
-  "客戶姓名",
-  "客戶聯繫方式",
-  "案件類別",
-  "子分類",
-  "服務管道",
-  "電商訂單編號",
-  "問題描述",
-];
-
-const SAMPLE_ROWS = [
-  [
-    "BATCH-202608-001",
-    "王小明",
-    "0912345678",
-    "退貨",
-    "商品功能異常",
-    "蝦皮商城",
-    "SP202608090001",
-    "客戶申請退貨，待品檢確認。",
-  ],
+const SAMPLE_ROWS: ReturnExchangeUploadRow[] = [
+  {
+    ecommerce_order_no: "SP202608090001",
+    shipping_tracking_no: "D1234567890",
+    batch_no: "BATCH-202608-001",
+    customer_name: "王小明",
+    source_detail: "蝦皮商城",
+    complaint_type: "退貨",
+    complaint_subtype: "商品功能異常",
+    description: "客戶申請退貨，待品檢確認。",
+  },
 ];
 
 function escapeCsvCell(value: string): string {
@@ -38,8 +41,15 @@ function escapeCsvCell(value: string): string {
 }
 
 function buildSampleCsv(): string {
-  const rows = [SAMPLE_HEADERS, ...SAMPLE_ROWS];
-  return `\uFEFF${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+  const rows = [
+    RETURN_EXCHANGE_UPLOAD_HEADERS,
+    ...SAMPLE_ROWS.map((sample) =>
+      RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.map((key) => sample[key])
+    ),
+  ];
+  return `\uFEFF${rows
+    .map((row) => row.map(escapeCsvCell).join(","))
+    .join("\r\n")}\r\n`;
 }
 
 function downloadSample() {
@@ -89,46 +99,100 @@ function parseDelimitedLine(line: string, delimiter: string): string[] {
   return cells;
 }
 
+function assertExpectedHeaders(headers: string[]) {
+  const normalized = headers.map((header) => header.trim());
+  const matches =
+    normalized.length === RETURN_EXCHANGE_UPLOAD_HEADERS.length &&
+    RETURN_EXCHANGE_UPLOAD_HEADERS.every(
+      (expected, index) => normalized[index] === expected
+    );
+
+  if (!matches) {
+    throw new Error(
+      `欄位順序需為：${RETURN_EXCHANGE_UPLOAD_HEADERS.join(" / ")}`
+    );
+  }
+}
+
+function cellsToRow(cells: string[]): ReturnExchangeUploadRow {
+  return RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.reduce((row, key, index) => {
+    row[key] = cells[index]?.trim() ?? "";
+    return row;
+  }, {} as ReturnExchangeUploadRow);
+}
+
 function parsePreview(text: string, fileName: string): PreviewState {
-  const normalized = text.replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  const normalized = text
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n");
   const lines = normalized
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean);
+
   if (lines.length === 0) {
     throw new Error("檔案沒有可預覽的資料");
   }
 
   const delimiter = lines[0].includes("\t") ? "\t" : ",";
   const headers = parseDelimitedLine(lines[0], delimiter);
-  const rows = lines.slice(1).map((line) => parseDelimitedLine(line, delimiter));
+  assertExpectedHeaders(headers);
 
-  return { fileName, headers, rows };
+  const rows = lines
+    .slice(1)
+    .map((line) => cellsToRow(parseDelimitedLine(line, delimiter)))
+    .filter((row) =>
+      RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.some((key) => row[key].trim() !== "")
+    );
+
+  if (rows.length === 0) {
+    throw new Error("檔案沒有可匯入的資料列");
+  }
+
+  return { fileName, rows };
 }
 
 export function ReturnExchangeUploadPanel() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [result, setResult] =
+    useState<ImportReturnExchangeCasesResult | null>(null);
+  const [pendingPreview, setPendingPreview] = useState(false);
+  const [pendingImport, startImportTransition] = useTransition();
 
   const previewRows = useMemo(() => preview?.rows.slice(0, 30) ?? [], [preview]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     setError(null);
+    setResult(null);
     setPreview(null);
     if (!file) return;
 
-    setPending(true);
+    setPendingPreview(true);
     try {
       const text = await file.text();
       setPreview(parsePreview(text, file.name));
     } catch (err) {
       setError(err instanceof Error ? err.message : "檔案預覽失敗");
     } finally {
-      setPending(false);
+      setPendingPreview(false);
       e.target.value = "";
     }
+  }
+
+  function handleImport() {
+    if (!preview || pendingImport) return;
+    setError(null);
+    setResult(null);
+    startImportTransition(async () => {
+      const importResult = await importReturnExchangeCasesAction(preview.rows);
+      setResult(importResult);
+      if (importResult.ok) {
+        setPreview(null);
+      }
+    });
   }
 
   return (
@@ -154,7 +218,7 @@ export function ReturnExchangeUploadPanel() {
             報表檔案
           </label>
           <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700">
-            {pending ? (
+            {pendingPreview ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               <FileUp className="h-4 w-4" />
@@ -165,7 +229,7 @@ export function ReturnExchangeUploadPanel() {
               accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
               className="hidden"
               onChange={handleFileChange}
-              disabled={pending}
+              disabled={pendingPreview || pendingImport}
             />
           </label>
         </div>
@@ -175,15 +239,57 @@ export function ReturnExchangeUploadPanel() {
             {error}
           </p>
         )}
+
+        {result && !result.ok && (
+          <div className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+            <p>{result.error}</p>
+            {result.rowErrors && result.rowErrors.length > 0 && (
+              <ul className="mt-2 list-disc space-y-1 pl-5">
+                {result.rowErrors.map((rowError) => (
+                  <li key={rowError}>{rowError}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {result?.ok && (
+          <div className="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" />
+              已匯入 {result.importedCount} 筆
+            </div>
+            <p className="mt-1 break-all text-emerald-800">
+              {result.caseNumbers.join("、")}
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
-        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <h2 className="text-base font-semibold text-slate-900">預覽</h2>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">預覽</h2>
+            {preview && (
+              <p className="mt-1 text-sm text-slate-500">
+                {preview.fileName} · 共 {preview.rows.length} 筆
+              </p>
+            )}
+          </div>
           {preview && (
-            <p className="text-sm text-slate-500">
-              {preview.fileName} · 共 {preview.rows.length} 筆
-            </p>
+            <button
+              type="button"
+              onClick={handleImport}
+              disabled={pendingImport}
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+            >
+              {pendingImport ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <UploadCloud className="h-4 w-4" />
+              )}
+              確認匯入
+            </button>
           )}
         </div>
 
@@ -193,15 +299,15 @@ export function ReturnExchangeUploadPanel() {
           </div>
         ) : (
           <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full min-w-[720px] text-left text-sm">
+            <table className="w-full min-w-[980px] text-left text-sm">
               <thead className="border-b border-slate-200 bg-slate-50">
                 <tr>
-                  {preview.headers.map((header, index) => (
+                  {RETURN_EXCHANGE_UPLOAD_HEADERS.map((header) => (
                     <th
-                      key={`${header}-${index}`}
+                      key={header}
                       className="px-3 py-2 font-medium text-slate-600"
                     >
-                      {header || `欄位 ${index + 1}`}
+                      {header}
                     </th>
                   ))}
                 </tr>
@@ -209,9 +315,9 @@ export function ReturnExchangeUploadPanel() {
               <tbody className="divide-y divide-slate-100">
                 {previewRows.map((row, rowIndex) => (
                   <tr key={rowIndex} className="hover:bg-slate-50">
-                    {preview.headers.map((_, cellIndex) => (
-                      <td key={cellIndex} className="px-3 py-2 text-slate-700">
-                        {row[cellIndex] || "—"}
+                    {RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.map((key) => (
+                      <td key={key} className="px-3 py-2 text-slate-700">
+                        {row[key] || "—"}
                       </td>
                     ))}
                   </tr>

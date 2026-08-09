@@ -43,6 +43,7 @@ export interface Case {
   department: string | null;
   ecommerce_order_no: string | null;
   batch_no: string | null;
+  shipping_tracking_no: string | null;
   assignee_id: string | null;
   created_by_id: string | null;
   status: CaseStatus;
@@ -109,6 +110,7 @@ export interface CreateCaseInput {
   department: string | null;
   ecommerce_order_no?: string | null;
   batch_no?: string | null;
+  shipping_tracking_no?: string | null;
 }
 
 export interface UpdateCaseInput {
@@ -124,6 +126,7 @@ export interface UpdateCaseInput {
   department: string | null;
   ecommerce_order_no: string | null;
   batch_no: string | null;
+  shipping_tracking_no: string | null;
 }
 
 export interface UpdateUserInput {

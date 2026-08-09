@@ -186,6 +186,14 @@ export function CreateCaseForm({
             placeholder="選填"
           />
         </div>
+        <div>
+          <label className={labelClass}>寄件編號</label>
+          <input
+            name="shipping_tracking_no"
+            className={inputClass}
+            placeholder="選填"
+          />
+        </div>
       </div>
 
       <div>

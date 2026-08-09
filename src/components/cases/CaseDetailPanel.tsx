@@ -203,6 +203,11 @@ export function CaseDetailPanel({
               label="批號"
               value={caseData.batch_no?.trim() || "—"}
             />
+            <InfoRow
+              icon={Building2}
+              label="寄件編號"
+              value={caseData.shipping_tracking_no?.trim() || "—"}
+            />
             <InfoRow icon={Building2} label="案件來源" value={caseData.source} />
             <InfoRow
               icon={Building2}

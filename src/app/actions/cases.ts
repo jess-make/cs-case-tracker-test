@@ -70,6 +70,8 @@ function parseCaseFormData(formData: FormData) {
     ecommerce_order_no:
       (formData.get("ecommerce_order_no") as string)?.trim() || null,
     batch_no: (formData.get("batch_no") as string)?.trim() || null,
+    shipping_tracking_no:
+      (formData.get("shipping_tracking_no") as string)?.trim() || null,
   };
 }
 

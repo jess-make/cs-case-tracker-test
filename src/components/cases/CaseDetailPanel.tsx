@@ -198,6 +198,11 @@ export function CaseDetailPanel({
               label="電商訂單編號"
               value={caseData.ecommerce_order_no?.trim() || "—"}
             />
+            <InfoRow
+              icon={Building2}
+              label="批號"
+              value={caseData.batch_no?.trim() || "—"}
+            />
             <InfoRow icon={Building2} label="案件來源" value={caseData.source} />
             <InfoRow
               icon={Building2}

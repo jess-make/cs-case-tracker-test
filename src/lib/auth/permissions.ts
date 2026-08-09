@@ -1,4 +1,5 @@
 import type { UserRole } from "@/types";
+import { CS_DEPARTMENT } from "@/lib/constants";
 
 type CaseTaxonomyPermissionUser = {
   role: UserRole;
@@ -39,6 +40,16 @@ export function canManageCaseTaxonomy(user: CaseTaxonomyPermissionUser): boolean
   return (
     canManageUsers(user.role) ||
     CASE_TAXONOMY_MANAGER_EMAILS.has(normalizePermissionEmail(user.email))
+  );
+}
+
+export function canUploadReturnExchangeCases(user: {
+  role: UserRole;
+  department?: string | null;
+}): boolean {
+  return (
+    canManageUsers(user.role) ||
+    user.department?.trim() === CS_DEPARTMENT
   );
 }
 

@@ -69,6 +69,7 @@ function parseCaseFormData(formData: FormData) {
     autoAssignDepartment: isAutoAssignDepartmentValue(departmentValue),
     ecommerce_order_no:
       (formData.get("ecommerce_order_no") as string)?.trim() || null,
+    batch_no: (formData.get("batch_no") as string)?.trim() || null,
   };
 }
 

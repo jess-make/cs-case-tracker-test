@@ -52,6 +52,10 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
               <dt className="text-xs text-slate-500">服務管道</dt>
               <dd className="truncate text-slate-700">{c.source_detail?.trim() || "—"}</dd>
             </div>
+            <div className="min-w-0">
+              <dt className="text-xs text-slate-500">批號</dt>
+              <dd className="truncate text-slate-700">{c.batch_no?.trim() || "—"}</dd>
+            </div>
             <div>
               <dt className="text-xs text-slate-500">緊急程度</dt>
               <dd className="mt-0.5">
@@ -72,7 +76,7 @@ function CaseMobileCards({ cases }: { cases: Case[] }) {
 function CaseDesktopTable({ cases }: { cases: Case[] }) {
   return (
     <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
-      <table className="w-full min-w-[840px] text-left text-sm">
+      <table className="w-full min-w-[960px] text-left text-sm">
         <thead className="border-b border-slate-200 bg-slate-50">
           <tr>
             <th className="px-4 py-3 font-medium text-slate-600">建檔日</th>
@@ -80,6 +84,7 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
             <th className="px-4 py-3 font-medium text-slate-600">客戶</th>
             <th className="px-4 py-3 font-medium text-slate-600">案件類型</th>
             <th className="px-4 py-3 font-medium text-slate-600">服務管道</th>
+            <th className="px-4 py-3 font-medium text-slate-600">批號</th>
             <th className="px-4 py-3 font-medium text-slate-600">緊急程度</th>
             <th className="px-4 py-3 font-medium text-slate-600">案件狀態</th>
             <th className="px-4 py-3 font-medium text-slate-600">處理人</th>
@@ -105,6 +110,9 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
               </td>
               <td className="px-4 py-3 text-slate-600">
                 {c.source_detail?.trim() || "—"}
+              </td>
+              <td className="px-4 py-3 text-slate-600">
+                {c.batch_no?.trim() || "—"}
               </td>
               <td className="px-4 py-3">
                 <UrgencyBadge urgency={c.urgency} />

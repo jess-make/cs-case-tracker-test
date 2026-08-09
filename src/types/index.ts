@@ -42,6 +42,7 @@ export interface Case {
   urgency: UrgencyLevel;
   department: string | null;
   ecommerce_order_no: string | null;
+  batch_no: string | null;
   assignee_id: string | null;
   created_by_id: string | null;
   status: CaseStatus;
@@ -107,6 +108,7 @@ export interface CreateCaseInput {
   urgency: UrgencyLevel;
   department: string | null;
   ecommerce_order_no?: string | null;
+  batch_no?: string | null;
 }
 
 export interface UpdateCaseInput {
@@ -121,6 +123,7 @@ export interface UpdateCaseInput {
   urgency: UrgencyLevel;
   department: string | null;
   ecommerce_order_no: string | null;
+  batch_no: string | null;
 }
 
 export interface UpdateUserInput {

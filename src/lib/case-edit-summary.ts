@@ -7,6 +7,7 @@ const FIELD_LABELS: Record<keyof UpdateCaseInput, string> = {
   customer_gender: "客戶性別",
   customer_contact: "客戶聯繫方式",
   ecommerce_order_no: "電商訂單編號",
+  batch_no: "批號",
   source: "案件來源",
   source_detail: "服務管道",
   complaint_type: "案件類別",
@@ -31,6 +32,8 @@ function beforeValue(before: Case, field: keyof UpdateCaseInput): string {
   switch (field) {
     case "ecommerce_order_no":
       return normalizeValue(before.ecommerce_order_no);
+    case "batch_no":
+      return normalizeValue(before.batch_no);
     case "complaint_subtype":
       return normalizeValue(before.complaint_subtype);
     case "customer_gender":

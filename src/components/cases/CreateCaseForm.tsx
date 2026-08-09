@@ -178,6 +178,14 @@ export function CreateCaseForm({
             placeholder="選填"
           />
         </div>
+        <div>
+          <label className={labelClass}>批號</label>
+          <input
+            name="batch_no"
+            className={inputClass}
+            placeholder="選填"
+          />
+        </div>
       </div>
 
       <div>

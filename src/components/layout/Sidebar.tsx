@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, PlusCircle, List, Users, Building2, Tags, Radio, X, LogOut } from "lucide-react";
+import {
+  Building2,
+  FileUp,
+  LayoutDashboard,
+  List,
+  LogOut,
+  PlusCircle,
+  Radio,
+  Tags,
+  Users,
+  X,
+} from "lucide-react";
 import { BrandHeader } from "./BrandLogo";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
@@ -10,6 +21,7 @@ import {
   canCreateCase,
   canManageCaseTaxonomy,
   canManageUsers,
+  canUploadReturnExchangeCases,
 } from "@/lib/auth/permissions";
 import type { SessionUser } from "@/lib/auth/session";
 
@@ -17,6 +29,12 @@ const baseNavItems = [
   { href: "/", label: "案件總覽", icon: LayoutDashboard },
   { href: "/cases/new", label: "建立案件", icon: PlusCircle, requiresCreate: true },
   { href: "/cases", label: "案件列表", icon: List },
+  {
+    href: "/return-exchange-upload",
+    label: "退換貨案件上傳",
+    icon: FileUp,
+    requiresReturnExchangeUpload: true,
+  },
   { href: "/complaint-sources", label: "案件來源管理", icon: Radio, requiresTaxonomy: true },
   { href: "/complaint-categories", label: "案件類別管理", icon: Tags, requiresTaxonomy: true },
   { href: "/departments", label: "部門管理", icon: Building2, requiresAdmin: true },
@@ -37,6 +55,12 @@ export function Sidebar({ open = false, onClose, user }: SidebarProps) {
     }
     if ("requiresTaxonomy" in item && item.requiresTaxonomy) {
       return canManageCaseTaxonomy(user);
+    }
+    if (
+      "requiresReturnExchangeUpload" in item &&
+      item.requiresReturnExchangeUpload
+    ) {
+      return canUploadReturnExchangeCases(user);
     }
     if ("requiresAdmin" in item && item.requiresAdmin) {
       return canManageUsers(user.role);

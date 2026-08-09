@@ -307,7 +307,7 @@ export async function getCases(
     const sanitized = filters.q.trim().replace(/,/g, "");
     const term = `%${sanitized}%`;
     query = query.or(
-      `case_number.ilike.${term},customer_name.ilike.${term},customer_contact.ilike.${term},ecommerce_order_no.ilike.${term}`
+      `case_number.ilike.${term},customer_name.ilike.${term},customer_contact.ilike.${term},ecommerce_order_no.ilike.${term},batch_no.ilike.${term}`
     );
   }
 
@@ -436,6 +436,7 @@ export async function createCase(
       urgency: input.urgency,
       department: input.department ?? null,
       ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
+      batch_no: input.batch_no?.trim() || null,
       assignee_id: createdById,
       created_by_id: createdById,
       status: initialStatus,
@@ -493,6 +494,7 @@ export async function updateCase(
     urgency: input.urgency,
     department: input.department ?? null,
     ecommerce_order_no: input.ecommerce_order_no?.trim() || null,
+    batch_no: input.batch_no?.trim() || null,
   };
 
   if (promoteToInProgress) {

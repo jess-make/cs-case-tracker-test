@@ -53,6 +53,7 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     urgency,
     department: dept?.trim() ? String(dept).trim() : null,
     ecommerce_order_no: (raw.ecommerce_order_no as string | null) ?? null,
+    batch_no: (raw.batch_no as string | null) ?? null,
     assignee_id: (raw.assignee_id as string | null) ?? null,
     created_by_id: (raw.created_by_id as string | null) ?? null,
     status,

@@ -12,6 +12,7 @@ import {
 } from "@/lib/data/complaint-taxonomy-form";
 import { notifyCaseCreated } from "@/lib/line/case-notifications";
 import {
+  RETURN_EXCHANGE_ALLOWED_CATEGORIES,
   RETURN_EXCHANGE_UPLOAD_FIELD_LABELS,
   RETURN_EXCHANGE_UPLOAD_FIELD_KEYS,
   isEmptyUploadRow,
@@ -47,6 +48,9 @@ export type ValidateReturnExchangeCasesResult =
 const DEFAULT_CUSTOMER_CONTACT = "未提供";
 const DEFAULT_CUSTOMER_GENDER = "不透露";
 const DEFAULT_UPLOAD_SOURCE = "其他（備註）";
+const ALLOWED_CATEGORY_KEYS = new Set(
+  RETURN_EXCHANGE_ALLOWED_CATEGORIES.map((category) => normalizeKey(category))
+);
 
 function normalizeKey(value: string): string {
   return value.trim().toLowerCase();
@@ -151,8 +155,13 @@ function validateRows(
       );
     }
 
-    const category = categoryIssues.get(normalizeKey(row.complaint_type));
-    if (!category) {
+    const categoryKey = normalizeKey(row.complaint_type);
+    const category = categoryIssues.get(categoryKey);
+    if (!ALLOWED_CATEGORY_KEYS.has(categoryKey)) {
+      rowErrors.push(
+        `第 ${rowNumber} 列：案件類別只可填寫「${RETURN_EXCHANGE_ALLOWED_CATEGORIES.join("」或「")}」`
+      );
+    } else if (!category) {
       rowErrors.push(
         `第 ${rowNumber} 列：案件類別「${row.complaint_type || "空白"}」未啟用或不存在`
       );

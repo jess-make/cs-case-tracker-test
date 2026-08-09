@@ -3,14 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-  "dev": "next dev",
-  "build": "next build",
-  "start": "next start",
-  "lint": "next lint",
-  "cf:build": "opennextjs-cloudflare build",
-  "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-  "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
-},
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
+  },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.1",
@@ -18,7 +18,8 @@
     "lucide-react": "^0.475.0",
     "next": "^15.2.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "read-excel-file": "^9.3.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

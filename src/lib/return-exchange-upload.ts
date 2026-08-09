@@ -9,6 +9,8 @@ export const RETURN_EXCHANGE_UPLOAD_HEADERS = [
   "問題描述",
 ] as const;
 
+export const RETURN_EXCHANGE_ALLOWED_CATEGORIES = ["退貨", "換貨"] as const;
+
 export type ReturnExchangeUploadHeader =
   (typeof RETURN_EXCHANGE_UPLOAD_HEADERS)[number];
 

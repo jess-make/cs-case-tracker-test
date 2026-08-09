@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
+import { readSheet, type CellValue } from "read-excel-file/browser";
 import {
   CheckCircle2,
   Download,
@@ -24,6 +25,8 @@ type PreviewState = {
   fileName: string;
   rows: ReturnExchangeUploadRow[];
 };
+
+type SpreadsheetCell = CellValue<number> | null;
 
 const SAMPLE_ROWS: ReturnExchangeUploadRow[] = [
   {
@@ -123,7 +126,23 @@ function cellsToRow(cells: string[]): ReturnExchangeUploadRow {
   }, {} as ReturnExchangeUploadRow);
 }
 
-function parsePreview(text: string, fileName: string): PreviewState {
+function parseRows(headers: string[], rawRows: string[][], fileName: string): PreviewState {
+  assertExpectedHeaders(headers);
+
+  const rows = rawRows
+    .map(cellsToRow)
+    .filter((row) =>
+      RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.some((key) => row[key].trim() !== "")
+    );
+
+  if (rows.length === 0) {
+    throw new Error("檔案沒有可匯入的資料列");
+  }
+
+  return { fileName, rows };
+}
+
+function parseDelimitedPreview(text: string, fileName: string): PreviewState {
   const normalized = text
     .replace(/^\uFEFF/, "")
     .replace(/\r\n/g, "\n")
@@ -139,20 +158,61 @@ function parsePreview(text: string, fileName: string): PreviewState {
 
   const delimiter = lines[0].includes("\t") ? "\t" : ",";
   const headers = parseDelimitedLine(lines[0], delimiter);
-  assertExpectedHeaders(headers);
-
-  const rows = lines
+  const rawRows = lines
     .slice(1)
-    .map((line) => cellsToRow(parseDelimitedLine(line, delimiter)))
-    .filter((row) =>
-      RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.some((key) => row[key].trim() !== "")
-    );
+    .map((line) => parseDelimitedLine(line, delimiter));
+
+  return parseRows(headers, rawRows, fileName);
+}
+
+function spreadsheetCellToString(value: SpreadsheetCell): string {
+  if (value == null) return "";
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).trim();
+}
+
+function parseSpreadsheetRows(
+  spreadsheetRows: SpreadsheetCell[][],
+  fileName: string
+): PreviewState {
+  const rows = spreadsheetRows
+    .map((row) => row.map(spreadsheetCellToString))
+    .filter((row) => row.some((cell) => cell.trim() !== ""));
 
   if (rows.length === 0) {
-    throw new Error("檔案沒有可匯入的資料列");
+    throw new Error("檔案沒有可預覽的資料");
   }
 
-  return { fileName, rows };
+  return parseRows(rows[0], rows.slice(1), fileName);
+}
+
+function isXlsxFile(file: File): boolean {
+  return (
+    file.name.toLowerCase().endsWith(".xlsx") ||
+    file.type ===
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  );
+}
+
+function isCsvFile(file: File): boolean {
+  return (
+    file.name.toLowerCase().endsWith(".csv") ||
+    file.type === "text/csv" ||
+    file.type === "application/vnd.ms-excel"
+  );
+}
+
+async function parseFilePreview(file: File): Promise<PreviewState> {
+  if (isXlsxFile(file)) {
+    const rows = await readSheet<number>(file);
+    return parseSpreadsheetRows(rows, file.name);
+  }
+
+  if (isCsvFile(file)) {
+    return parseDelimitedPreview(await file.text(), file.name);
+  }
+
+  throw new Error("僅支援 CSV 或 XLSX 檔案");
 }
 
 export function ReturnExchangeUploadPanel() {
@@ -178,8 +238,7 @@ export function ReturnExchangeUploadPanel() {
 
     setPendingPreview(true);
     try {
-      const text = await file.text();
-      const nextPreview = parsePreview(text, file.name);
+      const nextPreview = await parseFilePreview(file);
       setPreview(nextPreview);
       const nextValidation = await validateReturnExchangeCasesAction(
         nextPreview.rows
@@ -212,7 +271,7 @@ export function ReturnExchangeUploadPanel() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-base font-semibold text-slate-900">上傳報表</h2>
-            <p className="mt-1 text-sm text-slate-500">CSV / TSV</p>
+            <p className="mt-1 text-sm text-slate-500">CSV / XLSX</p>
           </div>
           <button
             type="button"
@@ -237,7 +296,7 @@ export function ReturnExchangeUploadPanel() {
             選擇檔案
             <input
               type="file"
-              accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values,text/plain"
+              accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               className="hidden"
               onChange={handleFileChange}
               disabled={pendingPreview || pendingImport}

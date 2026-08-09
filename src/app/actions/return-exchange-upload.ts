@@ -32,7 +32,17 @@ type ImportFailure = {
   rowErrors?: string[];
 };
 
+type ValidateSuccess = {
+  ok: true;
+  validCount: number;
+};
+
+type ValidateFailure = ImportFailure;
+
 export type ImportReturnExchangeCasesResult = ImportSuccess | ImportFailure;
+export type ValidateReturnExchangeCasesResult =
+  | ValidateSuccess
+  | ValidateFailure;
 
 const DEFAULT_CUSTOMER_CONTACT = "未提供";
 const DEFAULT_CUSTOMER_GENDER = "不透露";
@@ -170,6 +180,66 @@ function validateRows(
   return { validRows, errors };
 }
 
+async function getValidatedRows(rows: ReturnExchangeUploadRow[]): Promise<
+  | { ok: true; validRows: Array<ReturnExchangeUploadRow & { source: string }> }
+  | { ok: false; error: string; rowErrors?: string[] }
+> {
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return { ok: false, error: "沒有可匯入的資料" };
+  }
+
+  const [sourceChannelTaxonomy, categoryIssueTaxonomy] = await Promise.all([
+    getSourceChannelTaxonomy({ useAdmin: true }),
+    getCategoryIssueTaxonomy({ useAdmin: true }),
+  ]);
+  const channelToSource = buildChannelSourceMap(sourceChannelTaxonomy);
+  const categoryIssues = buildCategoryIssueMap(categoryIssueTaxonomy);
+  const { validRows, errors } = validateRows(
+    rows,
+    channelToSource,
+    categoryIssues
+  );
+
+  if (errors.length > 0) {
+    return {
+      ok: false,
+      error: "匯入資料未通過檢查",
+      rowErrors: errors.slice(0, 20),
+    };
+  }
+
+  if (validRows.length === 0) {
+    return { ok: false, error: "沒有可匯入的資料" };
+  }
+
+  return { ok: true, validRows };
+}
+
+export async function validateReturnExchangeCasesAction(
+  rows: ReturnExchangeUploadRow[]
+): Promise<ValidateReturnExchangeCasesResult> {
+  try {
+    const actor = await requireUser();
+    if (!canUploadReturnExchangeCases(actor)) {
+      return { ok: false, error: "無權限檢查退換貨案件" };
+    }
+
+    const validated = await getValidatedRows(rows);
+    if (!validated.ok) return validated;
+
+    return {
+      ok: true,
+      validCount: validated.validRows.length,
+    };
+  } catch (err) {
+    console.error("[validateReturnExchangeCasesAction]", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "檢查失敗，請稍後再試",
+    };
+  }
+}
+
 export async function importReturnExchangeCasesAction(
   rows: ReturnExchangeUploadRow[]
 ): Promise<ImportReturnExchangeCasesResult> {
@@ -179,36 +249,11 @@ export async function importReturnExchangeCasesAction(
       return { ok: false, error: "無權限匯入退換貨案件" };
     }
 
-    if (!Array.isArray(rows) || rows.length === 0) {
-      return { ok: false, error: "沒有可匯入的資料" };
-    }
-
-    const [sourceChannelTaxonomy, categoryIssueTaxonomy] = await Promise.all([
-      getSourceChannelTaxonomy({ useAdmin: true }),
-      getCategoryIssueTaxonomy({ useAdmin: true }),
-    ]);
-    const channelToSource = buildChannelSourceMap(sourceChannelTaxonomy);
-    const categoryIssues = buildCategoryIssueMap(categoryIssueTaxonomy);
-    const { validRows, errors } = validateRows(
-      rows,
-      channelToSource,
-      categoryIssues
-    );
-
-    if (errors.length > 0) {
-      return {
-        ok: false,
-        error: "匯入資料未通過檢查",
-        rowErrors: errors.slice(0, 20),
-      };
-    }
-
-    if (validRows.length === 0) {
-      return { ok: false, error: "沒有可匯入的資料" };
-    }
+    const validated = await getValidatedRows(rows);
+    if (!validated.ok) return validated;
 
     const caseNumbers: string[] = [];
-    for (const row of validRows) {
+    for (const row of validated.validRows) {
       const input: CreateCaseInput = {
         customer_name: row.customer_name,
         customer_contact: DEFAULT_CUSTOMER_CONTACT,

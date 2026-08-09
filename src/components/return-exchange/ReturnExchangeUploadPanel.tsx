@@ -11,6 +11,8 @@ import {
 import {
   importReturnExchangeCasesAction,
   type ImportReturnExchangeCasesResult,
+  validateReturnExchangeCasesAction,
+  type ValidateReturnExchangeCasesResult,
 } from "@/app/actions/return-exchange-upload";
 import {
   RETURN_EXCHANGE_UPLOAD_FIELD_KEYS,
@@ -158,22 +160,31 @@ export function ReturnExchangeUploadPanel() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] =
     useState<ImportReturnExchangeCasesResult | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<ValidateReturnExchangeCasesResult | null>(null);
   const [pendingPreview, setPendingPreview] = useState(false);
   const [pendingImport, startImportTransition] = useTransition();
 
   const previewRows = useMemo(() => preview?.rows.slice(0, 30) ?? [], [preview]);
+  const canImport = Boolean(preview && validationResult?.ok);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null;
     setError(null);
     setResult(null);
+    setValidationResult(null);
     setPreview(null);
     if (!file) return;
 
     setPendingPreview(true);
     try {
       const text = await file.text();
-      setPreview(parsePreview(text, file.name));
+      const nextPreview = parsePreview(text, file.name);
+      setPreview(nextPreview);
+      const nextValidation = await validateReturnExchangeCasesAction(
+        nextPreview.rows
+      );
+      setValidationResult(nextValidation);
     } catch (err) {
       setError(err instanceof Error ? err.message : "檔案預覽失敗");
     } finally {
@@ -183,7 +194,7 @@ export function ReturnExchangeUploadPanel() {
   }
 
   function handleImport() {
-    if (!preview || pendingImport) return;
+    if (!preview || !canImport || pendingImport) return;
     setError(null);
     setResult(null);
     startImportTransition(async () => {
@@ -280,7 +291,7 @@ export function ReturnExchangeUploadPanel() {
             <button
               type="button"
               onClick={handleImport}
-              disabled={pendingImport}
+              disabled={pendingImport || pendingPreview || !canImport}
               className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
             >
               {pendingImport ? (
@@ -298,32 +309,62 @@ export function ReturnExchangeUploadPanel() {
             尚未選擇檔案
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="w-full min-w-[980px] text-left text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50">
-                <tr>
-                  {RETURN_EXCHANGE_UPLOAD_HEADERS.map((header) => (
-                    <th
-                      key={header}
-                      className="px-3 py-2 font-medium text-slate-600"
-                    >
-                      {header}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {previewRows.map((row, rowIndex) => (
-                  <tr key={rowIndex} className="hover:bg-slate-50">
-                    {RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.map((key) => (
-                      <td key={key} className="px-3 py-2 text-slate-700">
-                        {row[key] || "—"}
-                      </td>
+          <div className="space-y-4">
+            {pendingPreview && (
+              <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                檢查欄位規則中
+              </div>
+            )}
+
+            {validationResult && !validationResult.ok && (
+              <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+                <p>{validationResult.error}</p>
+                {validationResult.rowErrors &&
+                  validationResult.rowErrors.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {validationResult.rowErrors.map((rowError) => (
+                        <li key={rowError}>{rowError}</li>
+                      ))}
+                    </ul>
+                  )}
+              </div>
+            )}
+
+            {validationResult?.ok && (
+              <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                <CheckCircle2 className="h-4 w-4" />
+                檢查通過，共 {validationResult.validCount} 筆可匯入
+              </div>
+            )}
+
+            <div className="overflow-x-auto rounded-lg border border-slate-200">
+              <table className="w-full min-w-[980px] text-left text-sm">
+                <thead className="border-b border-slate-200 bg-slate-50">
+                  <tr>
+                    {RETURN_EXCHANGE_UPLOAD_HEADERS.map((header) => (
+                      <th
+                        key={header}
+                        className="px-3 py-2 font-medium text-slate-600"
+                      >
+                        {header}
+                      </th>
                     ))}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {previewRows.map((row, rowIndex) => (
+                    <tr key={rowIndex} className="hover:bg-slate-50">
+                      {RETURN_EXCHANGE_UPLOAD_FIELD_KEYS.map((key) => (
+                        <td key={key} className="px-3 py-2 text-slate-700">
+                          {row[key] || "—"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>

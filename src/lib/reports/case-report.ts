@@ -40,6 +40,7 @@ type GroupStats = {
 
 export type CaseReportDetails = {
   qualityInspectionResults: string[];
+  qualityInspectionResultDates: string[];
   qualityInspectionNotes: string[];
 };
 
@@ -95,6 +96,7 @@ export function buildCaseReportDetailsByCaseId(
   for (const [caseId, logs] of logsByCaseId.entries()) {
     const details: CaseReportDetails = {
       qualityInspectionResults: [],
+      qualityInspectionResultDates: [],
       qualityInspectionNotes: [],
     };
 
@@ -103,10 +105,10 @@ export function buildCaseReportDetailsByCaseId(
       const parsed = parseQualityInspectionReply(log.content);
       if (!parsed) continue;
 
-      const loggedAt = formatDate(log.created_at);
-      details.qualityInspectionResults.push(`${loggedAt}：${parsed.result}`);
+      details.qualityInspectionResults.push(parsed.result);
+      details.qualityInspectionResultDates.push(formatDateOnly(log.created_at));
       if (parsed.note) {
-        details.qualityInspectionNotes.push(`${loggedAt}：${parsed.note}`);
+        details.qualityInspectionNotes.push(parsed.note);
       }
     }
 
@@ -328,8 +330,9 @@ export function buildCaseReportCsv(
       "逾期",
       "結案日",
       "結案天數",
-      "品檢結果",
-      "品檢簡述",
+      "品檢回覆",
+      "品檢回覆說明",
+      "品檢回覆日期",
     ])
   );
 
@@ -355,6 +358,7 @@ export function buildCaseReportCsv(
         days == null ? "" : days.toFixed(1),
         joinReportItems(reportDetails?.qualityInspectionResults ?? []),
         joinReportItems(reportDetails?.qualityInspectionNotes ?? []),
+        joinReportItems(reportDetails?.qualityInspectionResultDates ?? []),
       ])
     );
   }

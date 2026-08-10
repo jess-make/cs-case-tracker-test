@@ -140,7 +140,8 @@ function validateRows(
       const optional =
         key === "ecommerce_order_no" ||
         key === "shipping_tracking_no" ||
-        key === "batch_no";
+        key === "batch_no" ||
+        key === "description";
       if (!optional && !row[key]) {
         rowErrors.push(
           `第 ${rowNumber} 列：${RETURN_EXCHANGE_UPLOAD_FIELD_LABELS[key]} 不可空白`

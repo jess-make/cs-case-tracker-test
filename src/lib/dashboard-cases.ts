@@ -1,11 +1,9 @@
-import { hasAssignedDepartment } from "@/lib/case-department";
 import { normalizeCaseStatus } from "@/lib/case-status";
 import { getPresetRange, toCreatedAtBounds } from "@/lib/date-range";
 import type { Case, DashboardStats } from "@/types";
 
 export const DASHBOARD_CASE_FILTERS = [
   "month",
-  "unassigned",
   "in_progress",
   "pending_close",
   "closed",
@@ -51,8 +49,6 @@ export function getDashboardCases(
   switch (filter) {
     case "month":
       return getCurrentMonthCases(cases);
-    case "unassigned":
-      return cases.filter((c) => !hasAssignedDepartment(c.department));
     case "in_progress":
       return cases.filter((c) =>
         ["in_progress", "replied"].includes(normalizeCaseStatus(c.status))
@@ -72,7 +68,6 @@ export function buildDashboardStats(cases: Case[]): DashboardStats {
     currentMonth,
     previousMonth,
     monthDelta: currentMonth - previousMonth,
-    unassigned: getDashboardCases(cases, "unassigned").length,
     inProgress: getDashboardCases(cases, "in_progress").length,
     pendingClose: getDashboardCases(cases, "pending_close").length,
     closed: getDashboardCases(cases, "closed").length,

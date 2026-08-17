@@ -107,7 +107,6 @@ export interface DashboardStats {
   currentMonth: number;
   previousMonth: number;
   monthDelta: number;
-  unassigned: number;
   inProgress: number;
   pendingClose: number;
   closed: number;

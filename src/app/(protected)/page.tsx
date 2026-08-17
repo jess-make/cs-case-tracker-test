@@ -4,7 +4,6 @@ import {
   Clock,
   FolderOpen,
   Loader,
-  UserMinus,
 } from "lucide-react";
 import { StatCard } from "@/components/ui/StatCard";
 import { CaseTable } from "@/components/cases/CaseTable";
@@ -25,7 +24,6 @@ interface PageProps {
 
 const DASHBOARD_FILTER_LABELS: Record<DashboardCaseFilter, string> = {
   month: "本月案件",
-  unassigned: "未指派",
   in_progress: "處理中",
   pending_close: "待結案",
   closed: "已結案",
@@ -72,13 +70,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       detail: `上個月 ${stats.previousMonth} 件，\n${formatMonthDelta(stats.monthDelta)}`,
     },
     {
-      filter: "unassigned",
-      title: "未指派",
-      value: stats.unassigned,
-      icon: UserMinus,
-      color: "slate",
-    },
-    {
       filter: "in_progress",
       title: "處理中",
       value: stats.inProgress,
@@ -107,7 +98,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         <h1 className="text-xl font-bold text-slate-900 sm:text-2xl">案件總覽</h1>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 lg:mb-8 lg:grid-cols-5 lg:gap-3">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:gap-3 lg:mb-8 lg:grid-cols-4 lg:gap-3">
         {cards.map((card) => {
           const active = activeFilter === card.filter;
           return (

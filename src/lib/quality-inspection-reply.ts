@@ -3,7 +3,9 @@ const QUALITY_INSPECTION_REPLY_CATEGORIES = new Set(["退貨", "換貨"]);
 
 export const QUALITY_INSPECTION_REPLY_OPTIONS = [
   "一般退貨",
-  "修正機況",
+  "修正機況-品名錯誤",
+  "修正機況-外觀異常",
+  "修正機況-功能異常",
   "出錯貨",
   "鎖密碼",
   "爭議中",

@@ -4,6 +4,7 @@ const BUSINESS_ECOMMERCE = "業務部-電商";
 const BUSINESS_STORE = "業務部-門市";
 const BACKOFFICE_QA = "後勤部-品檢";
 const BACKOFFICE_WAREHOUSE = "後勤部-倉儲";
+const CUSTOMER_SERVICE = "業務部-客服";
 
 type CategoryRule = {
   all?: AssignmentPlan;
@@ -11,9 +12,9 @@ type CategoryRule = {
 };
 
 const ASSIGNMENT_RULES: Record<string, CategoryRule> = {
-  諮詢服務: { all: [] },
+  諮詢服務: { all: [CUSTOMER_SERVICE] },
   商品問題: {
-    all: [],
+    all: [CUSTOMER_SERVICE],
     issues: {
       缺件: [BUSINESS_ECOMMERCE, BACKOFFICE_WAREHOUSE],
     },
@@ -40,7 +41,7 @@ const ASSIGNMENT_RULES: Record<string, CategoryRule> = {
   換貨: { all: [BUSINESS_ECOMMERCE, BACKOFFICE_QA] },
   退換貨: { all: [BUSINESS_ECOMMERCE, BACKOFFICE_QA] },
   舊機回收: { all: [BACKOFFICE_QA] },
-  其他: { all: [] },
+  其他: { all: [CUSTOMER_SERVICE] },
 };
 
 function normalizeTaxonomyName(value: string | null | undefined): string {

@@ -44,14 +44,14 @@ function makeTarget(
 }
 
 export function getCaseWorkflowRevertTarget(
-  caseData: RevertableCase
+  caseData: RevertableCase,
+  assignmentPlanOverride?: readonly string[]
 ): CaseWorkflowRevertTarget | null {
   const status = normalizeCaseStatus(String(caseData.status));
   const department = normalizeDepartment(caseData.department);
-  const assignmentPlan = getAutoAssignmentPlan(
-    caseData.complaint_type,
-    caseData.complaint_subtype
-  );
+  const assignmentPlan =
+    assignmentPlanOverride ??
+    getAutoAssignmentPlan(caseData.complaint_type, caseData.complaint_subtype);
 
   if (
     status === "replied" &&

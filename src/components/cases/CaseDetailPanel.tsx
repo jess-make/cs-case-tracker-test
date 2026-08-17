@@ -62,6 +62,7 @@ export function CaseDetailPanel({
   activeDepartments,
   categoryIssueTaxonomy,
   sourceChannelTaxonomy,
+  assignmentPlan,
 }: {
   caseData: Case;
   logs?: CaseLog[] | null;
@@ -70,6 +71,7 @@ export function CaseDetailPanel({
   activeDepartments: string[];
   categoryIssueTaxonomy: CategoryIssueTaxonomy;
   sourceChannelTaxonomy: SourceChannelTaxonomy;
+  assignmentPlan?: string[];
 }) {
   const [reply, setReply] = useState("");
   const [qualityInspectionResult, setQualityInspectionResult] = useState("");
@@ -84,7 +86,7 @@ export function CaseDetailPanel({
   const safeLogs = logs ?? [];
   const displayStatus = normalizeCaseStatus(caseData.status);
   const nextStatus = getNextStatus(displayStatus);
-  const revertTarget = getCaseWorkflowRevertTarget(caseData);
+  const revertTarget = getCaseWorkflowRevertTarget(caseData, assignmentPlan);
   const revertTargetLabel = revertTarget
     ? getCaseWorkflowRevertTargetLabel(revertTarget)
     : null;

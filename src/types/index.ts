@@ -170,6 +170,28 @@ export interface Department {
   updated_at: string;
 }
 
+export interface CaseAssignmentRuleStep {
+  id: string;
+  rule_id: string;
+  step_order: number;
+  department: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CaseAssignmentRule {
+  id: string;
+  complaint_type: string;
+  complaint_subtype: string | null;
+  applies_to_all_subtypes: boolean;
+  is_active: boolean;
+  note: string | null;
+  created_at: string;
+  updated_at: string;
+  steps: CaseAssignmentRuleStep[];
+  is_fallback?: boolean;
+}
+
 export interface ComplaintCategory {
   id: string;
   name: string;

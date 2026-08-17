@@ -12,6 +12,24 @@ function supabase() {
   return createClient();
 }
 
+type SupabaseLikeError = {
+  code?: string;
+  message?: string;
+};
+
+function isAssignmentRuleSchemaUnavailableError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const { code, message } = error as SupabaseLikeError;
+  return (
+    code === "42P01" ||
+    code === "42703" ||
+    code === "PGRST200" ||
+    code === "PGRST204" ||
+    code === "PGRST205" ||
+    (message?.includes("case_assignment_rule_steps") ?? false)
+  );
+}
+
 const CASE_ASSIGNMENT_EXCLUDED_DEPARTMENTS = new Set([
   "CEO",
   "管理員",
@@ -148,7 +166,7 @@ export async function getDepartmentById(id: string): Promise<Department | null> 
 
 export async function getDepartmentUsageCounts(
   departmentName: string
-): Promise<{ users: number; cases: number }> {
+): Promise<{ users: number; cases: number; assignmentRules: number }> {
   const client = await supabase();
   const [usersRes, casesRes] = await Promise.all([
     client
@@ -164,9 +182,22 @@ export async function getDepartmentUsageCounts(
   if (usersRes.error) throw usersRes.error;
   if (casesRes.error) throw casesRes.error;
 
+  let assignmentRules = 0;
+  const rulesRes = await client
+    .from("case_assignment_rule_steps")
+    .select("*", { count: "exact", head: true })
+    .eq("department", departmentName);
+  if (rulesRes.error && !isAssignmentRuleSchemaUnavailableError(rulesRes.error)) {
+    throw rulesRes.error;
+  }
+  if (!rulesRes.error) {
+    assignmentRules = rulesRes.count ?? 0;
+  }
+
   return {
     users: usersRes.count ?? 0,
     cases: casesRes.count ?? 0,
+    assignmentRules,
   };
 }
 
@@ -226,6 +257,26 @@ export async function renameDepartment(
     throw new Error(`更新案件部門失敗：${casesError.message}`);
   }
 
+  const { error: assignmentRulesError } = await client
+    .from("case_assignment_rule_steps")
+    .update({ department: trimmed })
+    .eq("department", oldName);
+
+  if (
+    assignmentRulesError &&
+    !isAssignmentRuleSchemaUnavailableError(assignmentRulesError)
+  ) {
+    await client
+      .from("users")
+      .update({ department: oldName })
+      .eq("department", trimmed);
+    await client
+      .from("cases")
+      .update({ department: oldName })
+      .eq("department", trimmed);
+    throw new Error(`更新指派規則部門失敗：${assignmentRulesError.message}`);
+  }
+
   const { data, error: deptError } = await client
     .from("departments")
     .update({ name: trimmed })
@@ -240,6 +291,10 @@ export async function renameDepartment(
       .eq("department", trimmed);
     await client
       .from("cases")
+      .update({ department: oldName })
+      .eq("department", trimmed);
+    await client
+      .from("case_assignment_rule_steps")
       .update({ department: oldName })
       .eq("department", trimmed);
     if (deptError.code === "23505") {
@@ -261,10 +316,12 @@ export async function deleteDepartment(id: string): Promise<void> {
     throw new Error("此為系統客服部門，不可刪除");
   }
 
-  const { users, cases } = await getDepartmentUsageCounts(existing.name);
-  if (users > 0 || cases > 0) {
+  const { users, cases, assignmentRules } = await getDepartmentUsageCounts(
+    existing.name
+  );
+  if (users > 0 || cases > 0 || assignmentRules > 0) {
     throw new Error(
-      `無法刪除部門，目前仍有 ${users} 位使用者、${cases} 筆案件使用此部門。`
+      `無法刪除部門，目前仍有 ${users} 位使用者、${cases} 筆案件、${assignmentRules} 條指派規則使用此部門。`
     );
   }
 

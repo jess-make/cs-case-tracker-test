@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   Building2,
   FileUp,
+  GitBranch,
   LayoutDashboard,
   List,
   LogOut,
@@ -19,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
 import {
   canCreateCase,
+  canManageCaseAssignmentRules,
   canManageCaseTaxonomy,
   canManageUsers,
   canUploadReturnExchangeCases,
@@ -34,6 +36,12 @@ const baseNavItems = [
     label: "退換貨案件上傳",
     icon: FileUp,
     requiresReturnExchangeUpload: true,
+  },
+  {
+    href: "/case-assignment-rules",
+    label: "案件指派規則",
+    icon: GitBranch,
+    requiresAssignmentRules: true,
   },
   { href: "/complaint-sources", label: "案件來源管理", icon: Radio, requiresTaxonomy: true },
   { href: "/complaint-categories", label: "案件類別管理", icon: Tags, requiresTaxonomy: true },
@@ -55,6 +63,9 @@ export function Sidebar({ open = false, onClose, user }: SidebarProps) {
     }
     if ("requiresTaxonomy" in item && item.requiresTaxonomy) {
       return canManageCaseTaxonomy(user);
+    }
+    if ("requiresAssignmentRules" in item && item.requiresAssignmentRules) {
+      return canManageCaseAssignmentRules(user);
     }
     if (
       "requiresReturnExchangeUpload" in item &&

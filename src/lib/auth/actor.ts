@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/auth/session";
 import {
   canCreateCase,
+  canManageCaseAssignmentRules,
   canManageCaseTaxonomy,
   canManageUsers,
 } from "@/lib/auth/permissions";
@@ -110,6 +111,14 @@ export async function requireManageCaseTaxonomyPermission(): Promise<SessionUser
   const user = await requireUser();
   if (!canManageCaseTaxonomy(user)) {
     throw new Error("無權限管理案件來源或案件類別");
+  }
+  return user;
+}
+
+export async function requireManageCaseAssignmentRulesPermission(): Promise<SessionUser> {
+  const user = await requireUser();
+  if (!canManageCaseAssignmentRules(user)) {
+    throw new Error("無權限管理案件指派規則");
   }
   return user;
 }

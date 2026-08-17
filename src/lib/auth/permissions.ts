@@ -44,6 +44,10 @@ export function canManageCaseTaxonomy(user: CaseTaxonomyPermissionUser): boolean
   );
 }
 
+export function canManageCaseAssignmentRules(user: { role: UserRole }): boolean {
+  return canManageUsers(user.role);
+}
+
 export function canUploadReturnExchangeCases(user: {
   role: UserRole;
   department?: string | null;

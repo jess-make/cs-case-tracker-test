@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth/session";
 import { canUploadReturnExchangeCases } from "@/lib/auth/permissions";
-import { getInitialAutoAssignedDepartment } from "@/lib/case-auto-assignment";
+import { getCaseAssignmentResolver } from "@/lib/data/case-assignment-rules";
 import { createCase } from "@/lib/data/cases";
 import { createCaseLog } from "@/lib/data/case-logs";
 import {
@@ -261,9 +261,14 @@ export async function importReturnExchangeCasesAction(
 
     const validated = await getValidatedRows(rows);
     if (!validated.ok) return validated;
+    const resolveAssignmentPlan = await getCaseAssignmentResolver();
 
     const caseNumbers: string[] = [];
     for (const row of validated.validRows) {
+      const assignmentPlan = resolveAssignmentPlan(
+        row.complaint_type,
+        row.complaint_subtype
+      );
       const input: CreateCaseInput = {
         customer_name: row.customer_name,
         customer_contact: DEFAULT_CUSTOMER_CONTACT,
@@ -274,10 +279,7 @@ export async function importReturnExchangeCasesAction(
         complaint_subtype: row.complaint_subtype,
         description: row.description,
         urgency: "low",
-        department: getInitialAutoAssignedDepartment(
-          row.complaint_type,
-          row.complaint_subtype
-        ),
+        department: assignmentPlan[0] ?? null,
         ecommerce_order_no: row.ecommerce_order_no || null,
         shipping_tracking_no: row.shipping_tracking_no || null,
         batch_no: row.batch_no || null,

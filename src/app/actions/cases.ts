@@ -45,7 +45,10 @@ import {
 import { getNextStatus } from "@/lib/case-status";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
 import { parseOptionalDepartment } from "@/lib/parse-form";
-import { getInitialAutoAssignedDepartment } from "@/lib/case-auto-assignment";
+import {
+  getCaseAssignmentPlan,
+  getInitialCaseAssignmentDepartment,
+} from "@/lib/data/case-assignment-rules";
 import {
   hasAssignedDepartment,
   isAutoAssignDepartmentValue,
@@ -150,7 +153,7 @@ export async function createCaseAction(
     const input: CreateCaseInput = {
       ...parsedInput,
       department: parsed.autoAssignDepartment
-        ? getInitialAutoAssignedDepartment(
+        ? await getInitialCaseAssignmentDepartment(
             parsedInput.complaint_type,
             parsedInput.complaint_subtype
           )
@@ -331,7 +334,11 @@ export async function revertCaseStatusAction(caseId: string) {
   const current = await getCaseById(caseId, actor);
   if (!current) return { error: "案件不存在" };
 
-  const target = getCaseWorkflowRevertTarget(current);
+  const assignmentPlan = await getCaseAssignmentPlan(
+    current.complaint_type,
+    current.complaint_subtype
+  );
+  const target = getCaseWorkflowRevertTarget(current, assignmentPlan);
   if (!target) return { error: "無法回推狀態" };
 
   const revertedCase = await revertCaseStatus(caseId, target.status, actorId, {

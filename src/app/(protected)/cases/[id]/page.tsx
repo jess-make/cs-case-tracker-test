@@ -8,6 +8,7 @@ import {
   getCategoryIssueTaxonomy,
   getSourceChannelTaxonomy,
 } from "@/lib/data/complaint-taxonomy-form";
+import { getCaseAssignmentPlan } from "@/lib/data/case-assignment-rules";
 import { requireUser } from "@/lib/auth/session";
 import { getCasePermissions } from "@/lib/auth/permissions";
 
@@ -71,6 +72,10 @@ export default async function CaseDetailPage({ params }: PageProps) {
   }
 
   const permissions = getCasePermissions(currentUser, caseData);
+  const assignmentPlan = await getCaseAssignmentPlan(
+    caseData.complaint_type,
+    caseData.complaint_subtype
+  ).catch(() => undefined);
 
   return (
     <div>
@@ -90,6 +95,7 @@ export default async function CaseDetailPage({ params }: PageProps) {
         activeDepartments={activeDepartments}
         categoryIssueTaxonomy={categoryIssueTaxonomy}
         sourceChannelTaxonomy={sourceChannelTaxonomy}
+        assignmentPlan={assignmentPlan}
       />
     </div>
   );

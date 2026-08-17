@@ -26,9 +26,10 @@ import {
 import { buildCaseEditSummary } from "@/lib/case-edit-summary";
 import { hasAssignedDepartment } from "@/lib/case-department";
 import {
-  getNextAutoAssignedDepartment,
-  isAutoAssignedDepartmentStep,
+  getNextDepartmentInAssignmentPlan,
+  isDepartmentInAssignmentPlan,
 } from "@/lib/case-auto-assignment";
+import { getCaseAssignmentPlan } from "@/lib/data/case-assignment-rules";
 import {
   isCompensationEligibleCase,
   parseCompensationType,
@@ -694,17 +695,16 @@ export async function addCaseReply(
 
   const replyLogSaved = await logCaseReply(caseId, userId, content);
   const departmentStepCompleted = canAutoAdvanceDepartmentStep(existing, actor);
-  const currentDepartmentIsAutoStep = isAutoAssignedDepartmentStep(
+  const assignmentPlan = await getCaseAssignmentPlan(
     existing.complaint_type,
-    existing.complaint_subtype,
+    existing.complaint_subtype
+  );
+  const currentDepartmentIsAutoStep = isDepartmentInAssignmentPlan(
+    assignmentPlan,
     existing.department
   );
   const nextDepartment = departmentStepCompleted
-    ? getNextAutoAssignedDepartment(
-        existing.complaint_type,
-        existing.complaint_subtype,
-        existing.department
-      )
+    ? getNextDepartmentInAssignmentPlan(assignmentPlan, existing.department)
     : null;
   const shouldReturnToCs =
     departmentStepCompleted &&

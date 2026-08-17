@@ -1,5 +1,8 @@
 import type { UserRole } from "@/types";
-import { CS_DEPARTMENT } from "@/lib/constants";
+import {
+  BUSINESS_HEAD_DEPARTMENT,
+  CS_DEPARTMENT,
+} from "@/lib/constants";
 
 type CaseTaxonomyPermissionUser = {
   role: UserRole;
@@ -46,6 +49,19 @@ export function canManageCaseTaxonomy(user: CaseTaxonomyPermissionUser): boolean
 
 export function canManageCaseAssignmentRules(user: { role: UserRole }): boolean {
   return canManageUsers(user.role);
+}
+
+export function canAccessReportManagement(user: {
+  role: UserRole;
+  department?: string | null;
+}): boolean {
+  const department = user.department?.trim();
+  return (
+    user.role === "admin" ||
+    user.role === "boss" ||
+    department === CS_DEPARTMENT ||
+    (user.role === "department_head" && department === BUSINESS_HEAD_DEPARTMENT)
+  );
 }
 
 export function canUploadReturnExchangeCases(user: {

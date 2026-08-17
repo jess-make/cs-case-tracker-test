@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
+  ClipboardList,
   FileUp,
   GitBranch,
   LayoutDashboard,
@@ -19,6 +20,7 @@ import { BrandHeader } from "./BrandLogo";
 import { cn } from "@/lib/utils";
 import { signOutAction } from "@/app/actions/auth";
 import {
+  canAccessReportManagement,
   canCreateCase,
   canManageCaseAssignmentRules,
   canManageCaseTaxonomy,
@@ -31,6 +33,12 @@ const baseNavItems = [
   { href: "/", label: "案件總覽", icon: LayoutDashboard },
   { href: "/cases/new", label: "建立案件", icon: PlusCircle, requiresCreate: true },
   { href: "/cases", label: "案件列表", icon: List },
+  {
+    href: "/reports",
+    label: "報表管理",
+    icon: ClipboardList,
+    requiresReports: true,
+  },
   {
     href: "/return-exchange-upload",
     label: "退換貨案件上傳",
@@ -66,6 +74,9 @@ export function Sidebar({ open = false, onClose, user }: SidebarProps) {
     }
     if ("requiresAssignmentRules" in item && item.requiresAssignmentRules) {
       return canManageCaseAssignmentRules(user);
+    }
+    if ("requiresReports" in item && item.requiresReports) {
+      return canAccessReportManagement(user);
     }
     if (
       "requiresReturnExchangeUpload" in item &&

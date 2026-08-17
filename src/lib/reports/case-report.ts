@@ -5,6 +5,7 @@ import {
 } from "@/lib/constants";
 import { resolveDateRange, formatSlashDate } from "@/lib/date-range";
 import { getAssigneeDisplayName } from "@/lib/case-display";
+import { formatCompensationStatus } from "@/lib/compensation-approval";
 import { formatDate, formatDateOnly } from "@/lib/utils";
 import {
   formatTaipeiDateTime,
@@ -338,6 +339,13 @@ export function buildCaseReportCsv(
       "品檢回覆",
       "品檢回覆說明",
       "品檢回覆日期",
+      "補償方式",
+      "補償簽核狀態",
+      "補償申請人",
+      "補償申請時間",
+      "補償審核人",
+      "補償審核時間",
+      "補償審核說明",
     ])
   );
 
@@ -369,6 +377,19 @@ export function buildCaseReportCsv(
         joinReportItems(reportDetails?.qualityInspectionResults ?? []),
         joinReportItems(reportDetails?.qualityInspectionNotes ?? []),
         joinReportItems(reportDetails?.qualityInspectionResultDates ?? []),
+        caseData.compensation_type ?? "",
+        caseData.compensation_type
+          ? formatCompensationStatus(caseData.compensation_status)
+          : "",
+        caseData.compensation_requested_by?.name ?? "",
+        caseData.compensation_requested_at
+          ? formatDate(caseData.compensation_requested_at)
+          : "",
+        caseData.compensation_reviewed_by?.name ?? "",
+        caseData.compensation_reviewed_at
+          ? formatDate(caseData.compensation_reviewed_at)
+          : "",
+        caseData.compensation_review_note ?? "",
       ])
     );
   }

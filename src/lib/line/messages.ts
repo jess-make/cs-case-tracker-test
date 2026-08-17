@@ -73,3 +73,11 @@ export function buildCaseClosedMessage(caseData: Case): string {
     summary: "案件已結案",
   });
 }
+
+export function buildCompensationApprovalRequestedMessage(caseData: Case): string {
+  return buildMessage({
+    eventLabel: "補償簽核待審核",
+    caseData,
+    summary: `補償方式：${caseData.compensation_type ?? "—"}`,
+  });
+}

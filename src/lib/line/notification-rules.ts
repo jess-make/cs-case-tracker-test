@@ -1,5 +1,6 @@
 import { CS_DEPARTMENT } from "@/lib/constants";
 import { hasAssignedDepartment } from "@/lib/case-department";
+import { canApproveCompensation } from "@/lib/auth/case-access";
 import {
   filterByDepartmentAudience,
   filterByDepartment,
@@ -102,4 +103,26 @@ export function resolveCaseClosedRecipients(
   }
 
   return [creator.line_user_id.trim()];
+}
+
+/**
+ * 補償簽核待審核：通知可審核者（admin、業務部-客服 manager）
+ */
+export function resolveCompensationApprovalRequestedRecipients(
+  activeUsers: User[]
+): string[] {
+  return uniqueLineUserIds(
+    withLineUserId(activeUsers).filter((user) =>
+      canApproveCompensation({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department,
+        line_user_id: user.line_user_id,
+        must_change_password: user.must_change_password === true,
+        must_bind_line: user.must_bind_line === true,
+      })
+    )
+  );
 }

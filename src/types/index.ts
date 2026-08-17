@@ -14,6 +14,13 @@ export type CaseStatus =
 
 export type UrgencyLevel = "low" | "medium" | "high" | "critical";
 
+export type CompensationType = "部分退款" | "折價券" | "其他補償";
+
+export type CompensationApprovalStatus =
+  | "pending"
+  | "approved"
+  | "rejected";
+
 export interface User {
   id: string;
   email: string;
@@ -49,6 +56,13 @@ export interface Case {
   status: CaseStatus;
   due_date: string | null;
   resolution: string | null;
+  compensation_type: CompensationType | null;
+  compensation_status: CompensationApprovalStatus | null;
+  compensation_requested_by_id: string | null;
+  compensation_requested_at: string | null;
+  compensation_reviewed_by_id: string | null;
+  compensation_reviewed_at: string | null;
+  compensation_review_note: string | null;
   attachment_urls: string[];
   is_overdue: boolean;
   closed_at: string | null;
@@ -57,6 +71,8 @@ export interface Case {
   participant_departments?: string[];
   assignee?: User | null;
   created_by?: User | null;
+  compensation_requested_by?: User | null;
+  compensation_reviewed_by?: User | null;
   attachments?: CaseAttachment[];
 }
 
@@ -111,6 +127,7 @@ export interface CreateCaseInput {
   ecommerce_order_no?: string | null;
   batch_no?: string | null;
   shipping_tracking_no?: string | null;
+  compensation_type?: CompensationType | null;
 }
 
 export interface UpdateCaseInput {

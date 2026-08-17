@@ -19,6 +19,7 @@ import {
   revertCaseStatusAction,
   closeCaseAction,
   addReplyAction,
+  approveCompensationAction,
 } from "@/app/actions/cases";
 import { Loader2, User, Building2, Pencil } from "lucide-react";
 import { CaseEditForm } from "@/components/cases/CaseEditForm";
@@ -43,9 +44,15 @@ import {
   getCaseWorkflowRevertTarget,
   getCaseWorkflowRevertTargetLabel,
 } from "@/lib/case-workflow-revert";
+import {
+  COMPENSATION_APPROVAL_STATUS_LABELS,
+  formatCompensationStatus,
+} from "@/lib/compensation-approval";
 
 const REPLY_REQUIRED_MESSAGE = "請輸入處理說明後再送出。";
 const QUALITY_RESULT_REQUIRED_MESSAGE = "請選擇品檢結果後再送出。";
+const COMPENSATION_DECISION_REQUIRED_MESSAGE = "請選擇核准或不同意。";
+const COMPENSATION_NOTE_REQUIRED_MESSAGE = "請填寫審核說明。";
 
 export function CaseDetailPanel({
   caseData,
@@ -67,6 +74,9 @@ export function CaseDetailPanel({
   const [reply, setReply] = useState("");
   const [qualityInspectionResult, setQualityInspectionResult] = useState("");
   const [replyError, setReplyError] = useState<string | null>(null);
+  const [compensationDecision, setCompensationDecision] = useState("");
+  const [compensationReviewNote, setCompensationReviewNote] = useState("");
+  const [compensationError, setCompensationError] = useState<string | null>(null);
   const [replyAttachments, setReplyAttachments] = useState<PendingAttachment[]>([]);
   const [editing, setEditing] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -79,6 +89,10 @@ export function CaseDetailPanel({
     ? getCaseWorkflowRevertTargetLabel(revertTarget)
     : null;
   const showQualityInspectionReply = isQualityInspectionReplyStep(caseData);
+  const hasCompensationApproval = Boolean(caseData.compensation_type);
+  const canReviewCompensation =
+    permissions.canApproveCompensation &&
+    caseData.compensation_status === "pending";
 
   function handleAdvance() {
     startTransition(async () => {
@@ -140,6 +154,34 @@ export function CaseDetailPanel({
       setQualityInspectionResult("");
       revokeAllPendingAttachments(replyAttachments);
       setReplyAttachments([]);
+      router.refresh();
+    });
+  }
+
+  function handleCompensationReview(e: React.FormEvent) {
+    e.preventDefault();
+    if (!compensationDecision) {
+      setCompensationError(COMPENSATION_DECISION_REQUIRED_MESSAGE);
+      return;
+    }
+    if (!compensationReviewNote.trim()) {
+      setCompensationError(COMPENSATION_NOTE_REQUIRED_MESSAGE);
+      return;
+    }
+
+    setCompensationError(null);
+    const formData = new FormData();
+    formData.set("decision", compensationDecision);
+    formData.set("review_note", compensationReviewNote);
+
+    startTransition(async () => {
+      const result = await approveCompensationAction(caseData.id, formData);
+      if (result?.error) {
+        setCompensationError(result.error);
+        return;
+      }
+      setCompensationDecision("");
+      setCompensationReviewNote("");
       router.refresh();
     });
   }
@@ -242,6 +284,126 @@ export function CaseDetailPanel({
             <CaseAttachmentsSection attachments={attachments} />
           )}
         </section>
+
+        {hasCompensationApproval && (
+          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+            <h3 className="mb-4 text-base font-semibold text-slate-900">
+              補償簽核
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <CompensationInfo label="補償方式" value={caseData.compensation_type ?? "—"} />
+              <CompensationInfo
+                label="簽核狀態"
+                value={formatCompensationStatus(caseData.compensation_status)}
+              />
+              <CompensationInfo
+                label="申請人"
+                value={caseData.compensation_requested_by?.name ?? "—"}
+              />
+              <CompensationInfo
+                label="申請時間"
+                value={
+                  caseData.compensation_requested_at
+                    ? formatDate(caseData.compensation_requested_at)
+                    : "—"
+                }
+              />
+              <CompensationInfo
+                label="審核人"
+                value={caseData.compensation_reviewed_by?.name ?? "—"}
+              />
+              <CompensationInfo
+                label="審核時間"
+                value={
+                  caseData.compensation_reviewed_at
+                    ? formatDate(caseData.compensation_reviewed_at)
+                    : "—"
+                }
+              />
+            </div>
+            {caseData.compensation_review_note && (
+              <div className="mt-4 border-t border-slate-100 pt-4">
+                <p className="mb-1 text-sm font-medium text-slate-700">
+                  審核說明
+                </p>
+                <p className="whitespace-pre-wrap text-sm text-slate-600">
+                  {caseData.compensation_review_note}
+                </p>
+              </div>
+            )}
+
+            {canReviewCompensation && (
+              <form
+                onSubmit={handleCompensationReview}
+                className="mt-4 border-t border-slate-100 pt-4"
+              >
+                {compensationError && (
+                  <p
+                    className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700"
+                    role="alert"
+                  >
+                    {compensationError}
+                  </p>
+                )}
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[minmax(180px,220px)_1fr]">
+                  <div>
+                    <label
+                      htmlFor={`compensation-decision-${caseData.id}`}
+                      className="mb-1 block text-sm font-medium text-slate-700"
+                    >
+                      審核結果 *
+                    </label>
+                    <select
+                      id={`compensation-decision-${caseData.id}`}
+                      value={compensationDecision}
+                      onChange={(e) => {
+                        setCompensationDecision(e.target.value);
+                        if (compensationError) setCompensationError(null);
+                      }}
+                      required
+                      className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-800 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    >
+                      <option value="">請選擇</option>
+                      <option value="approved">
+                        {COMPENSATION_APPROVAL_STATUS_LABELS.approved}
+                      </option>
+                      <option value="rejected">
+                        {COMPENSATION_APPROVAL_STATUS_LABELS.rejected}
+                      </option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      htmlFor={`compensation-note-${caseData.id}`}
+                      className="mb-1 block text-sm font-medium text-slate-700"
+                    >
+                      審核說明 *
+                    </label>
+                    <textarea
+                      id={`compensation-note-${caseData.id}`}
+                      value={compensationReviewNote}
+                      onChange={(e) => {
+                        setCompensationReviewNote(e.target.value);
+                        if (compensationError) setCompensationError(null);
+                      }}
+                      required
+                      rows={3}
+                      className="w-full min-h-11 rounded-lg border border-slate-300 px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={pending}
+                  className="mt-3 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto"
+                >
+                  {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  送出審核
+                </button>
+              </form>
+            )}
+          </section>
+        )}
 
         <section className="min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
           <h3 className="mb-4 text-base font-semibold text-slate-900">案件回覆</h3>
@@ -453,6 +615,21 @@ export function CaseDetailPanel({
           )}
         </section>
       </div>
+    </div>
+  );
+}
+
+function CompensationInfo({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div>
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-sm font-medium text-slate-800">{value}</p>
     </div>
   );
 }

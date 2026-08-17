@@ -8,6 +8,7 @@ import {
   updateCaseStatus,
   revertCaseStatus,
   addCaseReply,
+  reviewCaseCompensation,
 } from "@/lib/data/cases";
 import {
   uploadAndRecordCaseAttachments,
@@ -19,6 +20,8 @@ import {
   logCaseCreated,
   logAttachmentsAdded,
   logAttachmentsDeleted,
+  logCompensationRequested,
+  logCompensationReviewed,
 } from "@/lib/data/case-logs";
 import {
   requireCreatePermission,
@@ -27,6 +30,7 @@ import {
   requireCaseAttachmentUploadPermission,
   requireCaseWorkflowPermission,
   requireCaseWorkflowRevertPermission,
+  requireCaseCompensationApprovalPermission,
 } from "@/lib/auth/actor";
 import {
   canDeleteAttachment,
@@ -36,6 +40,7 @@ import {
   notifyCaseClosed,
   notifyCaseReplied,
   notifyDepartmentAssigned,
+  notifyCompensationApprovalRequested,
 } from "@/lib/line/case-notifications";
 import { getNextStatus } from "@/lib/case-status";
 import type { CreateCaseInput, UrgencyLevel } from "@/types";
@@ -51,6 +56,12 @@ import {
   isQualityInspectionReplyOption,
   isQualityInspectionReplyStep,
 } from "@/lib/quality-inspection-reply";
+import {
+  COMPENSATION_APPROVAL_DECISIONS,
+  isCompensationEligibleCase,
+  parseCompensationType,
+} from "@/lib/compensation-approval";
+import type { CompensationApprovalStatus } from "@/types";
 
 function parseCaseFormData(formData: FormData) {
   const departmentValue = formData.get("department");
@@ -72,6 +83,9 @@ function parseCaseFormData(formData: FormData) {
     batch_no: (formData.get("batch_no") as string)?.trim() || null,
     shipping_tracking_no:
       (formData.get("shipping_tracking_no") as string)?.trim() || null,
+    compensation_type: parseCompensationType(
+      (formData.get("compensation_type") as string | null) ?? null
+    ),
   };
 }
 
@@ -104,6 +118,19 @@ function parseReplyFormData(
   return { content: buildQualityInspectionReplyContent(result, note) };
 }
 
+function parseCompensationDecision(
+  value: FormDataEntryValue | null
+): Exclude<CompensationApprovalStatus, "pending"> | null {
+  const decision = String(value ?? "").trim();
+  if (
+    decision === "approved" ||
+    decision === "rejected"
+  ) {
+    return decision;
+  }
+  return null;
+}
+
 export async function createCaseAction(
   formData: FormData
 ): Promise<{ error?: string } | void> {
@@ -114,6 +141,12 @@ export async function createCaseAction(
 
     const parsed = parseCaseFormData(formData);
     const parsedInput = stripAutoAssignFlag(parsed);
+    if (
+      parsedInput.compensation_type &&
+      !isCompensationEligibleCase(parsedInput.complaint_type)
+    ) {
+      return { error: "只有商品問題案件可發起補償簽核" };
+    }
     const input: CreateCaseInput = {
       ...parsedInput,
       department: parsed.autoAssignDepartment
@@ -137,11 +170,21 @@ export async function createCaseAction(
     }
 
     await logCaseCreated(newCase.id, actorId, uploadedNames);
+    if (newCase.compensation_type) {
+      await logCompensationRequested(
+        newCase.id,
+        actorId,
+        newCase.compensation_type
+      );
+    }
     if (uploadedNames.length > 0) {
       await logAttachmentsAdded(newCase.id, actorId, uploadedNames);
     }
 
     await notifyCaseCreated(newCase);
+    if (newCase.compensation_type) {
+      await notifyCompensationApprovalRequested(newCase);
+    }
 
     revalidatePath("/");
     revalidatePath("/cases");
@@ -386,4 +429,50 @@ export async function confirmCaseAction(caseId: string) {
   await updateCaseStatus(caseId, "cs_confirming", actorId);
   revalidatePath(`/cases/${caseId}`);
   return { success: true };
+}
+
+export async function approveCompensationAction(caseId: string, formData: FormData) {
+  try {
+    const { user: actor, caseData } =
+      await requireCaseCompensationApprovalPermission(caseId);
+    if (
+      !caseData.compensation_type ||
+      caseData.compensation_status !== "pending"
+    ) {
+      return { error: "此案件沒有待審核的補償簽核" };
+    }
+
+    const decision = parseCompensationDecision(formData.get("decision"));
+    if (!decision || !COMPENSATION_APPROVAL_DECISIONS.includes(decision)) {
+      return { error: "請選擇核准或不同意" };
+    }
+
+    const note = ((formData.get("review_note") as string) ?? "").trim();
+    if (!note) {
+      return { error: "請填寫審核說明" };
+    }
+
+    const reviewedCase = await reviewCaseCompensation(
+      caseId,
+      decision,
+      note,
+      actor.id
+    );
+    if (!reviewedCase) {
+      return { error: "此補償簽核已被處理或不存在" };
+    }
+
+    await logCompensationReviewed(caseId, actor.id, decision, note);
+
+    revalidatePath(`/cases/${caseId}`);
+    revalidatePath("/");
+    revalidatePath("/cases");
+    return { success: true };
+  } catch (err) {
+    console.error("[approveCompensationAction]", err);
+    return {
+      error:
+        err instanceof Error ? err.message : "補償簽核審核失敗，請稍後再試",
+    };
+  }
 }

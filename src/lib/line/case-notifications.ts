@@ -3,12 +3,14 @@ import {
   buildCaseClosedMessage,
   buildCaseRepliedMessage,
   buildDepartmentAssignedMessage,
+  buildCompensationApprovalRequestedMessage,
 } from "@/lib/line/messages";
 import {
   resolveCaseClosedRecipients,
   resolveCaseCreatedRecipients,
   resolveCaseRepliedRecipients,
   resolveDepartmentAssignedRecipients,
+  resolveCompensationApprovalRequestedRecipients,
   type NotificationActor,
 } from "@/lib/line/notification-rules";
 import { fetchActiveUsers, fetchUserById } from "@/lib/line/recipients";
@@ -135,5 +137,30 @@ export async function notifyCaseClosed(caseData: Case): Promise<void> {
     );
   } catch (err) {
     console.error("[LINE notifyCaseClosed]", err);
+  }
+}
+
+/** 補償簽核待審核 */
+export async function notifyCompensationApprovalRequested(
+  caseData: Case
+): Promise<void> {
+  try {
+    if (!isLineConfigured()) return;
+    if (!caseData.compensation_type || caseData.compensation_status !== "pending") {
+      return;
+    }
+
+    const activeUsers = await fetchActiveUsers();
+    const recipients = resolveCompensationApprovalRequestedRecipients(activeUsers);
+    const message = buildCompensationApprovalRequestedMessage(caseData);
+
+    await dispatchToRecipients(
+      "notifyCompensationApprovalRequested",
+      caseData.case_number,
+      recipients,
+      message
+    );
+  } catch (err) {
+    console.error("[LINE notifyCompensationApprovalRequested]", err);
   }
 }

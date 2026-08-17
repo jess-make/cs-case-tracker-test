@@ -15,6 +15,10 @@ import { LocalAttachmentPicker } from "@/components/cases/LocalAttachmentPicker"
 import { Loader2 } from "lucide-react";
 import { AUTO_ASSIGN_DEPARTMENT_VALUE } from "@/lib/case-department";
 import {
+  COMPENSATION_TYPES,
+  isCompensationEligibleCase,
+} from "@/lib/compensation-approval";
+import {
   type PendingAttachment,
   appendAttachmentsToFormData,
   ATTACHMENT_HINT,
@@ -89,6 +93,7 @@ export function CreateCaseForm({
     "inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto";
   const btnPrimary =
     "inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-brand-600 px-6 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60 sm:w-auto";
+  const showCompensationApproval = isCompensationEligibleCase(complaintCategory);
 
   return (
     <form
@@ -206,6 +211,27 @@ export function CreateCaseForm({
           placeholder="請詳細描述案件內容..."
         />
       </div>
+
+      {showCompensationApproval && (
+        <div className="border-l-4 border-brand-200 py-3 pl-4 pr-3">
+          <label className={labelClass} htmlFor="compensation-type">
+            補償簽核
+          </label>
+          <select
+            id="compensation-type"
+            name="compensation_type"
+            className={inputClass}
+            defaultValue=""
+          >
+            <option value="">不發起簽核</option>
+            {COMPENSATION_TYPES.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <LocalAttachmentPicker
         labelClass={labelClass}

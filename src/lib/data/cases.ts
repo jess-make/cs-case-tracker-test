@@ -29,6 +29,10 @@ import {
   getNextAutoAssignedDepartment,
   isAutoAssignedDepartmentStep,
 } from "@/lib/case-auto-assignment";
+import {
+  isCompensationEligibleCase,
+  parseCompensationType,
+} from "@/lib/compensation-approval";
 import { isDepartmentInScope } from "@/lib/department-scope";
 import {
   buildDashboardStats,
@@ -54,6 +58,12 @@ const CASE_SELECT_WITH_USERS = `
     id, name, email, role, department, line_user_id, created_at, updated_at
   ),
   created_by:users!cases_created_by_id_fkey (
+    id, name, email, role, department, line_user_id, created_at, updated_at
+  ),
+  compensation_requested_by:users!cases_compensation_requested_by_id_fkey (
+    id, name, email, role, department, line_user_id, created_at, updated_at
+  ),
+  compensation_reviewed_by:users!cases_compensation_reviewed_by_id_fkey (
     id, name, email, role, department, line_user_id, created_at, updated_at
   )
 `;
@@ -83,6 +93,8 @@ async function enrichCases(cases: Case[]): Promise<Case[]> {
   for (const c of cases) {
     if (c.assignee_id) ids.push(c.assignee_id);
     if (c.created_by_id) ids.push(c.created_by_id);
+    if (c.compensation_requested_by_id) ids.push(c.compensation_requested_by_id);
+    if (c.compensation_reviewed_by_id) ids.push(c.compensation_reviewed_by_id);
   }
   const userMap = await fetchUsersByIds(ids);
 
@@ -94,6 +106,16 @@ async function enrichCases(cases: Case[]): Promise<Case[]> {
         : null,
       created_by: c.created_by_id
         ? userMap.get(c.created_by_id) ?? c.created_by ?? null
+        : null,
+      compensation_requested_by: c.compensation_requested_by_id
+        ? userMap.get(c.compensation_requested_by_id) ??
+          c.compensation_requested_by ??
+          null
+        : null,
+      compensation_reviewed_by: c.compensation_reviewed_by_id
+        ? userMap.get(c.compensation_reviewed_by_id) ??
+          c.compensation_reviewed_by ??
+          null
         : null,
     } as Record<string, unknown>)
   );
@@ -421,6 +443,13 @@ export async function createCase(
   const client = await supabase();
   const assignedDepartment = hasAssignedDepartment(input.department);
   const initialStatus = assignedDepartment ? "in_progress" : "new";
+  const compensationType =
+    isCompensationEligibleCase(input.complaint_type) && input.compensation_type
+      ? parseCompensationType(input.compensation_type)
+      : null;
+  const compensationRequestedAt = compensationType
+    ? new Date().toISOString()
+    : null;
 
   const { data, error } = await client
     .from("cases")
@@ -442,6 +471,13 @@ export async function createCase(
       created_by_id: createdById,
       status: initialStatus,
       due_date: null,
+      compensation_type: compensationType,
+      compensation_status: compensationType ? "pending" : null,
+      compensation_requested_by_id: compensationType ? createdById : null,
+      compensation_requested_at: compensationRequestedAt,
+      compensation_reviewed_by_id: null,
+      compensation_reviewed_at: null,
+      compensation_review_note: null,
       attachment_urls: [],
     })
     .select()
@@ -524,6 +560,41 @@ export async function updateCase(
     normalizeCase(data as Record<string, unknown>),
   ]);
   return { case: enriched, departmentAssigned };
+}
+
+export async function reviewCaseCompensation(
+  caseId: string,
+  status: "approved" | "rejected",
+  note: string,
+  reviewerId: string
+): Promise<Case | null> {
+  const trimmedNote = note.trim();
+  if (!trimmedNote) {
+    throw new Error("請填寫審核說明");
+  }
+
+  const client = await supabase();
+  const { data, error } = await client
+    .from("cases")
+    .update({
+      compensation_status: status,
+      compensation_review_note: trimmedNote,
+      compensation_reviewed_by_id: reviewerId,
+      compensation_reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", caseId)
+    .eq("compensation_status", "pending")
+    .not("compensation_type", "is", null)
+    .select(CASE_SELECT_WITH_USERS)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  const [enriched] = await enrichCases([
+    normalizeCase(data as Record<string, unknown>),
+  ]);
+  return enriched;
 }
 
 export async function addCaseLog(

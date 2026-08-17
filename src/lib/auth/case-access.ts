@@ -124,6 +124,7 @@ export interface CasePermissions {
   canDeleteAttachment: boolean;
   canAdvanceWorkflow: boolean;
   canRevertWorkflow: boolean;
+  canApproveCompensation: boolean;
 }
 
 /** admin 或客服部：完整案件操作權限 */
@@ -146,6 +147,16 @@ export function hasCaseWorkflowRevertControl(user: SessionUser): boolean {
   );
 }
 
+export function canApproveCompensation(user: SessionUser): boolean {
+  return (
+    user.role === "admin" ||
+    (
+      user.department?.trim() === CS_DEPARTMENT &&
+      user.role === "manager"
+    )
+  );
+}
+
 export function getCasePermissions(
   user: SessionUser,
   caseData: Case
@@ -158,6 +169,7 @@ export function getCasePermissions(
       canDeleteAttachment: false,
       canAdvanceWorkflow: false,
       canRevertWorkflow: false,
+      canApproveCompensation: false,
     };
   }
 
@@ -171,6 +183,7 @@ export function getCasePermissions(
     canDeleteAttachment: full,
     canAdvanceWorkflow: full,
     canRevertWorkflow: hasCaseWorkflowRevertControl(user),
+    canApproveCompensation: canApproveCompensation(user),
   };
 }
 

@@ -1,6 +1,17 @@
-import type { Case, CaseLog, UrgencyLevel, User } from "@/types";
+import type {
+  Case,
+  CaseLog,
+  CompensationApprovalStatus,
+  CompensationType,
+  UrgencyLevel,
+  User,
+} from "@/types";
 import { normalizeCaseStatus } from "@/lib/case-status";
 import { normalizeUserRole } from "@/lib/auth/roles";
+import {
+  isCompensationApprovalStatus,
+  isCompensationType,
+} from "@/lib/compensation-approval";
 
 function coerceEmbeddedUser(raw: unknown): User | null {
   if (raw == null) return null;
@@ -38,6 +49,14 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     ? (raw.urgency as UrgencyLevel)
     : "medium";
   const dept = raw.department as string | null | undefined;
+  const compensationType = isCompensationType(String(raw.compensation_type ?? ""))
+    ? (raw.compensation_type as CompensationType)
+    : null;
+  const compensationStatus = isCompensationApprovalStatus(
+    String(raw.compensation_status ?? "")
+  )
+    ? (raw.compensation_status as CompensationApprovalStatus)
+    : null;
 
   return {
     id: String(raw.id ?? ""),
@@ -61,6 +80,18 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
     status,
     due_date: (raw.due_date as string | null) ?? null,
     resolution: (raw.resolution as string | null) ?? null,
+    compensation_type: compensationType,
+    compensation_status: compensationStatus,
+    compensation_requested_by_id:
+      (raw.compensation_requested_by_id as string | null) ?? null,
+    compensation_requested_at:
+      (raw.compensation_requested_at as string | null) ?? null,
+    compensation_reviewed_by_id:
+      (raw.compensation_reviewed_by_id as string | null) ?? null,
+    compensation_reviewed_at:
+      (raw.compensation_reviewed_at as string | null) ?? null,
+    compensation_review_note:
+      (raw.compensation_review_note as string | null) ?? null,
     attachment_urls: Array.isArray(raw.attachment_urls)
       ? (raw.attachment_urls as string[])
       : [],
@@ -75,6 +106,10 @@ export function normalizeCase(raw: Record<string, unknown>): Case {
       : [],
     assignee: coerceEmbeddedUser(raw.assignee),
     created_by: coerceEmbeddedUser(raw.created_by),
+    compensation_requested_by: coerceEmbeddedUser(
+      raw.compensation_requested_by
+    ),
+    compensation_reviewed_by: coerceEmbeddedUser(raw.compensation_reviewed_by),
   };
 }
 

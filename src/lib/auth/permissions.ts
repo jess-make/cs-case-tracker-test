@@ -25,6 +25,7 @@ export {
   canDeleteAttachment,
   canAdvanceWorkflow,
   canRevertWorkflow,
+  canApproveCompensation,
   NO_ACCESS_CASE_ID,
 } from "@/lib/auth/case-access";
 

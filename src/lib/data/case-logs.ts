@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { assertSupabaseEnv } from "@/lib/supabase/env";
 import { getCaseStatusLabel } from "@/lib/case-status";
-import type { CaseStatus } from "@/types";
+import { COMPENSATION_APPROVAL_STATUS_LABELS } from "@/lib/compensation-approval";
+import type { CaseStatus, CompensationApprovalStatus } from "@/types";
 
 function supabase() {
   assertSupabaseEnv();
@@ -126,6 +127,33 @@ export async function logCaseEdited(
   summary: string
 ): Promise<boolean> {
   return createCaseLog(caseId, userId, "編輯案件", summary);
+}
+
+export async function logCompensationRequested(
+  caseId: string,
+  userId: string | null,
+  compensationType: string
+): Promise<boolean> {
+  return createCaseLog(
+    caseId,
+    userId,
+    "補償簽核",
+    `建立補償簽核：${compensationType}`
+  );
+}
+
+export async function logCompensationReviewed(
+  caseId: string,
+  userId: string | null,
+  status: Exclude<CompensationApprovalStatus, "pending">,
+  note: string
+): Promise<boolean> {
+  return createCaseLog(
+    caseId,
+    userId,
+    "補償簽核",
+    `審核結果：${COMPENSATION_APPROVAL_STATUS_LABELS[status]}\n審核說明：${note.trim()}`
+  );
 }
 
 export async function logStatusChange(

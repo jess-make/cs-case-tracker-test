@@ -13,7 +13,12 @@ import {
   formatTaipeiFilenameDate,
   formatTaipeiMonthKey,
 } from "@/lib/taipei-time";
-import { buildXlsxWorkbookFromCsv } from "@/lib/reports/xlsx";
+import {
+  buildXlsxWorkbookFromCsv,
+  buildXlsxWorkbookWithSheets,
+  parseCsvRows,
+  type SpreadsheetRow,
+} from "@/lib/reports/xlsx";
 import type { Case, CaseLog, CaseStatus } from "@/types";
 
 type ReportFilters = {
@@ -112,9 +117,7 @@ export function buildCaseReportDetailsByCaseId(
 
       details.qualityInspectionResults.push(parsed.result);
       details.qualityInspectionResultDates.push(formatDateOnly(log.created_at));
-      if (parsed.note) {
-        details.qualityInspectionNotes.push(parsed.note);
-      }
+      details.qualityInspectionNotes.push(parsed.note);
     }
 
     if (
@@ -233,6 +236,99 @@ function filterSummary(filters: ReportFilters): string {
   if (filters.urgency) active.push(`緊急程度=${filters.urgency}`);
   if (filters.q) active.push(`查詢=${filters.q}`);
   return active.length ? active.join("；") : "全部";
+}
+
+function rowsToCsv(rows: SpreadsheetRow[]): string {
+  return `\uFEFF${rows.map(row).join("\r\n")}\r\n`;
+}
+
+function splitCaseReportCsvRows(csv: string): {
+  analysisRows: SpreadsheetRow[];
+  detailRows: SpreadsheetRow[];
+} {
+  const rows = parseCsvRows(csv);
+  const markerIndex = rows.findIndex((csvRow) => csvRow[0] === "案件明細");
+
+  if (markerIndex < 0) {
+    return { analysisRows: rows, detailRows: [] };
+  }
+
+  return {
+    analysisRows: rows.slice(0, markerIndex),
+    detailRows: rows.slice(markerIndex + 1),
+  };
+}
+
+function qualityInspectionReportRows(
+  cases: Case[],
+  detailsByCaseId: CaseReportDetailsByCaseId
+): SpreadsheetRow[] {
+  const rows: SpreadsheetRow[] = [
+    [
+      "建檔日",
+      "案件編號",
+      "電商訂單編號",
+      "批號",
+      "結案日",
+      "品檢回覆",
+      "品檢回覆說明",
+      "品檢回覆日期",
+    ],
+  ];
+
+  for (const caseData of cases) {
+    const reportDetails = detailsByCaseId.get(caseData.id);
+    const results = reportDetails?.qualityInspectionResults ?? [];
+
+    for (let index = 0; index < results.length; index += 1) {
+      rows.push([
+        formatDateOnly(caseData.created_at),
+        caseData.case_number,
+        caseData.ecommerce_order_no ?? "",
+        caseData.batch_no ?? "",
+        formatDateOnly(caseData.closed_at),
+        results[index],
+        reportDetails?.qualityInspectionNotes[index] ?? "",
+        reportDetails?.qualityInspectionResultDates[index] ?? "",
+      ]);
+    }
+  }
+
+  return rows;
+}
+
+function qualityInspectionAnalysisRows(
+  cases: Case[],
+  filters: ReportFilters,
+  detailsByCaseId: CaseReportDetailsByCaseId
+): SpreadsheetRow[] {
+  const { from, to } = resolveDateRange(filters);
+  const counts = new Map<string, number>();
+  let total = 0;
+
+  for (const caseData of cases) {
+    const results = detailsByCaseId.get(caseData.id)?.qualityInspectionResults ?? [];
+    for (const result of results) {
+      const key = result.trim() || "未填寫";
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      total += 1;
+    }
+  }
+
+  const countRows = [...counts.entries()]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([result, count]) => [result, count] as SpreadsheetRow);
+
+  return [
+    ["修正機況統計"],
+    ["產生時間", formatTaipeiDateTime(new Date())],
+    ["日期範圍", `${formatSlashDate(from)} - ${formatSlashDate(to)}`],
+    ["統計欄位", "品檢回覆"],
+    [],
+    ["品檢回覆", "筆數"],
+    ...countRows,
+    ["總計", total],
+  ];
 }
 
 export function buildCaseReportCsv(
@@ -406,10 +502,14 @@ export function buildCaseReportXlsx(
   filters: ReportFilters,
   detailsByCaseId: CaseReportDetailsByCaseId = new Map()
 ): Uint8Array {
-  return buildXlsxWorkbookFromCsv(
-    buildCaseReportCsv(cases, filters, detailsByCaseId),
-    "全部案件報表"
+  const { analysisRows, detailRows } = splitCaseReportCsvRows(
+    buildCaseReportCsv(cases, filters, detailsByCaseId)
   );
+
+  return buildXlsxWorkbookWithSheets([
+    { name: "統計分析", rows: analysisRows },
+    { name: "所有案件明細", rows: detailRows },
+  ]);
 }
 
 export function buildReturnExchangeCaseReportCsv(
@@ -489,10 +589,40 @@ export function buildReturnExchangeCaseReportXlsx(
   );
 }
 
+export function buildQualityInspectionStatsCsv(
+  cases: Case[],
+  filters: ReportFilters,
+  detailsByCaseId: CaseReportDetailsByCaseId = new Map()
+): string {
+  return rowsToCsv([
+    ...qualityInspectionAnalysisRows(cases, filters, detailsByCaseId),
+    [],
+    ["明細"],
+    ...qualityInspectionReportRows(cases, detailsByCaseId),
+  ]);
+}
+
+export function buildQualityInspectionStatsXlsx(
+  cases: Case[],
+  filters: ReportFilters,
+  detailsByCaseId: CaseReportDetailsByCaseId = new Map()
+): Uint8Array {
+  return buildXlsxWorkbookWithSheets([
+    {
+      name: "統計分析",
+      rows: qualityInspectionAnalysisRows(cases, filters, detailsByCaseId),
+    },
+    {
+      name: "明細",
+      rows: qualityInspectionReportRows(cases, detailsByCaseId),
+    },
+  ]);
+}
+
 export function buildCaseReportFilename(
   format: CaseReportFileFormat = "csv"
 ): string {
-  return buildCategoryCaseReportFilename("全部案件報表", format);
+  return buildCategoryCaseReportFilename("全部案件", format);
 }
 
 export function buildCategoryCaseReportFilename(

@@ -20,13 +20,20 @@ const EMPTY_TAXONOMY: CategoryIssueTaxonomy = {
 const DOWNLOADABLE_REPORTS = [
   {
     key: "return",
-    name: "退貨案件報表",
+    name: "退貨案件",
+    template: "return-exchange",
     category: "退貨",
   },
   {
     key: "exchange",
-    name: "換貨案件報表",
+    name: "換貨案件",
+    template: "return-exchange",
     category: "換貨",
+  },
+  {
+    key: "quality-inspection-stats",
+    name: "修正機況統計",
+    template: "quality-inspection-stats",
   },
 ] as const;
 
@@ -49,17 +56,19 @@ function getReportDateParams(params: Awaited<PageProps["searchParams"]>) {
   };
 }
 
-function buildReturnExchangeReportHref(
-  category: string,
+function buildReportHref(
+  report: (typeof DOWNLOADABLE_REPORTS)[number],
   format: ReportFormat,
   params: Awaited<PageProps["searchParams"]>
 ): string {
   const query = new URLSearchParams({
-    template: "return-exchange",
-    complaint_type: category,
+    template: report.template,
     format,
     ...getReportDateParams(params),
   });
+  if ("category" in report) {
+    query.set("complaint_type", report.category);
+  }
   return `/api/reports/cases?${query.toString()}`;
 }
 
@@ -73,13 +82,15 @@ export default async function ReportsPage({ searchParams }: PageProps) {
   const taxonomy = await getCategoryIssueTaxonomy().catch(() => EMPTY_TAXONOMY);
   const categories = taxonomy.categories.filter((category) => category.is_active);
   const downloadableCategories = new Set<string>(
-    DOWNLOADABLE_REPORTS.map((report) => report.category)
+    DOWNLOADABLE_REPORTS.flatMap((report) =>
+      "category" in report ? [report.category] : []
+    )
   );
   const plannedReports = categories
     .filter((category) => !downloadableCategories.has(category.name))
     .map((category) => ({
       id: category.id,
-      name: `${category.name}案件報表`,
+      name: `${category.name}案件`,
     }));
   const totalReports = DOWNLOADABLE_REPORTS.length + plannedReports.length;
 
@@ -90,7 +101,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
           報表管理
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          共 {totalReports} 份案件類別報表
+          共 {totalReports} 份報表
         </p>
       </div>
 
@@ -136,22 +147,14 @@ export default async function ReportsPage({ searchParams }: PageProps) {
                     <td className="whitespace-nowrap px-4 py-3 text-right">
                       <div className="inline-flex flex-wrap justify-end gap-2">
                         <Link
-                          href={buildReturnExchangeReportHref(
-                            report.category,
-                            "csv",
-                            params
-                          )}
+                          href={buildReportHref(report, "csv", params)}
                           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                         >
                           <Download className="h-4 w-4" />
                           下載 CSV
                         </Link>
                         <Link
-                          href={buildReturnExchangeReportHref(
-                            report.category,
-                            "xlsx",
-                            params
-                          )}
+                          href={buildReportHref(report, "xlsx", params)}
                           className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
                         >
                           <Download className="h-4 w-4" />

@@ -9,6 +9,8 @@ import {
   buildCaseReportDetailsByCaseId,
   buildCaseReportFilename,
   buildCaseReportXlsx,
+  buildQualityInspectionStatsCsv,
+  buildQualityInspectionStatsXlsx,
   buildReturnExchangeCaseReportCsv,
   buildReturnExchangeCaseReportXlsx,
   type CaseReportFileFormat,
@@ -89,6 +91,38 @@ export async function GET(request: NextRequest) {
 
   const template = request.nextUrl.searchParams.get("template")?.trim();
   const format = getReportFormat(request.nextUrl.searchParams);
+  if (template === "quality-inspection-stats") {
+    if (!canAccessReportManagement(currentUser)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const filters = getReportFilters(request.nextUrl.searchParams);
+    const cases = await getCases(currentUser, {
+      ...filters,
+      filterByDate: true,
+    });
+    const logsByCaseId = await getCaseLogsByCaseIds(
+      cases.map((caseData) => caseData.id)
+    );
+    const reportDetails = buildCaseReportDetailsByCaseId(logsByCaseId);
+    const reportName = "修正機況統計";
+    const filename = buildCategoryCaseReportFilename(reportName, format);
+
+    if (format === "xlsx") {
+      return reportResponse(
+        buildQualityInspectionStatsXlsx(cases, filters, reportDetails),
+        filename,
+        XLSX_CONTENT_TYPE
+      );
+    }
+
+    return reportResponse(
+      buildQualityInspectionStatsCsv(cases, filters, reportDetails),
+      filename,
+      CSV_CONTENT_TYPE
+    );
+  }
+
   if (template === "return-exchange") {
     if (!canAccessReportManagement(currentUser)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
@@ -126,7 +160,7 @@ export async function GET(request: NextRequest) {
           : [],
       ])
     );
-    const reportName = `${reportType}案件報表`;
+    const reportName = `${reportType}案件`;
     const filename = buildCategoryCaseReportFilename(reportName, format);
 
     if (format === "xlsx") {

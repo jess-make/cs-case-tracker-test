@@ -6,6 +6,7 @@ import {
 import { resolveDateRange, formatSlashDate } from "@/lib/date-range";
 import { getAssigneeDisplayName } from "@/lib/case-display";
 import { formatCompensationStatus } from "@/lib/compensation-approval";
+import { getCaseStatusDisplayLabel } from "@/lib/case-status-display";
 import { formatDate, formatDateOnly } from "@/lib/utils";
 import {
   formatTaipeiDateTime,
@@ -46,6 +47,7 @@ export type CaseReportDetails = {
 };
 
 type CaseReportDetailsByCaseId = Map<string, CaseReportDetails>;
+type AssignmentPlansByCaseId = Map<string, readonly string[]>;
 
 const STATUS_ORDER: CaseStatus[] = [
   "new",
@@ -397,6 +399,71 @@ export function buildCaseReportCsv(
   return `\uFEFF${lines.join("\r\n")}\r\n`;
 }
 
+export function buildReturnExchangeCaseReportCsv(
+  cases: Case[],
+  detailsByCaseId: CaseReportDetailsByCaseId = new Map(),
+  assignmentPlansByCaseId: AssignmentPlansByCaseId = new Map()
+): string {
+  const lines: string[] = [];
+  lines.push(
+    row([
+      "建檔日",
+      "案件編號",
+      "電商訂單編號",
+      "寄件編號",
+      "批號",
+      "客戶",
+      "客戶性別",
+      "客戶聯繫方式",
+      "案件來源",
+      "服務管道",
+      "案件類別",
+      "子分類",
+      "問題描述",
+      "狀態",
+      "結案日",
+      "品檢回覆",
+      "品檢回覆說明",
+      "品檢回覆日期",
+    ])
+  );
+
+  for (const caseData of cases) {
+    const reportDetails = detailsByCaseId.get(caseData.id);
+    lines.push(
+      row([
+        formatDateOnly(caseData.created_at),
+        caseData.case_number,
+        caseData.ecommerce_order_no ?? "",
+        caseData.shipping_tracking_no ?? "",
+        caseData.batch_no ?? "",
+        caseData.customer_name,
+        caseData.customer_gender ?? "",
+        caseData.customer_contact,
+        caseData.source,
+        caseData.source_detail ?? "",
+        caseData.complaint_type,
+        caseData.complaint_subtype ?? "",
+        caseData.description,
+        getCaseStatusDisplayLabel(
+          caseData,
+          assignmentPlansByCaseId.get(caseData.id)
+        ),
+        formatDateOnly(caseData.closed_at),
+        joinReportItems(reportDetails?.qualityInspectionResults ?? []),
+        joinReportItems(reportDetails?.qualityInspectionNotes ?? []),
+        joinReportItems(reportDetails?.qualityInspectionResultDates ?? []),
+      ])
+    );
+  }
+
+  return `\uFEFF${lines.join("\r\n")}\r\n`;
+}
+
 export function buildCaseReportFilename(): string {
   return `grevia-case-report-${formatTaipeiFilenameTimestamp()}.csv`;
+}
+
+export function buildCategoryCaseReportFilename(reportName: string): string {
+  return `${reportName}-${formatTaipeiFilenameTimestamp()}.csv`;
 }

@@ -9,6 +9,7 @@ import {
   getCategoryIssueTaxonomy,
   getSourceChannelTaxonomy,
 } from "@/lib/data/complaint-taxonomy-form";
+import { getCaseAssignmentResolver } from "@/lib/data/case-assignment-rules";
 import { requireUser } from "@/lib/auth/session";
 import { canCreateCase } from "@/lib/auth/permissions";
 
@@ -81,6 +82,18 @@ export default async function CasesPage({ searchParams }: PageProps) {
       issuesByCategoryName: {},
     })),
   ]);
+  const resolveAssignmentPlan = await getCaseAssignmentResolver().catch(() => null);
+  const assignmentPlansByCaseId = Object.fromEntries(
+    cases.map((caseData) => [
+      caseData.id,
+      resolveAssignmentPlan
+        ? resolveAssignmentPlan(
+            caseData.complaint_type,
+            caseData.complaint_subtype
+          )
+        : [],
+    ])
+  );
 
   return (
     <div>
@@ -122,7 +135,10 @@ export default async function CasesPage({ searchParams }: PageProps) {
         </div>
       </Suspense>
 
-      <CaseTable cases={cases} />
+      <CaseTable
+        cases={cases}
+        assignmentPlansByCaseId={assignmentPlansByCaseId}
+      />
     </div>
   );
 }

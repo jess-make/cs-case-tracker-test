@@ -3,7 +3,10 @@ import type { Case } from "@/types";
 import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatComplaintLabel } from "@/lib/constants";
 import { getAssigneeDisplayName } from "@/lib/case-display";
+import { getCaseStatusDisplayLabel } from "@/lib/case-status-display";
 import { formatDateOnly } from "@/lib/utils";
+
+type AssignmentPlansByCaseId = Record<string, string[]>;
 
 function EmptyCases() {
   return (
@@ -13,63 +16,89 @@ function EmptyCases() {
   );
 }
 
-function CaseMobileCards({ cases }: { cases: Case[] }) {
+function CaseMobileCards({
+  cases,
+  assignmentPlansByCaseId = {},
+}: {
+  cases: Case[];
+  assignmentPlansByCaseId?: AssignmentPlansByCaseId;
+}) {
   return (
     <div className="space-y-3 md:hidden">
-      {cases.map((c) => (
-        <Link
-          key={c.id}
-          href={`/cases/${c.id}`}
-          className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:bg-slate-50"
-        >
-          <p className="mb-3 text-xs text-slate-500">
-            建檔日{" "}
-            <span className="font-medium text-slate-700">
-              {formatDateOnly(c.created_at)}
-            </span>
-          </p>
+      {cases.map((c) => {
+        const assignmentPlan = assignmentPlansByCaseId[c.id] ?? [];
+        return (
+          <Link
+            key={c.id}
+            href={`/cases/${c.id}`}
+            className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-colors hover:bg-slate-50"
+          >
+            <p className="mb-3 text-xs text-slate-500">
+              建檔日{" "}
+              <span className="font-medium text-slate-700">
+                {formatDateOnly(c.created_at)}
+              </span>
+            </p>
 
-          <div className="mb-3 flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs text-slate-500">案件編號</p>
-              <p className="truncate font-medium text-brand-600">{c.case_number}</p>
+            <div className="mb-3 flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-slate-500">案件編號</p>
+                <p className="truncate font-medium text-brand-600">
+                  {c.case_number}
+                </p>
+              </div>
+              <StatusBadge
+                status={c.status}
+                label={getCaseStatusDisplayLabel(c, assignmentPlan)}
+              />
             </div>
-            <StatusBadge status={c.status} />
-          </div>
 
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-            <div className="min-w-0">
-              <dt className="text-xs text-slate-500">客戶</dt>
-              <dd className="truncate font-medium text-slate-800">{c.customer_name}</dd>
-            </div>
-            <div className="min-w-0 sm:col-span-2">
-              <dt className="text-xs text-slate-500">案件類型</dt>
-              <dd className="text-slate-700">
-                {formatComplaintLabel(c.complaint_type, c.complaint_subtype)}
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-xs text-slate-500">服務管道</dt>
-              <dd className="truncate text-slate-700">{c.source_detail?.trim() || "—"}</dd>
-            </div>
-            <div>
-              <dt className="text-xs text-slate-500">緊急程度</dt>
-              <dd className="mt-0.5">
-                <UrgencyBadge urgency={c.urgency} />
-              </dd>
-            </div>
-            <div className="min-w-0">
-              <dt className="text-xs text-slate-500">處理人</dt>
-              <dd className="truncate text-slate-700">{getAssigneeDisplayName(c)}</dd>
-            </div>
-          </dl>
-        </Link>
-      ))}
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+              <div className="min-w-0">
+                <dt className="text-xs text-slate-500">客戶</dt>
+                <dd className="truncate font-medium text-slate-800">
+                  {c.customer_name}
+                </dd>
+              </div>
+              <div className="min-w-0 sm:col-span-2">
+                <dt className="text-xs text-slate-500">案件類型</dt>
+                <dd className="text-slate-700">
+                  {formatComplaintLabel(c.complaint_type, c.complaint_subtype)}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-xs text-slate-500">服務管道</dt>
+                <dd className="truncate text-slate-700">
+                  {c.source_detail?.trim() || "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-slate-500">緊急程度</dt>
+                <dd className="mt-0.5">
+                  <UrgencyBadge urgency={c.urgency} />
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="text-xs text-slate-500">處理人</dt>
+                <dd className="truncate text-slate-700">
+                  {getAssigneeDisplayName(c)}
+                </dd>
+              </div>
+            </dl>
+          </Link>
+        );
+      })}
     </div>
   );
 }
 
-function CaseDesktopTable({ cases }: { cases: Case[] }) {
+function CaseDesktopTable({
+  cases,
+  assignmentPlansByCaseId = {},
+}: {
+  cases: Case[];
+  assignmentPlansByCaseId?: AssignmentPlansByCaseId;
+}) {
   return (
     <div className="hidden overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm md:block">
       <table className="w-full min-w-[880px] text-left text-sm">
@@ -86,52 +115,70 @@ function CaseDesktopTable({ cases }: { cases: Case[] }) {
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          {cases.map((c) => (
-            <tr key={c.id} className="hover:bg-slate-50">
-              <td className="whitespace-nowrap px-4 py-3 text-slate-600">
-                {formatDateOnly(c.created_at)}
-              </td>
-              <td className="px-4 py-3">
-                <Link
-                  href={`/cases/${c.id}`}
-                  className="font-medium text-brand-600 hover:underline"
-                >
-                  {c.case_number}
-                </Link>
-              </td>
-              <td className="px-4 py-3 text-slate-700">{c.customer_name}</td>
-              <td className="px-4 py-3 text-slate-600">
-                {formatComplaintLabel(c.complaint_type, c.complaint_subtype)}
-              </td>
-              <td className="px-4 py-3 text-slate-600">
-                {c.source_detail?.trim() || "—"}
-              </td>
-              <td className="px-4 py-3">
-                <UrgencyBadge urgency={c.urgency} />
-              </td>
-              <td className="px-4 py-3">
-                <StatusBadge status={c.status} />
-              </td>
-              <td className="px-4 py-3 text-slate-600">
-                {getAssigneeDisplayName(c)}
-              </td>
-            </tr>
-          ))}
+          {cases.map((c) => {
+            const assignmentPlan = assignmentPlansByCaseId[c.id] ?? [];
+            return (
+              <tr key={c.id} className="hover:bg-slate-50">
+                <td className="whitespace-nowrap px-4 py-3 text-slate-600">
+                  {formatDateOnly(c.created_at)}
+                </td>
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/cases/${c.id}`}
+                    className="font-medium text-brand-600 hover:underline"
+                  >
+                    {c.case_number}
+                  </Link>
+                </td>
+                <td className="px-4 py-3 text-slate-700">{c.customer_name}</td>
+                <td className="px-4 py-3 text-slate-600">
+                  {formatComplaintLabel(c.complaint_type, c.complaint_subtype)}
+                </td>
+                <td className="px-4 py-3 text-slate-600">
+                  {c.source_detail?.trim() || "—"}
+                </td>
+                <td className="px-4 py-3">
+                  <UrgencyBadge urgency={c.urgency} />
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge
+                    status={c.status}
+                    label={getCaseStatusDisplayLabel(c, assignmentPlan)}
+                  />
+                </td>
+                <td className="px-4 py-3 text-slate-600">
+                  {getAssigneeDisplayName(c)}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
 
-export function CaseTable({ cases }: { cases: Case[] }) {
+export function CaseTable({
+  cases,
+  assignmentPlansByCaseId = {},
+}: {
+  cases: Case[];
+  assignmentPlansByCaseId?: AssignmentPlansByCaseId;
+}) {
   if (cases.length === 0) {
     return <EmptyCases />;
   }
 
   return (
     <>
-      <CaseMobileCards cases={cases} />
-      <CaseDesktopTable cases={cases} />
+      <CaseMobileCards
+        cases={cases}
+        assignmentPlansByCaseId={assignmentPlansByCaseId}
+      />
+      <CaseDesktopTable
+        cases={cases}
+        assignmentPlansByCaseId={assignmentPlansByCaseId}
+      />
     </>
   );
 }

@@ -7,12 +7,14 @@ import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/utils";
 import { getCaseLogDisplayContent } from "@/lib/case-log-display";
 import {
-  CASE_FLOW_STEPS,
   getCaseStatusLabel,
   getNextStatus,
-  isActiveFlowStep,
   normalizeCaseStatus,
 } from "@/lib/case-status";
+import {
+  getCaseFlowDisplaySteps,
+  getCaseStatusDisplayLabel,
+} from "@/lib/case-status-display";
 import { getAssigneeDisplayName } from "@/lib/case-display";
 import {
   advanceCaseStatusAction,
@@ -86,6 +88,8 @@ export function CaseDetailPanel({
   const safeLogs = logs ?? [];
   const displayStatus = normalizeCaseStatus(caseData.status);
   const nextStatus = getNextStatus(displayStatus);
+  const statusDisplayLabel = getCaseStatusDisplayLabel(caseData, assignmentPlan);
+  const flowDisplaySteps = getCaseFlowDisplaySteps(caseData, assignmentPlan);
   const revertTarget = getCaseWorkflowRevertTarget(caseData, assignmentPlan);
   const revertTargetLabel = revertTarget
     ? getCaseWorkflowRevertTargetLabel(revertTarget)
@@ -198,7 +202,7 @@ export function CaseDetailPanel({
               <p className="text-sm text-slate-500">建立於 {formatDate(caseData.created_at)}</p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <StatusBadge status={displayStatus} />
+              <StatusBadge status={displayStatus} label={statusDisplayLabel} />
               <UrgencyBadge urgency={caseData.urgency} />
               {!editing && permissions.canEditCase && (
                 <button
@@ -557,23 +561,23 @@ export function CaseDetailPanel({
           <h3 className="mb-4 text-base font-semibold text-slate-900">案件流程</h3>
 
           <div className="mb-4 space-y-2">
-            {CASE_FLOW_STEPS.map((s) => (
+            {flowDisplaySteps.map((step) => (
               <div
-                key={s}
+                key={step.key}
                 className={`flex items-center gap-2 text-sm ${
-                  isActiveFlowStep(caseData.status, s)
+                  step.active
                     ? "font-semibold text-brand-600"
                     : "text-slate-400"
                 }`}
               >
                 <span
                   className={`h-2 w-2 rounded-full ${
-                    isActiveFlowStep(caseData.status, s)
+                    step.active
                       ? "bg-brand-600"
                       : "bg-slate-200"
                   }`}
                 />
-                {getCaseStatusLabel(s)}
+                {step.label}
               </div>
             ))}
           </div>

@@ -3,8 +3,14 @@ import { URGENCY_LABELS, URGENCY_COLORS } from "@/lib/constants";
 import { getCaseStatusColor, getCaseStatusLabel } from "@/lib/case-status";
 import { cn } from "@/lib/utils";
 
-export function StatusBadge({ status }: { status: CaseStatus | string }) {
-  const label = getCaseStatusLabel(String(status));
+export function StatusBadge({
+  status,
+  label,
+}: {
+  status: CaseStatus | string;
+  label?: string;
+}) {
+  const displayLabel = label ?? getCaseStatusLabel(String(status));
   const color = getCaseStatusColor(String(status));
 
   return (
@@ -14,7 +20,7 @@ export function StatusBadge({ status }: { status: CaseStatus | string }) {
         color
       )}
     >
-      {label}
+      {displayLabel}
     </span>
   );
 }

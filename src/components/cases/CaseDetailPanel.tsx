@@ -7,7 +7,6 @@ import { StatusBadge, UrgencyBadge } from "@/components/ui/StatusBadge";
 import { formatDate } from "@/lib/utils";
 import { getCaseLogDisplayContent } from "@/lib/case-log-display";
 import {
-  getCaseStatusLabel,
   getNextStatus,
   normalizeCaseStatus,
 } from "@/lib/case-status";
@@ -44,7 +43,6 @@ import {
 } from "@/lib/attachment-preview";
 import {
   getCaseWorkflowRevertTarget,
-  getCaseWorkflowRevertTargetLabel,
 } from "@/lib/case-workflow-revert";
 import {
   COMPENSATION_APPROVAL_STATUS_LABELS,
@@ -92,8 +90,30 @@ export function CaseDetailPanel({
   const flowDisplaySteps = getCaseFlowDisplaySteps(caseData, assignmentPlan);
   const revertTarget = getCaseWorkflowRevertTarget(caseData, assignmentPlan);
   const revertTargetLabel = revertTarget
-    ? getCaseWorkflowRevertTargetLabel(revertTarget)
+    ? getCaseStatusDisplayLabel(
+        {
+          status: revertTarget.status,
+          department: revertTarget.department,
+        },
+        assignmentPlan
+      )
     : null;
+  const nextStatusLabel = nextStatus
+    ? getCaseStatusDisplayLabel(
+        {
+          status: nextStatus,
+          department: caseData.department,
+        },
+        assignmentPlan
+      )
+    : null;
+  const closeStatusLabel = getCaseStatusDisplayLabel(
+    {
+      status: "closed",
+      department: caseData.department,
+    },
+    assignmentPlan
+  );
   const showQualityInspectionReply = isQualityInspectionReplyStep(caseData);
   const hasCompensationApproval = Boolean(caseData.compensation_type);
   const canReviewCompensation =
@@ -588,27 +608,39 @@ export function CaseDetailPanel({
                 <button
                   onClick={handleRevert}
                   disabled={pending}
-                  className="min-h-11 w-full rounded-lg border border-slate-300 bg-white py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"
                 >
-                  回推至：{revertTargetLabel}
+                  <span>回推至</span>
+                  <span aria-hidden="true" className="text-slate-400">
+                    →
+                  </span>
+                  <span className="break-words">{revertTargetLabel}</span>
                 </button>
               )}
-              {permissions.canAdvanceWorkflow && displayStatus !== "closed" && nextStatus && (
+              {permissions.canAdvanceWorkflow && displayStatus !== "closed" && nextStatusLabel && (
                 <button
                   onClick={handleAdvance}
                   disabled={pending}
-                  className="min-h-11 w-full rounded-lg bg-brand-600 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-brand-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-brand-700 disabled:opacity-60"
                 >
-                  推進至：{getCaseStatusLabel(nextStatus)}
+                  <span>推進至</span>
+                  <span aria-hidden="true" className="text-white/70">
+                    →
+                  </span>
+                  <span className="break-words">{nextStatusLabel}</span>
                 </button>
               )}
               {permissions.canAdvanceWorkflow && (displayStatus === "cs_confirming" || displayStatus === "replied") && (
                 <button
                   onClick={handleClose}
                   disabled={pending}
-                  className="min-h-11 w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-60"
                 >
-                  結案
+                  <span>推進至</span>
+                  <span aria-hidden="true" className="text-white/70">
+                    →
+                  </span>
+                  <span className="break-words">{closeStatusLabel}</span>
                 </button>
               )}
             </div>

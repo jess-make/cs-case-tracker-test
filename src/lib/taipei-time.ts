@@ -79,6 +79,13 @@ export function formatTaipeiFilenameTimestamp(
   return `${year}${pad2(month)}${pad2(day)}-${pad2(hour)}${pad2(minute)}`;
 }
 
+export function formatTaipeiFilenameDate(
+  value: Date | string | number = new Date()
+): string {
+  const { year, month, day } = getTaipeiDateTimeParts(value);
+  return `${year}${pad2(month)}${pad2(day)}`;
+}
+
 export function toTaipeiDayBoundsIso(date: Date): { from: string; to: string } {
   const year = date.getFullYear();
   const month = date.getMonth();

@@ -8,7 +8,10 @@ import {
   buildCaseReportCsv,
   buildCaseReportDetailsByCaseId,
   buildCaseReportFilename,
+  buildCaseReportXlsx,
   buildReturnExchangeCaseReportCsv,
+  buildReturnExchangeCaseReportXlsx,
+  type CaseReportFileFormat,
 } from "@/lib/reports/case-report";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +35,10 @@ const FILTER_KEYS = [
 type FilterKey = (typeof FILTER_KEYS)[number];
 type ReturnExchangeReportType = "退貨" | "換貨";
 
+const CSV_CONTENT_TYPE = "text/csv; charset=utf-8";
+const XLSX_CONTENT_TYPE =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
 function getReportFilters(searchParams: URLSearchParams): Record<FilterKey, string | undefined> {
   const filters = {} as Record<FilterKey, string | undefined>;
   for (const key of FILTER_KEYS) {
@@ -50,11 +57,21 @@ function getReturnExchangeReportType(
     : null;
 }
 
-function csvResponse(csv: string, filename: string): NextResponse {
+function getReportFormat(searchParams: URLSearchParams): CaseReportFileFormat {
+  return searchParams.get("format")?.trim().toLowerCase() === "xlsx"
+    ? "xlsx"
+    : "csv";
+}
+
+function reportResponse(
+  body: string | Uint8Array,
+  filename: string,
+  contentType: string
+): NextResponse {
   const fallbackFilename = filename.replace(/[^\x20-\x7E]/g, "_");
-  return new NextResponse(csv, {
+  return new NextResponse(body as BodyInit, {
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Type": contentType,
       "Content-Disposition": `attachment; filename="${fallbackFilename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
       "Cache-Control": "no-store",
     },
@@ -71,6 +88,7 @@ export async function GET(request: NextRequest) {
   }
 
   const template = request.nextUrl.searchParams.get("template")?.trim();
+  const format = getReportFormat(request.nextUrl.searchParams);
   if (template === "return-exchange") {
     if (!canAccessReportManagement(currentUser)) {
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
@@ -84,8 +102,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const filters = getReportFilters(request.nextUrl.searchParams);
     const cases = await getCases(currentUser, {
+      ...filters,
       complaint_type: reportType,
+      filterByDate: true,
     });
     const logsByCaseId = await getCaseLogsByCaseIds(
       cases.map((caseData) => caseData.id)
@@ -106,12 +127,30 @@ export async function GET(request: NextRequest) {
       ])
     );
     const reportName = `${reportType}案件報表`;
-    const csv = buildReturnExchangeCaseReportCsv(
-      cases,
-      reportDetails,
-      assignmentPlansByCaseId
+    const filename = buildCategoryCaseReportFilename(reportName, format);
+
+    if (format === "xlsx") {
+      return reportResponse(
+        buildReturnExchangeCaseReportXlsx(
+          cases,
+          reportDetails,
+          assignmentPlansByCaseId,
+          reportName
+        ),
+        filename,
+        XLSX_CONTENT_TYPE
+      );
+    }
+
+    return reportResponse(
+      buildReturnExchangeCaseReportCsv(
+        cases,
+        reportDetails,
+        assignmentPlansByCaseId
+      ),
+      filename,
+      CSV_CONTENT_TYPE
     );
-    return csvResponse(csv, buildCategoryCaseReportFilename(reportName));
   }
 
   const filters = getReportFilters(request.nextUrl.searchParams);
@@ -123,8 +162,19 @@ export async function GET(request: NextRequest) {
     cases.map((caseData) => caseData.id)
   );
   const reportDetails = buildCaseReportDetailsByCaseId(logsByCaseId);
-  const csv = buildCaseReportCsv(cases, filters, reportDetails);
-  const filename = buildCaseReportFilename();
+  const filename = buildCaseReportFilename(format);
 
-  return csvResponse(csv, filename);
+  if (format === "xlsx") {
+    return reportResponse(
+      buildCaseReportXlsx(cases, filters, reportDetails),
+      filename,
+      XLSX_CONTENT_TYPE
+    );
+  }
+
+  return reportResponse(
+    buildCaseReportCsv(cases, filters, reportDetails),
+    filename,
+    CSV_CONTENT_TYPE
+  );
 }

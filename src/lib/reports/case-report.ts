@@ -10,9 +10,10 @@ import { getCaseStatusDisplayLabel } from "@/lib/case-status-display";
 import { formatDate, formatDateOnly } from "@/lib/utils";
 import {
   formatTaipeiDateTime,
-  formatTaipeiFilenameTimestamp,
+  formatTaipeiFilenameDate,
   formatTaipeiMonthKey,
 } from "@/lib/taipei-time";
+import { buildXlsxWorkbookFromCsv } from "@/lib/reports/xlsx";
 import type { Case, CaseLog, CaseStatus } from "@/types";
 
 type ReportFilters = {
@@ -48,6 +49,7 @@ export type CaseReportDetails = {
 
 type CaseReportDetailsByCaseId = Map<string, CaseReportDetails>;
 type AssignmentPlansByCaseId = Map<string, readonly string[]>;
+export type CaseReportFileFormat = "csv" | "xlsx";
 
 const STATUS_ORDER: CaseStatus[] = [
   "new",
@@ -399,6 +401,17 @@ export function buildCaseReportCsv(
   return `\uFEFF${lines.join("\r\n")}\r\n`;
 }
 
+export function buildCaseReportXlsx(
+  cases: Case[],
+  filters: ReportFilters,
+  detailsByCaseId: CaseReportDetailsByCaseId = new Map()
+): Uint8Array {
+  return buildXlsxWorkbookFromCsv(
+    buildCaseReportCsv(cases, filters, detailsByCaseId),
+    "全部案件報表"
+  );
+}
+
 export function buildReturnExchangeCaseReportCsv(
   cases: Case[],
   detailsByCaseId: CaseReportDetailsByCaseId = new Map(),
@@ -460,10 +473,31 @@ export function buildReturnExchangeCaseReportCsv(
   return `\uFEFF${lines.join("\r\n")}\r\n`;
 }
 
-export function buildCaseReportFilename(): string {
-  return `grevia-case-report-${formatTaipeiFilenameTimestamp()}.csv`;
+export function buildReturnExchangeCaseReportXlsx(
+  cases: Case[],
+  detailsByCaseId: CaseReportDetailsByCaseId = new Map(),
+  assignmentPlansByCaseId: AssignmentPlansByCaseId = new Map(),
+  sheetName: string
+): Uint8Array {
+  return buildXlsxWorkbookFromCsv(
+    buildReturnExchangeCaseReportCsv(
+      cases,
+      detailsByCaseId,
+      assignmentPlansByCaseId
+    ),
+    sheetName
+  );
 }
 
-export function buildCategoryCaseReportFilename(reportName: string): string {
-  return `${reportName}-${formatTaipeiFilenameTimestamp()}.csv`;
+export function buildCaseReportFilename(
+  format: CaseReportFileFormat = "csv"
+): string {
+  return buildCategoryCaseReportFilename("全部案件報表", format);
+}
+
+export function buildCategoryCaseReportFilename(
+  reportName: string,
+  format: CaseReportFileFormat = "csv"
+): string {
+  return `${reportName}-${formatTaipeiFilenameDate()}.${format}`;
 }

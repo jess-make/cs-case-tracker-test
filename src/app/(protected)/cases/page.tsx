@@ -30,22 +30,28 @@ interface PageProps {
   }>;
 }
 
-function buildCaseReportHref(params: Awaited<PageProps["searchParams"]>): string {
+type ReportFormat = "csv" | "xlsx";
+
+function buildCaseReportHref(
+  params: Awaited<PageProps["searchParams"]>,
+  format: ReportFormat
+): string {
   const query = new URLSearchParams();
+  query.set("format", format);
   for (const [key, value] of Object.entries(params)) {
     if (typeof value === "string" && value.trim()) {
       query.set(key, value.trim());
     }
   }
-  const qs = query.toString();
-  return qs ? `/api/reports/cases?${qs}` : "/api/reports/cases";
+  return `/api/reports/cases?${query.toString()}`;
 }
 
 export default async function CasesPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const currentUser = await requireUser();
   const showCreate = canCreateCase(currentUser);
-  const reportHref = buildCaseReportHref(params);
+  const csvReportHref = buildCaseReportHref(params, "csv");
+  const xlsxReportHref = buildCaseReportHref(params, "xlsx");
 
   const [
     cases,
@@ -104,11 +110,18 @@ export default async function CasesPage({ searchParams }: PageProps) {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
-            href={reportHref}
+            href={csvReportHref}
             className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto"
           >
             <Download className="h-4 w-4" />
-            下載報表
+            下載 CSV
+          </Link>
+          <Link
+            href={xlsxReportHref}
+            className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 sm:w-auto"
+          >
+            <Download className="h-4 w-4" />
+            下載 XLSX
           </Link>
           {showCreate && (
             <Link

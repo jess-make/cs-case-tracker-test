@@ -84,7 +84,7 @@ function csvCell(value: string | number | null | undefined): string {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
-function row(values: Array<string | number | null | undefined>): string {
+function row(values: ReadonlyArray<string | number | null | undefined>): string {
   return values.map(csvCell).join(",");
 }
 
@@ -253,6 +253,43 @@ function filterSummary(filters: ReportFilters): string {
 function rowsToCsv(rows: SpreadsheetRow[]): string {
   return `\uFEFF${rows.map(row).join("\r\n")}\r\n`;
 }
+
+export const QUALITY_INSPECTION_ANALYSIS_REPORT_HEADERS = [
+  "品檢回覆",
+  "筆數",
+] as const;
+
+export const QUALITY_INSPECTION_DETAIL_REPORT_HEADERS = [
+  "建檔日",
+  "案件編號",
+  "電商訂單編號",
+  "批號",
+  "結案日",
+  "品檢回覆",
+  "品檢回覆說明",
+  "品檢回覆日期",
+] as const;
+
+export const RETURN_EXCHANGE_CASE_REPORT_HEADERS = [
+  "建檔日",
+  "案件編號",
+  "電商訂單編號",
+  "寄件編號",
+  "批號",
+  "客戶",
+  "客戶性別",
+  "客戶聯繫方式",
+  "案件來源",
+  "服務管道",
+  "案件類別",
+  "子分類",
+  "問題描述",
+  "狀態",
+  "結案日",
+  "品檢回覆",
+  "品檢回覆說明",
+  "品檢回覆日期",
+] as const;
 
 type CategoryCaseReportColumn = {
   header: string;
@@ -500,6 +537,14 @@ export function isCategoryCaseReportType(
   return CATEGORY_CASE_REPORT_TYPES.includes(value as CategoryCaseReportType);
 }
 
+export function getCategoryCaseReportHeaders(
+  reportType: CategoryCaseReportType
+): string[] {
+  return CATEGORY_CASE_REPORT_FIELD_SETS[reportType].map(
+    (key) => CATEGORY_CASE_REPORT_COLUMN_DEFINITIONS[key].header
+  );
+}
+
 function buildCategoryCaseDetailRows(
   cases: Case[],
   reportType: CategoryCaseReportType
@@ -538,16 +583,7 @@ function qualityInspectionReportRows(
   detailsByCaseId: CaseReportDetailsByCaseId
 ): SpreadsheetRow[] {
   const rows: SpreadsheetRow[] = [
-    [
-      "建檔日",
-      "案件編號",
-      "電商訂單編號",
-      "批號",
-      "結案日",
-      "品檢回覆",
-      "品檢回覆說明",
-      "品檢回覆日期",
-    ],
+    [...QUALITY_INSPECTION_DETAIL_REPORT_HEADERS],
   ];
 
   for (const caseData of cases) {
@@ -599,7 +635,7 @@ function qualityInspectionAnalysisRows(
     ["日期範圍", `${formatSlashDate(from)} - ${formatSlashDate(to)}`],
     ["統計欄位", "品檢回覆"],
     [],
-    ["品檢回覆", "筆數"],
+    [...QUALITY_INSPECTION_ANALYSIS_REPORT_HEADERS],
     ...countRows,
     ["總計", total],
   ];
@@ -792,28 +828,7 @@ export function buildReturnExchangeCaseReportCsv(
   assignmentPlansByCaseId: AssignmentPlansByCaseId = new Map()
 ): string {
   const lines: string[] = [];
-  lines.push(
-    row([
-      "建檔日",
-      "案件編號",
-      "電商訂單編號",
-      "寄件編號",
-      "批號",
-      "客戶",
-      "客戶性別",
-      "客戶聯繫方式",
-      "案件來源",
-      "服務管道",
-      "案件類別",
-      "子分類",
-      "問題描述",
-      "狀態",
-      "結案日",
-      "品檢回覆",
-      "品檢回覆說明",
-      "品檢回覆日期",
-    ])
-  );
+  lines.push(row(RETURN_EXCHANGE_CASE_REPORT_HEADERS));
 
   for (const caseData of cases) {
     const reportDetails = detailsByCaseId.get(caseData.id);

@@ -9,10 +9,13 @@ import {
   buildCaseReportDetailsByCaseId,
   buildCaseReportFilename,
   buildCaseReportXlsx,
+  buildCategoryCaseDetailReportCsv,
+  buildCategoryCaseDetailReportXlsx,
   buildQualityInspectionStatsCsv,
   buildQualityInspectionStatsXlsx,
   buildReturnExchangeCaseReportCsv,
   buildReturnExchangeCaseReportXlsx,
+  isCategoryCaseReportType,
   type CaseReportFileFormat,
 } from "@/lib/reports/case-report";
 
@@ -182,6 +185,43 @@ export async function GET(request: NextRequest) {
         reportDetails,
         assignmentPlansByCaseId
       ),
+      filename,
+      CSV_CONTENT_TYPE
+    );
+  }
+
+  if (template === "category-case") {
+    if (!canAccessReportManagement(currentUser)) {
+      return NextResponse.json({ message: "Forbidden" }, { status: 403 });
+    }
+
+    const reportType = request.nextUrl.searchParams.get("complaint_type")?.trim();
+    if (!isCategoryCaseReportType(reportType)) {
+      return NextResponse.json(
+        { message: "Invalid category report type" },
+        { status: 400 }
+      );
+    }
+
+    const filters = getReportFilters(request.nextUrl.searchParams);
+    const cases = await getCases(currentUser, {
+      ...filters,
+      complaint_type: reportType,
+      filterByDate: true,
+    });
+    const reportName = `${reportType}案件`;
+    const filename = buildCategoryCaseReportFilename(reportName, format);
+
+    if (format === "xlsx") {
+      return reportResponse(
+        buildCategoryCaseDetailReportXlsx(cases, reportType),
+        filename,
+        XLSX_CONTENT_TYPE
+      );
+    }
+
+    return reportResponse(
+      buildCategoryCaseDetailReportCsv(cases, reportType),
       filename,
       CSV_CONTENT_TYPE
     );

@@ -56,6 +56,18 @@ type CaseReportDetailsByCaseId = Map<string, CaseReportDetails>;
 type AssignmentPlansByCaseId = Map<string, readonly string[]>;
 export type CaseReportFileFormat = "csv" | "xlsx";
 
+export const CATEGORY_CASE_REPORT_TYPES = [
+  "諮詢服務",
+  "商品問題",
+  "門市問題",
+  "物流問題",
+  "舊機回收",
+  "其他",
+] as const;
+
+export type CategoryCaseReportType =
+  (typeof CATEGORY_CASE_REPORT_TYPES)[number];
+
 const STATUS_ORDER: CaseStatus[] = [
   "new",
   "in_progress",
@@ -240,6 +252,268 @@ function filterSummary(filters: ReportFilters): string {
 
 function rowsToCsv(rows: SpreadsheetRow[]): string {
   return `\uFEFF${rows.map(row).join("\r\n")}\r\n`;
+}
+
+type CategoryCaseReportColumn = {
+  header: string;
+  value: (caseData: Case) => string;
+};
+
+const CATEGORY_CASE_REPORT_COLUMN_DEFINITIONS = {
+  createdAt: {
+    header: "建檔日",
+    value: (caseData) => formatDateOnly(caseData.created_at),
+  },
+  caseNumber: {
+    header: "案件編號",
+    value: (caseData) => caseData.case_number,
+  },
+  ecommerceOrderNo: {
+    header: "電商訂單編號",
+    value: (caseData) => caseData.ecommerce_order_no ?? "",
+  },
+  shippingTrackingNo: {
+    header: "寄件編號",
+    value: (caseData) => caseData.shipping_tracking_no ?? "",
+  },
+  batchNo: {
+    header: "批號",
+    value: (caseData) => caseData.batch_no ?? "",
+  },
+  customerName: {
+    header: "客戶",
+    value: (caseData) => caseData.customer_name,
+  },
+  customerGender: {
+    header: "客戶性別",
+    value: (caseData) => caseData.customer_gender ?? "",
+  },
+  customerContact: {
+    header: "客戶聯繫方式",
+    value: (caseData) => caseData.customer_contact,
+  },
+  source: {
+    header: "案件來源",
+    value: (caseData) => caseData.source,
+  },
+  sourceDetail: {
+    header: "服務管道",
+    value: (caseData) => caseData.source_detail ?? "",
+  },
+  complaintType: {
+    header: "案件類別",
+    value: (caseData) => caseData.complaint_type,
+  },
+  complaintSubtype: {
+    header: "子分類",
+    value: (caseData) => caseData.complaint_subtype ?? "",
+  },
+  description: {
+    header: "問題描述",
+    value: (caseData) => caseData.description,
+  },
+  department: {
+    header: "指派部門",
+    value: (caseData) => caseData.department?.trim() || "暫未指派",
+  },
+  assignee: {
+    header: "處理人",
+    value: (caseData) => getAssigneeDisplayName(caseData),
+  },
+  urgency: {
+    header: "緊急程度",
+    value: (caseData) => URGENCY_LABELS[caseData.urgency],
+  },
+  status: {
+    header: "狀態",
+    value: (caseData) => CASE_STATUS_LABELS[caseData.status],
+  },
+  closedAt: {
+    header: "結案日",
+    value: (caseData) => formatDateOnly(caseData.closed_at),
+  },
+  compensationType: {
+    header: "補償方式",
+    value: (caseData) => caseData.compensation_type ?? "",
+  },
+  compensationStatus: {
+    header: "補償簽核狀態",
+    value: (caseData) =>
+      caseData.compensation_type
+        ? formatCompensationStatus(caseData.compensation_status)
+        : "",
+  },
+  compensationRequestedBy: {
+    header: "補償申請人",
+    value: (caseData) => caseData.compensation_requested_by?.name ?? "",
+  },
+  compensationRequestedAt: {
+    header: "補償申請時間",
+    value: (caseData) =>
+      caseData.compensation_requested_at
+        ? formatDate(caseData.compensation_requested_at)
+        : "",
+  },
+  compensationReviewedBy: {
+    header: "補償審核人",
+    value: (caseData) => caseData.compensation_reviewed_by?.name ?? "",
+  },
+  compensationReviewedAt: {
+    header: "補償審核時間",
+    value: (caseData) =>
+      caseData.compensation_reviewed_at
+        ? formatDate(caseData.compensation_reviewed_at)
+        : "",
+  },
+  compensationReviewNote: {
+    header: "補償審核說明",
+    value: (caseData) => caseData.compensation_review_note ?? "",
+  },
+} satisfies Record<string, CategoryCaseReportColumn>;
+
+type CategoryCaseReportColumnKey =
+  keyof typeof CATEGORY_CASE_REPORT_COLUMN_DEFINITIONS;
+
+const CATEGORY_CASE_REPORT_FIELD_SETS: Record<
+  CategoryCaseReportType,
+  readonly CategoryCaseReportColumnKey[]
+> = {
+  諮詢服務: [
+    "createdAt",
+    "caseNumber",
+    "ecommerceOrderNo",
+    "customerName",
+    "customerGender",
+    "customerContact",
+    "source",
+    "sourceDetail",
+    "complaintType",
+    "complaintSubtype",
+    "description",
+    "assignee",
+    "urgency",
+    "status",
+    "closedAt",
+  ],
+  商品問題: [
+    "createdAt",
+    "caseNumber",
+    "ecommerceOrderNo",
+    "shippingTrackingNo",
+    "batchNo",
+    "customerName",
+    "customerGender",
+    "customerContact",
+    "source",
+    "sourceDetail",
+    "complaintType",
+    "complaintSubtype",
+    "description",
+    "department",
+    "assignee",
+    "status",
+    "closedAt",
+    "compensationType",
+    "compensationStatus",
+    "compensationRequestedBy",
+    "compensationRequestedAt",
+    "compensationReviewedBy",
+    "compensationReviewedAt",
+    "compensationReviewNote",
+  ],
+  門市問題: [
+    "createdAt",
+    "caseNumber",
+    "batchNo",
+    "customerName",
+    "customerGender",
+    "customerContact",
+    "source",
+    "sourceDetail",
+    "complaintType",
+    "complaintSubtype",
+    "description",
+    "department",
+    "assignee",
+    "status",
+    "closedAt",
+  ],
+  物流問題: [
+    "createdAt",
+    "caseNumber",
+    "ecommerceOrderNo",
+    "shippingTrackingNo",
+    "batchNo",
+    "customerName",
+    "customerGender",
+    "customerContact",
+    "source",
+    "sourceDetail",
+    "complaintType",
+    "complaintSubtype",
+    "description",
+    "department",
+    "assignee",
+    "status",
+    "closedAt",
+  ],
+  舊機回收: [
+    "createdAt",
+    "caseNumber",
+    "customerName",
+    "customerGender",
+    "customerContact",
+    "source",
+    "sourceDetail",
+    "complaintType",
+    "complaintSubtype",
+    "description",
+    "department",
+    "assignee",
+    "status",
+    "closedAt",
+  ],
+  其他: [
+    "createdAt",
+    "caseNumber",
+    "ecommerceOrderNo",
+    "shippingTrackingNo",
+    "batchNo",
+    "customerName",
+    "customerGender",
+    "customerContact",
+    "source",
+    "sourceDetail",
+    "complaintType",
+    "complaintSubtype",
+    "description",
+    "department",
+    "assignee",
+    "status",
+    "closedAt",
+  ],
+};
+
+export function isCategoryCaseReportType(
+  value: string | null | undefined
+): value is CategoryCaseReportType {
+  return CATEGORY_CASE_REPORT_TYPES.includes(value as CategoryCaseReportType);
+}
+
+function buildCategoryCaseDetailRows(
+  cases: Case[],
+  reportType: CategoryCaseReportType
+): SpreadsheetRow[] {
+  const columns = CATEGORY_CASE_REPORT_FIELD_SETS[reportType].map(
+    (key) => CATEGORY_CASE_REPORT_COLUMN_DEFINITIONS[key]
+  );
+
+  return [
+    columns.map((column) => column.header),
+    ...cases.map((caseData) =>
+      columns.map((column) => column.value(caseData))
+    ),
+  ];
 }
 
 function splitCaseReportCsvRows(csv: string): {
@@ -586,6 +860,23 @@ export function buildReturnExchangeCaseReportXlsx(
       assignmentPlansByCaseId
     ),
     sheetName
+  );
+}
+
+export function buildCategoryCaseDetailReportCsv(
+  cases: Case[],
+  reportType: CategoryCaseReportType
+): string {
+  return rowsToCsv(buildCategoryCaseDetailRows(cases, reportType));
+}
+
+export function buildCategoryCaseDetailReportXlsx(
+  cases: Case[],
+  reportType: CategoryCaseReportType
+): Uint8Array {
+  return buildXlsxWorkbookFromCsv(
+    buildCategoryCaseDetailReportCsv(cases, reportType),
+    `${reportType}案件`
   );
 }
 

@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Suspense } from "react";
-import { ClipboardList, Download, FileText } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { canAccessReportManagement } from "@/lib/auth/permissions";
 import { requireUser } from "@/lib/auth/session";
 import { DateRangeFilter } from "@/components/cases/DateRangeFilter";
@@ -34,6 +34,42 @@ const DOWNLOADABLE_REPORTS = [
     key: "quality-inspection-stats",
     name: "修正機況統計",
     template: "quality-inspection-stats",
+  },
+  {
+    key: "consultation",
+    name: "諮詢服務案件",
+    template: "category-case",
+    category: "諮詢服務",
+  },
+  {
+    key: "product",
+    name: "商品問題案件",
+    template: "category-case",
+    category: "商品問題",
+  },
+  {
+    key: "store",
+    name: "門市問題案件",
+    template: "category-case",
+    category: "門市問題",
+  },
+  {
+    key: "logistics",
+    name: "物流問題案件",
+    template: "category-case",
+    category: "物流問題",
+  },
+  {
+    key: "recycling",
+    name: "舊機回收案件",
+    template: "category-case",
+    category: "舊機回收",
+  },
+  {
+    key: "other",
+    name: "其他案件",
+    template: "category-case",
+    category: "其他",
   },
 ] as const;
 
@@ -169,14 +205,7 @@ export default async function ReportsPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        {plannedReports.length === 0 ? (
-          <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
-            <ClipboardList className="h-10 w-10 text-slate-300" />
-            <p className="mt-3 text-sm font-medium text-slate-700">
-              目前沒有規劃中的案件類別報表
-            </p>
-          </div>
-        ) : (
+        {plannedReports.length > 0 && (
           <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-slate-50 px-4 py-3">
               <h2 className="text-sm font-semibold text-slate-900">規劃中報表</h2>

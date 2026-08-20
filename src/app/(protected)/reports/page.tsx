@@ -93,12 +93,12 @@ const DOWNLOADABLE_REPORTS = [
 const REPORT_GROUPS = [
   {
     key: "operations",
-    title: "退換貨作業報表",
+    title: "退換貨相關",
     description: "退貨、換貨與修正機況統計",
   },
   {
     key: "category",
-    title: "案件類別明細報表",
+    title: "案件類別明細",
     description: "依案件類別輸出指定欄位",
   },
 ] as const;
